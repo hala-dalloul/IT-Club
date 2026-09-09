@@ -39,7 +39,7 @@ import {
   type Content,
   type ContentCollection,
 } from "@/lib/club/model";
-import { configured, submitForm } from "@/lib/club/firebase";
+import { configured, submitForm } from "@/lib/club/supabase";
 import { AdminPanel } from "./AdminPanel";
 const nav = [
   ["", "الرئيسية", "Home"],
@@ -361,7 +361,7 @@ function Home() {
   );
 }
 function About() {
-  const { lang, settings } = useClub();
+  const { lang, settings, setupRequired } = useClub();
   const ar = lang === "ar";
   return (
     <>
@@ -613,7 +613,7 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   );
 }
 function PublicForm({ join }: { join: boolean }) {
-  const { lang, settings } = useClub();
+  const { lang, settings, setupRequired } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -725,7 +725,7 @@ function PublicForm({ join }: { join: boolean }) {
                 ? "تُستخدم بياناتك للرد على رسالتك أو مراجعة طلب انضمامك من إدارة النادي."
                 : "Club administrators use your details to respond to your message or review your membership request."}
             </p>
-            {!configured && (
+            {(!configured || setupRequired) && (
               <p role="status" className="text-sm text-muted-foreground">
                 {ar
                   ? "استقبال الطلبات غير متاح حاليًا. يُرجى العودة لاحقًا."
@@ -737,7 +737,7 @@ function PublicForm({ join }: { join: boolean }) {
                 {message}
               </p>
             )}
-            <BrandButton type="submit" disabled={busy || !configured}>
+            <BrandButton type="submit" disabled={busy || !configured || setupRequired}>
               {busy ? (ar ? "جارٍ الإرسال…" : "Sending…") : ar ? "إرسال" : "Submit"}
             </BrandButton>
           </form>

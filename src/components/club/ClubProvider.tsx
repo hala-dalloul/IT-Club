@@ -1,14 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
 import {
-  collections,
   emptySettings,
   type Content,
   type ContentCollection,
   type Lang,
   type Settings,
 } from "@/lib/club/model";
-import { configured, firebase, watchContent } from "@/lib/club/firebase";
+import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/club/supabase";
 const emptyData: Record<ContentCollection, Content[]> = {
   projects: [],
   members: [],
@@ -23,6 +21,7 @@ const Context = createContext({
   settings: emptySettings,
   loading: false,
   error: false,
+  setupRequired: false,
 });
 export function ClubProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>("ar");
@@ -30,11 +29,12 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [loading, setLoading] = useState(configured);
   const [error, setError] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(false);
   useEffect(() => {
     try {
       if (localStorage.getItem("ucas-language") === "en") setLang("en");
     } catch {
-      /* Browser storage may be unavailable; keep the in-memory preference. */
+      /* Keep the in-memory language if browser storage is disabled. */
     }
   }, []);
   useEffect(() => {
@@ -43,45 +43,26 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem("ucas-language", lang);
     } catch {
-      /* Browser storage may be unavailable; keep the in-memory preference. */
+      /* Storage is optional. */
     }
   }, [lang]);
   useEffect(() => {
     if (!configured) return;
-    let pending = collections.length;
-    const done = new Set<string>();
-    const finish = (key: string) => {
-      if (!done.has(key)) {
-        done.add(key);
-        pending--;
-        if (!pending) setLoading(false);
-      }
-    };
-    const stops = collections.map((name) =>
-      watchContent(
-        name,
-        (rows) => {
-          setData((prev) => ({ ...prev, [name]: rows }));
-          finish(name);
-        },
-        () => {
-          setError(true);
-          finish(name);
-        },
-      ),
+    return watchQuery(
+      loadPublic,
+      (value) => {
+        setData(value.data);
+        setSettings({ ...emptySettings, ...value.settings });
+        setLoading(false);
+        setError(false);
+        setSetupRequired(false);
+      },
+      (error) => {
+        setLoading(false);
+        setSetupRequired(error instanceof SetupRequiredError);
+        setError(!(error instanceof SetupRequiredError));
+      },
     );
-    stops.push(
-      onSnapshot(
-        doc(firebase().db, "settings", "public"),
-        (s) => {
-          if (s.exists()) setSettings({ ...emptySettings, ...s.data() } as Settings);
-        },
-        () => setError(true),
-      ),
-    );
-    return () => {
-      stops.forEach((stop) => stop());
-    };
   }, []);
   useEffect(
     () => () => {
@@ -91,7 +72,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     [],
   );
   return (
-    <Context.Provider value={{ lang, setLang, data, settings, loading, error }}>
+    <Context.Provider value={{ lang, setLang, data, settings, loading, error, setupRequired }}>
       {children}
     </Context.Provider>
   );

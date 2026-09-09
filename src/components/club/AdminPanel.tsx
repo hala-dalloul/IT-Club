@@ -1,30 +1,24 @@
+import { MediaLibrary } from "./MediaLibrary";
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  type User,
-} from "firebase/auth";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  orderBy,
-  updateDoc,
-  setDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import type { User } from "@supabase/supabase-js";
 import { useClub } from "./ClubProvider";
 import {
   configured,
-  firebase,
+  observeAuth,
+  signIn,
+  signOut,
+  loadRole,
+  watchQuery,
+  loadInbox,
+  loadAdmins,
+  updateSubmission,
+  saveAdmin,
+  removeAdmin,
   saveContent,
   removeContent,
   uploadImage,
   saveSettings,
-} from "@/lib/club/firebase";
+} from "@/lib/club/supabase";
 import {
   collections,
   labels,
@@ -71,12 +65,12 @@ type InboxRow = {
   message: string;
   status?: string;
   isRead?: boolean;
-  submittedAt?: { toDate: () => Date };
+  submittedAt?: string;
 };
 type AdminRow = { id: string; name: string; email: string; role: string };
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
 export function AdminPanel() {
-  const { lang } = useClub();
+  const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState("");
@@ -86,7 +80,7 @@ export function AdminPanel() {
   useEffect(() => {
     if (!configured) return;
     let stopRole = () => {};
-    const stopAuth = onAuthStateChanged(firebase().auth, (current) => {
+    const stopAuth = observeAuth((current) => {
       stopRole();
       setUser(current);
       setRole("");
@@ -95,16 +89,17 @@ export function AdminPanel() {
         return;
       }
       setChecking(true);
-      stopRole = onSnapshot(
-        doc(firebase().db, "admins", current.uid),
-        (snap) => {
-          setRole(snap.exists() ? String(snap.data()["role"]) : "");
+      stopRole = watchQuery(
+        () => loadRole(current.id),
+        (value) => {
+          setRole(value);
           setChecking(false);
         },
         () => {
           setRole("");
           setChecking(false);
         },
+        30000,
       );
     });
     return () => {
@@ -118,11 +113,7 @@ export function AdminPanel() {
     setError("");
     const values = new FormData(e.currentTarget);
     try {
-      await signInWithEmailAndPassword(
-        firebase().auth,
-        String(values.get("email")),
-        String(values.get("password")),
-      );
+      await signIn(String(values.get("email")), String(values.get("password")));
     } catch {
       setError(
         ar
@@ -133,6 +124,19 @@ export function AdminPanel() {
       setBusy(false);
     }
   }
+  if (setupRequired)
+    return (
+      <div className="rounded-3xl border border-border bg-card p-8">
+        <h1 className="text-2xl font-black">
+          {ar ? "تفعيل قاعدة بيانات النادي" : "Set up the club database"}
+        </h1>
+        <p className="mt-4">
+          {ar
+            ? "اتصال Supabase جاهز. شغّلي ملف إعداد قاعدة البيانات في SQL Editor، ثم أنشئي حساب المدير وفعّلي صلاحيته."
+            : "Supabase is connected. Run the database setup SQL, then create and authorize the administrator account."}
+        </p>
+      </div>
+    );
   if (!configured)
     return (
       <div className="mx-auto max-w-xl rounded-3xl border border-border bg-card p-8">
@@ -174,15 +178,15 @@ export function AdminPanel() {
             ? "هذا الحساب غير مخوّل بإدارة الموقع."
             : "This account does not have administrative access."}
         </p>
-        <BrandButton className="mt-5" onClick={() => void signOut(firebase().auth)}>
+        <BrandButton className="mt-5" onClick={() => void signOut()}>
           {ar ? "تسجيل الخروج" : "Sign out"}
         </BrandButton>
       </div>
     );
-  return <AdminWorkspace key={user.uid + role} role={role} user={user} />;
+  return <AdminWorkspace key={user.id + role} role={role} user={user} />;
 }
 function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
-  const { lang } = useClub();
+  const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
   return (
     <AlertDialog>
@@ -221,25 +225,23 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
   useEffect(() => {
-    const stops = ["joinRequests", "contactMessages"].map((name, i) =>
-      onSnapshot(
-        query(collection(firebase().db, name), orderBy("submittedAt", "desc")),
-        (snap) => {
-          const rows = snap.docs.map((d) => ({ ...d.data(), id: d.id }) as InboxRow);
-          (i === 0 ? setRequests : setMessages)(rows);
-        },
-        () => setNotice(ar ? "تعذر تحميل الرسائل والطلبات." : "Could not load submissions."),
-      ),
-    );
-    if (role === "super_admin")
-      stops.push(
-        onSnapshot(
-          collection(firebase().db, "admins"),
-          (snap) => setAdmins(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as AdminRow)),
-          () =>
-            setNotice(ar ? "تعذر تحميل حسابات الإدارة." : "Could not load administrator accounts."),
-        ),
+    const fail = () =>
+      setNotice(
+        ar
+          ? "تعذر تحميل بيانات الإدارة. تحقق من إعداد Supabase."
+          : "Could not load admin data. Check Supabase setup.",
       );
+    const stops = [
+      watchQuery(
+        loadInbox,
+        (rows) => {
+          setRequests(rows.filter((r) => r.kind === "joinRequests"));
+          setMessages(rows.filter((r) => r.kind === "contactMessages"));
+        },
+        fail,
+      ),
+    ];
+    if (role === "super_admin") stops.push(watchQuery(loadAdmins, setAdmins, fail));
     return () => stops.forEach((stop) => stop());
   }, [role, ar]);
   async function run(action: () => Promise<void>) {
@@ -257,6 +259,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   }
   const tabs = [
     ["dashboard", ar ? "نظرة عامة" : "Overview"],
+    ["media", ar ? "مكتبة الصور" : "Media library"],
     ...collections.map((x) => [x, labels[x][ar ? 0 : 1]]),
     ["joinRequests", ar ? "طلبات الانضمام" : "Applications"],
     ["contactMessages", ar ? "الرسائل" : "Messages"],
@@ -279,7 +282,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             {role === "super_admin" ? (ar ? "مدير عام" : "Super admin") : ar ? "محرر" : "Editor"}
           </p>
         </div>
-        <BrandButton variant="outline" onClick={() => void signOut(firebase().auth)}>
+        <BrandButton variant="outline" onClick={() => void signOut()}>
           <LogOut size={18} />
           {ar ? "خروج" : "Sign out"}
         </BrandButton>
@@ -308,6 +311,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           {notice}
         </p>
       )}
+      {tab === "media" && <MediaLibrary />}
       {tab === "dashboard" && (
         <div className="grid gap-5 sm:grid-cols-3">
           {[
@@ -386,7 +390,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               </a>
               {row.submittedAt && (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {row.submittedAt.toDate().toLocaleString(ar ? "ar-PS" : "en-GB")}
+                  {new Date(row.submittedAt).toLocaleString(ar ? "ar-PS" : "en-GB")}
                 </p>
               )}
               {row.studentId && (
@@ -400,11 +404,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               {tab === "joinRequests" ? (
                 <Select
                   value={row.status || "new"}
-                  onValueChange={(status) =>
-                    void run(() =>
-                      updateDoc(doc(firebase().db, "joinRequests", row.id), { status }),
-                    )
-                  }
+                  onValueChange={(status) => void run(() => updateSubmission(row.id, { status }))}
                 >
                   <SelectTrigger
                     className="max-w-xs"
@@ -430,7 +430,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                   variant="outline"
                   onClick={() =>
                     void run(() =>
-                      updateDoc(doc(firebase().db, "contactMessages", row.id), {
+                      updateSubmission(row.id, {
                         isRead: !row.isRead,
                       }),
                     )
@@ -456,8 +456,8 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         <>
           <p className="mb-5 text-muted-foreground">
             {ar
-              ? "أضف حساب المحرر الموجود في Firebase Authentication باستخدام معرّفه UID. إزالة المحرر هنا تلغي صلاحياته على الموقع."
-              : "Add an existing Firebase Authentication account by its UID. Removing an editor here revokes their website access."}
+              ? "أضف حساب المحرر الموجود في Supabase Authentication باستخدام معرّفه UID. إزالة المحرر هنا تلغي صلاحياته على الموقع."
+              : "Add an existing Supabase Authentication account by its UID. Removing an editor here revokes their website access."}
           </p>
           <form
             className="mb-8 grid gap-4 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
@@ -466,14 +466,13 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               const f = e.currentTarget;
               const values = new FormData(f);
               const uid = String(values.get("uid")).trim();
-              if (uid === user.uid || uid.includes("/") || !uid) return;
+              if (uid === user.id || uid.includes("/") || !uid) return;
               void run(async () => {
-                await setDoc(doc(firebase().db, "admins", uid), {
+                await saveAdmin(
                   uid,
-                  name: String(values.get("name")).trim(),
-                  email: String(values.get("email")).trim(),
-                  role: "editor",
-                });
+                  String(values.get("name")).trim(),
+                  String(values.get("email")).trim(),
+                );
                 f.reset();
               });
             }}
@@ -504,10 +503,10 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                 <span>
                   {admin.name} · {admin.email} · {admin.role}
                 </span>
-                {admin.id !== user.uid && admin.role === "editor" && (
+                {admin.id !== user.id && admin.role === "editor" && (
                   <DeleteButton
                     label={admin.name}
-                    onDelete={() => run(() => deleteDoc(doc(firebase().db, "admins", admin.id)))}
+                    onDelete={() => run(() => removeAdmin(admin.id))}
                   />
                 )}
               </div>
@@ -800,6 +799,14 @@ function ContentEditor({
           </Select>
         </label>
       )}
+      <details className="rounded-2xl border border-border p-5">
+        <summary className="cursor-pointer font-bold">
+          {ar ? "اختيار من مكتبة الصور" : "Choose from media library"}
+        </summary>
+        <MediaLibrary
+          onSelect={(url) => setImages((prev) => (prev.includes(url) ? prev : [...prev, url]))}
+        />
+      </details>
       <fieldset className="rounded-2xl border border-border p-5">
         <legend className="px-2 font-bold">{ar ? "الصور" : "Images"}</legend>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -870,7 +877,7 @@ function SettingsEditor({
   initial: Settings;
   onSave: (value: Settings) => Promise<void>;
 }) {
-  const { lang } = useClub();
+  const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
   const fields: Record<keyof Settings, [string, string]> = {
