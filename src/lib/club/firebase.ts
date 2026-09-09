@@ -1,3 +1,4 @@
+import { prepareImage } from "./images";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import {
@@ -75,6 +76,7 @@ export async function uploadImage(file: File) {
   const { auth, storage } = firebase();
   if (!auth.currentUser) throw new Error("Sign in required");
   const target = ref(storage, `content/${auth.currentUser.uid}/${crypto.randomUUID()}`);
-  await uploadBytes(target, file, { contentType: file.type });
+  const optimized = await prepareImage(file);
+  await uploadBytes(target, optimized, { contentType: optimized.type });
   return getDownloadURL(target);
 }
