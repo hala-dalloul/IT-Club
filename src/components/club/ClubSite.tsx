@@ -65,12 +65,14 @@ function ClubLink({
   className?: string;
   navigation?: boolean;
 }) {
-  const pathname = useLocation().pathname.replace(/\/$/, "");
   const target = path ? `/club/${path}` : "/club";
-  const active =
-    navigation && (pathname === target || (Boolean(path) && pathname.startsWith(`${target}/`)));
   return (
-    <Link to={target} className={className} aria-current={active ? "page" : undefined}>
+    <Link
+      to={target}
+      className={className}
+      activeOptions={{ exact: !path, includeSearch: false, includeHash: false }}
+      data-club-navigation={navigation || undefined}
+    >
       {children}
     </Link>
   );
@@ -125,14 +127,14 @@ function Shell({ children }: { children: ReactNode }) {
           </ClubLink>
           <nav
             aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-            className="hidden flex-wrap items-center gap-1 xl:flex"
+            className="club-nav-bar hidden items-center gap-1 xl:flex"
           >
             {nav.map(([path, a, e]) => (
               <ClubLink
                 key={path}
                 path={path!}
                 navigation
-                className="club-nav-link rounded-full px-3 py-2 text-sm font-bold text-muted-foreground hover:bg-muted"
+                className="club-nav-link rounded-full px-3 py-2 text-sm font-bold"
               >
                 {ar ? a : e}
               </ClubLink>
@@ -166,7 +168,7 @@ function Shell({ children }: { children: ReactNode }) {
                 <ClubLink
                   path={path!}
                   navigation
-                  className="club-nav-link block rounded-xl p-3 text-sm font-bold text-muted-foreground hover:bg-muted"
+                  className="club-nav-link block rounded-xl p-3 text-sm font-bold"
                 >
                   {ar ? a : e}
                 </ClubLink>

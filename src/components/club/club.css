@@ -14,10 +14,53 @@
   outline-offset: 4px;
 }
 
-.club-site .club-nav-link[aria-current="page"] {
+.club-nav-bar {
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.club-site .club-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.club-nav-link::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease;
+}
+
+.club-site .club-nav-link:hover {
   color: var(--primary);
   background: var(--secondary);
-  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.club-site .club-nav-link[aria-current="page"] {
+  color: var(--primary);
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 3px 10px color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+.club-nav-link[aria-current="page"]::before {
+  opacity: 1;
+  transform: scale(1);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
@@ -31,6 +74,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .club-nav-link::before,
   .club-site :is(button, .club-action, .club-nav-link) {
     transition: none;
     transform: none;
