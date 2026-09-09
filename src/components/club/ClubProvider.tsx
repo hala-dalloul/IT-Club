@@ -33,14 +33,18 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       if (localStorage.getItem("ucas-language") === "en") setLang("en");
-    } catch {}
+    } catch {
+      /* Browser storage may be unavailable; keep the in-memory preference. */
+    }
   }, []);
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
     try {
       localStorage.setItem("ucas-language", lang);
-    } catch {}
+    } catch {
+      /* Browser storage may be unavailable; keep the in-memory preference. */
+    }
   }, [lang]);
   useEffect(() => {
     if (!configured) return;
@@ -75,8 +79,17 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         () => setError(true),
       ),
     );
-    return () => stops.forEach((stop) => stop());
+    return () => {
+      stops.forEach((stop) => stop());
+    };
   }, []);
+  useEffect(
+    () => () => {
+      document.documentElement.lang = "ar";
+      document.documentElement.dir = "rtl";
+    },
+    [],
+  );
   return (
     <Context.Provider value={{ lang, setLang, data, settings, loading, error }}>
       {children}

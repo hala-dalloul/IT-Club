@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { QUESTIONS, type SpecId } from "@/lib/game-data";
@@ -25,7 +25,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "اكتشف مسارك — رحلتك التقنية تبدأ من هنا" },
       {
         property: "og:description",
-        content: "مش عارف أي تخصص يناسبك؟ ولا يهمك — جاوب على أسئلة ممتعة واكتشف المجال التقني الأقرب لشخصيتك مع UCAS IT CLUB.",
+        content:
+          "مش عارف أي تخصص يناسبك؟ ولا يهمك — جاوب على أسئلة ممتعة واكتشف المجال التقني الأقرب لشخصيتك مع UCAS IT CLUB.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "ar_PS" },
@@ -35,7 +36,8 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Stage = "welcome" | "character" | "questions" | "analyzing" | "result" | "explore" | "how" | "about";
+type Stage =
+  "welcome" | "character" | "questions" | "analyzing" | "result" | "explore" | "how" | "about";
 
 function Index() {
   const [stage, setStage] = useState<Stage>("welcome");
@@ -140,12 +142,18 @@ function Index() {
 
       {!isGameStage && (
         <footer className="border-t border-border/60 py-8">
+          <div className="mb-5 text-center">
+            <Link to="/club" className="font-bold text-primary">
+              موقع نادي تكنولوجيا المعلومات
+            </Link>
+          </div>
           <div className="mx-auto max-w-6xl px-4 text-center">
             <p className="text-sm font-bold text-foreground">
               اكتشف مسارك — من تطوير <span className="text-gradient-brand">UCAS IT CLUB</span> 💙💚
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              هذه النتيجة استرشادية لمساعدتك على اكتشاف اهتماماتك، وليست بديلاً عن الإرشاد الأكاديمي.
+              هذه النتيجة استرشادية لمساعدتك على اكتشاف اهتماماتك، وليست بديلاً عن الإرشاد
+              الأكاديمي.
             </p>
           </div>
         </footer>
