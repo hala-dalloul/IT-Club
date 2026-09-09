@@ -1,0 +1,278 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * UCAS IT CLUB — "اكتشف مسارك" design system.
+ * Brand colors derived from the UCAS IT CLUB logo:
+ *   blue  #1864BC → oklch(0.509 0.156 255.7)
+ *   green #73BF49 → oklch(0.730 0.170 136.1)
+ *   gray  #959799 → oklch(0.675 0.004 247.9)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-gray: var(--brand-gray);
+  --color-navy: var(--navy);
+}
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  --radius: 1rem;
+  --brand-blue: oklch(0.509 0.156 255.7);
+  --brand-green: oklch(0.73 0.17 136.1);
+  --brand-gray: oklch(0.675 0.004 247.9);
+  --navy: oklch(0.283 0.068 254.4);
+
+  --background: oklch(0.99 0.003 250);
+  --foreground: var(--navy);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--navy);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--navy);
+  --primary: var(--brand-blue);
+  --primary-foreground: oklch(0.99 0.003 250);
+  --secondary: oklch(0.955 0.02 250);
+  --secondary-foreground: var(--navy);
+  --muted: oklch(0.962 0.012 250);
+  --muted-foreground: oklch(0.55 0.02 250);
+  --accent: var(--brand-green);
+  --accent-foreground: oklch(0.99 0.003 250);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.99 0.003 250);
+  --border: oklch(0.915 0.015 250);
+  --input: oklch(0.915 0.015 250);
+  --ring: var(--brand-blue);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--brand-blue) 25%, transparent);
+  }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--brand-blue) 65%, transparent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ---------- Brand utilities ---------- */
+
+@utility text-gradient-brand {
+  background-image: linear-gradient(120deg, var(--brand-blue) 10%, var(--brand-green) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, var(--brand-blue), var(--brand-green));
+}
+
+@utility bg-brand-gradient-soft {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--brand-blue) 9%, transparent),
+    color-mix(in oklab, var(--brand-green) 9%, transparent)
+  );
+}
+
+@utility shadow-glow-blue {
+  box-shadow:
+    0 12px 40px -12px color-mix(in oklab, var(--brand-blue) 45%, transparent),
+    0 4px 12px -4px color-mix(in oklab, var(--brand-blue) 25%, transparent);
+}
+
+@utility shadow-glow-green {
+  box-shadow:
+    0 12px 40px -12px color-mix(in oklab, var(--brand-green) 45%, transparent),
+    0 4px 12px -4px color-mix(in oklab, var(--brand-green) 25%, transparent);
+}
+
+@utility shadow-card {
+  box-shadow:
+    0 1px 2px oklch(0.283 0.068 254.4 / 4%),
+    0 12px 32px -12px oklch(0.283 0.068 254.4 / 12%);
+}
+
+@utility bg-grid-pattern {
+  background-image:
+    linear-gradient(to left, color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* ---------- Keyframe animations ---------- */
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(18px, -22px) rotate(8deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-blue) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(26px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(26px) rotate(-360deg);
+  }
+}
+
+@keyframes dash-flow {
+  to {
+    background-position-x: -44px;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 50%;
+  }
+  to {
+    background-position: -200% 50%;
+  }
+}
+
+.animate-stage-in {
+  animation: stage-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-float-slow {
+  animation: float-y 5s ease-in-out infinite;
+}
+
+.animate-drift {
+  animation: drift 9s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2.2s ease-out infinite;
+}
+
+.animate-orbit {
+  animation: orbit 1.6s linear infinite;
+}
+
+.animate-dash-flow {
+  animation: dash-flow 1.4s linear infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
