@@ -296,6 +296,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             key={key}
             size="sm"
             variant={tab === key ? "primary" : "outline"}
+            aria-pressed={tab === key}
             onClick={() => {
               setTab(key!);
               setEditing(undefined);

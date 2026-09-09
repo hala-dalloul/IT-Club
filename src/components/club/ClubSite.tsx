@@ -14,6 +14,7 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
+import "./club.css";
 import logo from "@/assets/ucas-logo.png";
 import { BrandButton } from "@/components/game/BrandButton";
 import { FloatingBackground } from "@/components/game/FloatingBackground";
@@ -52,18 +53,24 @@ const nav = [
   ["contact", "تواصل معنا", "Contact"],
 ];
 const linkClass =
-  "inline-flex items-center justify-center gap-2 rounded-full border-2 border-primary/30 bg-card px-6 py-3 text-base font-bold text-primary transition-colors hover:bg-primary/5";
+  "club-action inline-flex items-center justify-center gap-2 rounded-full border-2 border-primary/30 bg-card px-6 py-3 text-base font-bold text-primary transition-colors hover:bg-primary/5";
 function ClubLink({
   path = "",
   children,
   className = linkClass,
+  navigation = false,
 }: {
   path?: string;
   children: ReactNode;
   className?: string;
+  navigation?: boolean;
 }) {
+  const pathname = useLocation().pathname.replace(/\/$/, "");
+  const target = path ? `/club/${path}` : "/club";
+  const active =
+    navigation && (pathname === target || (Boolean(path) && pathname.startsWith(`${target}/`)));
   return (
-    <Link to={"/club/" + path} className={className}>
+    <Link to={target} className={className} aria-current={active ? "page" : undefined}>
       {children}
     </Link>
   );
@@ -99,7 +106,7 @@ function Shell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const ar = lang === "ar";
   return (
-    <div dir={ar ? "rtl" : "ltr"} className="min-h-screen">
+    <div dir={ar ? "rtl" : "ltr"} className="club-site min-h-screen">
       <FloatingBackground />
       <a href="#club-main" className="sr-only focus:not-sr-only">
         {ar ? "انتقل للمحتوى" : "Skip to content"}
@@ -124,7 +131,8 @@ function Shell({ children }: { children: ReactNode }) {
               <ClubLink
                 key={path}
                 path={path!}
-                className="rounded-full px-3 py-2 text-sm font-bold text-muted-foreground hover:bg-muted"
+                navigation
+                className="club-nav-link rounded-full px-3 py-2 text-sm font-bold text-muted-foreground hover:bg-muted"
               >
                 {ar ? a : e}
               </ClubLink>
@@ -157,7 +165,8 @@ function Shell({ children }: { children: ReactNode }) {
               <span key={path} onClick={() => setOpen(false)}>
                 <ClubLink
                   path={path!}
-                  className="block rounded-xl p-3 text-sm font-bold hover:bg-muted"
+                  navigation
+                  className="club-nav-link block rounded-xl p-3 text-sm font-bold text-muted-foreground hover:bg-muted"
                 >
                   {ar ? a : e}
                 </ClubLink>
@@ -176,7 +185,9 @@ function Shell({ children }: { children: ReactNode }) {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-4">
           <p className="font-bold">
-            {ar ? "نادي تكنولوجيا المعلومات — يوكاس" : "University College of Applied Sciences"}
+            {ar
+              ? "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية"
+              : "University College of Applied Sciences"}
             <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
           </p>
           <div className="flex flex-wrap gap-4 text-sm font-bold">
@@ -290,10 +301,13 @@ function Home() {
           className="mx-auto h-40 w-32 object-contain animate-float-slow"
         />
         <p className="mt-7 text-primary font-bold">
-          {ar ? "نادي تكنولوجيا المعلومات — يوكاس" : "UCAS IT CLUB"}
+          {ar ? "النادي التكنولوجي" : "Technology Club"}
+          <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+            {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
+          </span>
         </p>
         <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
-          {ar ? "نتعلم، نبدع، ونبني معًا" : "Learn, create, and build together"}
+          {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-loose text-muted-foreground">
           {ar
