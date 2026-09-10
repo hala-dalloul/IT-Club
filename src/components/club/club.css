@@ -102,16 +102,16 @@
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  border: 2px solid rgb(255 255 255 / 100%);
+  border: 2px solid #e5e8e8;
   border-radius: 50%;
   box-shadow:
-    0 0 3px 1px rgb(255 255 255 / 100%),
-    inset 0 0 3px 1px rgb(255 255 255 / 95%),
-    0 0 12px 4px rgb(255 255 255 / 80%),
-    inset 0 0 12px 3px rgb(255 255 255 / 65%),
-    0 0 28px 8px rgb(255 255 255 / 35%),
-    0 0 46px 12px rgb(255 255 255 / 15%),
-    0 0 4px 2px color-mix(in oklab, var(--brand-gray) 30%, transparent);
+    0 0 3px 1px rgb(229 232 232 / 100%),
+    inset 0 0 3px 1px rgb(229 232 232 / 95%),
+    0 0 12px 4px rgb(229 232 232 / 80%),
+    inset 0 0 12px 3px rgb(229 232 232 / 65%),
+    0 0 28px 8px rgb(229 232 232 / 35%),
+    0 0 46px 12px rgb(229 232 232 / 15%),
+    0 0 4px 2px rgb(229 232 232 / 30%);
   animation: club-grid-reveal 2.8s ease-out both;
 }
 .club-grid-pulse-second {
