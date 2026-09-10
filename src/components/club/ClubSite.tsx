@@ -115,7 +115,7 @@ function Shell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const ar = lang === "ar";
   return (
-    <div dir={ar ? "rtl" : "ltr"} className="club-site min-h-screen">
+    <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
       <FloatingBackground />
       <a href="#club-main" className="sr-only focus:not-sr-only">
         {ar ? "انتقل للمحتوى" : "Skip to content"}
@@ -202,6 +202,9 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="flex flex-wrap gap-4 text-sm font-bold">
             <ClubLink path="join" className="text-primary">
               {ar ? "انضم إلينا" : "Join us"}
+            </ClubLink>
+            <ClubLink path="contact" className="text-primary">
+              {ar ? "تواصل معنا" : "Contact us"}
             </ClubLink>
             <ClubLink path="admin" className="text-muted-foreground">
               {ar ? "الإدارة" : "Admin"}
@@ -337,6 +340,7 @@ function Home() {
           >
             {ar ? "انضم إلينا" : "Join the club"}
           </ClubLink>
+          <ClubLink path="contact">{ar ? "تواصل معنا" : "Contact us"}</ClubLink>
           <ClubLink path="projects">{ar ? "استكشف المشاريع" : "Explore projects"}</ClubLink>
         </div>
       </section>
@@ -448,7 +452,7 @@ function Listing({ kind }: { kind: ContentCollection }) {
     <>
       <Heading ar={labels[kind][0]} en={labels[kind][1]} />
       {kind === "projects" && (
-        <div className="mb-8 grid gap-3 sm:grid-cols-3">
+        <div className="club-project-filters mb-8 grid gap-4 sm:grid-cols-3">
           <Input
             aria-label={ar ? "ابحث في المشاريع" : "Search projects"}
             placeholder={ar ? "ابحث في المشاريع…" : "Search projects…"}
