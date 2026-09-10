@@ -762,8 +762,14 @@ function PublicForm({ join }: { join: boolean }) {
             className="rounded-2xl bg-brand-gradient-soft p-6 text-primary font-bold"
           >
             {ar
-              ? "وصل طلبك بنجاح. شكرًا لتواصلك معنا."
-              : "Your submission has been received. Thank you for getting in touch."}
+              ? "تم حفظ طلبك بنجاح. شكرًا لتواصلك معنا."
+              : "Your submission has been saved successfully. Thank you for getting in touch."}
+            <p className="mt-3 text-sm font-normal">
+              {ar ? "رقم تأكيد الطلب:" : "Submission reference:"}
+            </p>
+            <p dir="ltr" className="mt-1 break-all text-sm font-normal">
+              {requestId.current}
+            </p>
           </div>
         ) : join && (registrationUnavailable || !registration || !registration.open) ? (
           <p
