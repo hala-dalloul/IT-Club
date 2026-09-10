@@ -102,16 +102,16 @@
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  border: 2px solid #f4f6f7;
+  border: 2px solid #ebf5fb;
   border-radius: 50%;
   box-shadow:
-    0 0 3px 1px rgb(244 246 247 / 100%),
-    inset 0 0 3px 1px rgb(244 246 247 / 95%),
-    0 0 12px 4px rgb(244 246 247 / 80%),
-    inset 0 0 12px 3px rgb(244 246 247 / 65%),
-    0 0 28px 8px rgb(244 246 247 / 35%),
-    0 0 46px 12px rgb(244 246 247 / 15%),
-    0 0 4px 2px rgb(244 246 247 / 30%);
+    0 0 3px 1px rgb(235 245 251 / 100%),
+    inset 0 0 3px 1px rgb(235 245 251 / 95%),
+    0 0 12px 4px rgb(235 245 251 / 80%),
+    inset 0 0 12px 3px rgb(235 245 251 / 65%),
+    0 0 28px 8px rgb(235 245 251 / 35%),
+    0 0 46px 12px rgb(235 245 251 / 15%),
+    0 0 4px 2px rgb(235 245 251 / 30%);
   animation: club-grid-reveal 2.8s ease-out both;
 }
 .club-grid-pulse-second {
