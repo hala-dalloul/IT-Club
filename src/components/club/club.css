@@ -80,3 +80,10 @@
     transform: none;
   }
 }
+
+/* Give Arabic letter descenders room, including gradient-clipped headings. */
+.club-site :is(h1, h2, h3) {
+  line-height: 1.65;
+  padding-block-end: 0.2em;
+  margin-block-end: 0.5em;
+}
