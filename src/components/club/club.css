@@ -96,18 +96,20 @@
 }
 .club-grid-pulse {
   position: absolute;
+  z-index: 1;
   left: 50%;
   top: 50%;
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  border: 1px solid rgb(255 255 255 / 40%);
+  border: 1.5px solid rgb(255 255 255 / 85%);
   border-radius: 50%;
   box-shadow:
     0 0 12px 3px rgb(255 255 255 / 18%),
     inset 0 0 10px 2px rgb(255 255 255 / 12%),
-    0 0 22px 1px rgb(255 255 255 / 7%);
-  animation: club-grid-reveal 2.8s ease-out both;
+    0 0 22px 1px rgb(255 255 255 / 7%),
+    0 0 3px 1px color-mix(in oklab, var(--brand-gray) 28%, transparent);
+  animation: club-grid-reveal 4s linear both;
 }
 .club-grid-pulse-second {
   animation-delay: 0.18s;
