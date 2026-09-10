@@ -116,7 +116,7 @@ function Shell({ children }: { children: ReactNode }) {
   const ar = lang === "ar";
   return (
     <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
-      <FloatingBackground />
+      <FloatingBackground animatedSquares />
       <a href="#club-main" className="sr-only focus:not-sr-only">
         {ar ? "انتقل للمحتوى" : "Skip to content"}
       </a>
@@ -340,7 +340,6 @@ function Home() {
           >
             {ar ? "انضم إلينا" : "Join the club"}
           </ClubLink>
-          <ClubLink path="contact">{ar ? "تواصل معنا" : "Contact us"}</ClubLink>
           <ClubLink path="projects">{ar ? "استكشف المشاريع" : "Explore projects"}</ClubLink>
         </div>
       </section>

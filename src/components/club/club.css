@@ -103,10 +103,38 @@
   }
 }
 .club-site .club-moving-grid {
-  animation: club-grid-pan 20s linear infinite;
+  animation: club-grid-pan 10s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .club-site .club-moving-grid {
     animation: none;
+  }
+}
+
+.club-floating-square {
+  position: absolute;
+  border: 1px solid color-mix(in oklab, var(--primary) 28%, transparent);
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  border-radius: 7px;
+  animation: club-square-float 12s ease-in-out infinite;
+  will-change: transform;
+}
+.club-floating-square:nth-child(even) {
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  background: color-mix(in oklab, var(--accent) 9%, transparent);
+}
+@keyframes club-square-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(24px, -65px, 0) rotate(35deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .club-floating-square {
+    animation: none;
+    will-change: auto;
   }
 }
