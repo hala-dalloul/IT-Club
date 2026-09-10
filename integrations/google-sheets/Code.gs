@@ -1,4 +1,4 @@
-/** Paste into Code.gs in ONE Google Apps Script project owned by the club. */
+/** Set FORM_KIND to contact or join in this Apps Script project properties. */
 const CLUB = {
   contactSheet: '1-k2MvrFu2lvOq0ypMJCo-Zs_Q2lw3MD7_sTNAXUi6rc',
   joinSheet: '1v6RYlzZujoRSAHvOwsY_FQ7X5s3UOHW8E9b3SGxzcWg',
@@ -48,6 +48,11 @@ function sheet_(kind) {
   }
   return sheet;
 }
+function formKind_() {
+  const kind = PropertiesService.getScriptProperties().getProperty('FORM_KIND');
+  if (kind !== 'contact' && kind !== 'join') fail_('NOT_CONFIGURED');
+  return kind;
+}
 function settings_() {
   const raw = PropertiesService.getScriptProperties().getProperty('JOIN_SETTINGS');
   return raw ? JSON.parse(raw) : { enabled: false, limit: 40 };
@@ -62,7 +67,9 @@ function status_() {
 /** Run ONCE from the Apps Script editor to authorize access to both spreadsheets. */
 function setup() {
   return locked_(function() {
-    sheet_('contact'); sheet_('join');
+    const kind = formKind_();
+    sheet_(kind);
+    if (kind === 'contact') return { ready: true };
     if (!PropertiesService.getScriptProperties().getProperty('JOIN_SETTINGS')) {
       PropertiesService.getScriptProperties().setProperty('JOIN_SETTINGS', JSON.stringify({ enabled: false, limit: 40 }));
     }
@@ -71,7 +78,7 @@ function setup() {
 }
 /** Public endpoint exposes only registration availability and counts, never personal data. */
 function doGet() {
-  try { return response_({ ok: true, registration: locked_(status_) }); }
+  try { return response_(formKind_() === 'join' ? { ok: true, registration: locked_(status_) } : { ok: true, ready: true }); }
   catch (error) { return errorResponse_(error); }
 }
 function text_(data, key, min, max) {
@@ -123,6 +130,8 @@ function doPost(event) {
     let body;
     try { body = JSON.parse(event.postData.contents); } catch (_) { fail_('INVALID_INPUT'); }
     if (!body || typeof body !== 'object') fail_('INVALID_INPUT');
+    const kind = formKind_();
+    if ((kind === 'contact' && body.action !== 'contact') || (kind === 'join' && body.action !== 'join' && body.action !== 'configure')) fail_('INVALID_INPUT');
     if (body.action === 'configure') {
       requireAdmin_(body.accessToken);
       if (typeof body.enabled !== 'boolean' || !Number.isInteger(body.limit) || body.limit < 1 || body.limit > 100000) fail_('INVALID_INPUT');

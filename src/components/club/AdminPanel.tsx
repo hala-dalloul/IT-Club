@@ -1,3 +1,5 @@
+import { RegistrationAdmin } from "./RegistrationAdmin";
+import { sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -9,9 +11,7 @@ import {
   signOut,
   loadRole,
   watchQuery,
-  loadInbox,
   loadAdmins,
-  updateSubmission,
   saveAdmin,
   removeAdmin,
   saveContent,
@@ -220,8 +220,6 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const ar = lang === "ar";
   const [tab, setTab] = useState("dashboard");
   const [editing, setEditing] = useState<Content | null | undefined>(undefined);
-  const [requests, setRequests] = useState<InboxRow[]>([]);
-  const [messages, setMessages] = useState<InboxRow[]>([]);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -231,16 +229,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           ? "تعذر تحميل بيانات الإدارة. تحقق من إعداد Supabase."
           : "Could not load admin data. Check Supabase setup.",
       );
-    const stops = [
-      watchQuery(
-        loadInbox,
-        (rows) => {
-          setRequests(rows.filter((r) => r.kind === "joinRequests"));
-          setMessages(rows.filter((r) => r.kind === "contactMessages"));
-        },
-        fail,
-      ),
-    ];
+    const stops: (() => void)[] = [];
     if (role === "super_admin") stops.push(watchQuery(loadAdmins, setAdmins, fail));
     return () => stops.forEach((stop) => stop());
   }, [role, ar]);
@@ -317,11 +306,8 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         <div className="grid gap-5 sm:grid-cols-3">
           {[
             [data.projects.length, ar ? "مشاريع منشورة" : "Published projects"],
-            [
-              requests.filter((x) => x.status === "new").length,
-              ar ? "طلبات جديدة" : "New applications",
-            ],
-            [messages.filter((x) => !x.isRead).length, ar ? "رسائل غير مقروءة" : "Unread messages"],
+            [data.members.length, ar ? "أعضاء الفريق" : "Team members"],
+            [data.events.length, ar ? "الفعاليات" : "Events"],
           ].map(([count, label]) => (
             <div key={label} className="rounded-3xl border border-border bg-card p-8 shadow-card">
               <strong className="block text-4xl font-black text-primary">{count}</strong>
@@ -378,77 +364,24 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             </div>
           </>
         ))}
-      {(tab === "joinRequests" || tab === "contactMessages") && (
-        <div className="space-y-5">
-          {(tab === "joinRequests" ? requests : messages).length === 0 && (
-            <p>{ar ? "لا توجد طلبات أو رسائل." : "No submissions yet."}</p>
-          )}
-          {(tab === "joinRequests" ? requests : messages).map((row) => (
-            <article key={row.id} className="rounded-3xl border border-border bg-card p-6">
-              <h2 className="text-xl font-extrabold">{row.fullName || row.name}</h2>
-              <a href={`mailto:${row.email}`} className="text-primary">
-                {row.email}
-              </a>
-              {row.submittedAt && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {new Date(row.submittedAt).toLocaleString(ar ? "ar-PS" : "en-GB")}
-                </p>
-              )}
-              {row.studentId && (
-                <p className="mt-3">
-                  {row.studentId} · {row.major} ·{" "}
-                  {committees.find((x) => x[0] === row.preferredCommittee)?.[ar ? 1 : 2]}
-                  {row.phone && ` · ${row.phone}`}
-                </p>
-              )}
-              <p className="my-5 whitespace-pre-line leading-relaxed">{row.message}</p>
-              {tab === "joinRequests" ? (
-                <Select
-                  value={row.status || "new"}
-                  onValueChange={(status) => void run(() => updateSubmission(row.id, { status }))}
-                >
-                  <SelectTrigger
-                    className="max-w-xs"
-                    aria-label={ar ? "حالة الطلب" : "Application status"}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      ["new", "جديد", "New"],
-                      ["accepted", "مقبول", "Accepted"],
-                      ["rejected", "مرفوض", "Rejected"],
-                      ["archived", "مؤرشف", "Archived"],
-                    ].map(([key, a, e]) => (
-                      <SelectItem key={key} value={key!}>
-                        {ar ? a : e}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <BrandButton
-                  variant="outline"
-                  onClick={() =>
-                    void run(() =>
-                      updateSubmission(row.id, {
-                        isRead: !row.isRead,
-                      }),
-                    )
-                  }
-                >
-                  {row.isRead
-                    ? ar
-                      ? "تحديد كغير مقروءة"
-                      : "Mark unread"
-                    : ar
-                      ? "تحديد كمقروءة"
-                      : "Mark read"}
-                </BrandButton>
-              )}
-            </article>
-          ))}
-        </div>
+      {tab === "joinRequests" && <RegistrationAdmin canEdit={role === "super_admin"} />}
+      {tab === "contactMessages" && (
+        <section className="rounded-3xl border border-border bg-card p-6 space-y-4">
+          <h2 className="text-2xl font-bold">{ar ? "رسائل التواصل" : "Contact messages"}</h2>
+          <p>
+            {ar
+              ? "الرسائل الجديدة تُحفظ في Google Sheets فقط."
+              : "New messages are stored only in Google Sheets."}
+          </p>
+          <a
+            href={sheetLinks.contact}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-primary underline"
+          >
+            {ar ? "فتح شيت رسائل التواصل" : "Open contact spreadsheet"}
+          </a>
+        </section>
       )}
       {tab === "settings" && role === "super_admin" && (
         <SettingsEditor initial={settings} onSave={(value) => run(() => saveSettings(value))} />

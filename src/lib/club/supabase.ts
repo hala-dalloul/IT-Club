@@ -1,13 +1,6 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { prepareImage } from "./images";
-import {
-  contentSchema,
-  contactSchema,
-  joinSchema,
-  type Content,
-  type ContentCollection,
-  type Settings,
-} from "./model";
+import { contentSchema, type Content, type ContentCollection, type Settings } from "./model";
 const url = import.meta.env.VITE_SUPABASE_URL || "";
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 export const configured = Boolean(url && key);
@@ -146,15 +139,6 @@ export async function removeContent(kind: ContentCollection, id: string) {
     .eq("id", id)
     .select("id")
     .single();
-  check(error);
-  changed();
-}
-export async function submitForm(
-  kind: "joinRequests" | "contactMessages",
-  data: Record<string, string>,
-) {
-  const payload = (kind === "joinRequests" ? joinSchema : contactSchema).parse(data);
-  const { error } = await supabase().from("club_submissions").insert({ kind, data: payload });
   check(error);
   changed();
 }

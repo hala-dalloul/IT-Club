@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -42,7 +42,12 @@ import {
   type Content,
   type ContentCollection,
 } from "@/lib/club/model";
-import { configured, submitForm } from "@/lib/club/supabase";
+import {
+  loadRegistration,
+  submitToSheet,
+  submissionError,
+  type Registration,
+} from "@/lib/club/sheets";
 import { AdminPanel } from "./AdminPanel";
 const nav = [
   ["", "الرئيسية", "Home"],
@@ -640,11 +645,37 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   );
 }
 function PublicForm({ join }: { join: boolean }) {
-  const { lang, settings, setupRequired } = useClub();
+  const { lang, settings } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const requestId = useRef<string | undefined>(undefined);
+  const [registration, setRegistration] = useState<Registration>();
+  const [registrationUnavailable, setRegistrationUnavailable] = useState(false);
+  useEffect(() => {
+    if (!join) return;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const value = await loadRegistration();
+        if (active) {
+          setRegistration(value);
+          setRegistrationUnavailable(false);
+        }
+      } catch {
+        if (active) setRegistrationUnavailable(true);
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [join]);
   const [major, setMajor] = useState("");
   const [committee, setCommittee] = useState<string>(committees[0][0]);
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -668,15 +699,15 @@ function PublicForm({ join }: { join: boolean }) {
     setBusy(true);
     setMessage("");
     try {
-      await submitForm(join ? "joinRequests" : "contactMessages", parsed.data);
+      requestId.current ??= crypto.randomUUID();
+      await submitToSheet(join, parsed.data, requestId.current);
       setSuccess(true);
       form.reset();
-    } catch {
-      setMessage(
-        ar
-          ? "لم يتم الإرسال. حاول مجددًا لاحقًا."
-          : "Your message was not sent. Please try again later.",
-      );
+    } catch (error) {
+      setMessage(submissionError(error, ar));
+      if (error instanceof Error && error.message === "JOIN_CLOSED") {
+        setRegistration((prev) => (prev ? { ...prev, open: false } : prev));
+      }
     } finally {
       setBusy(false);
     }
@@ -705,6 +736,23 @@ function PublicForm({ join }: { join: boolean }) {
               ? "وصل طلبك بنجاح. شكرًا لتواصلك معنا."
               : "Your submission has been received. Thank you for getting in touch."}
           </div>
+        ) : join && (registrationUnavailable || !registration || !registration.open) ? (
+          <p
+            role="status"
+            className="rounded-2xl bg-brand-gradient-soft p-6 font-bold text-primary"
+          >
+            {registrationUnavailable
+              ? ar
+                ? "استقبال الطلبات غير متاح حاليًا. يرجى المحاولة لاحقًا."
+                : "Applications are currently unavailable. Please try later."
+              : !registration
+                ? ar
+                  ? "جارٍ التحقق من استقبال الطلبات…"
+                  : "Checking registration availability…"
+                : ar
+                  ? "تم وقف استقبال الأعضاء الجدد"
+                  : "New membership applications are closed."}
+          </p>
         ) : (
           <form onSubmit={submit} className="space-y-5">
             {fields.map(([name, a, en, type]) => (
@@ -800,19 +848,15 @@ function PublicForm({ join }: { join: boolean }) {
                 ? "تُستخدم بياناتك للرد على رسالتك أو مراجعة طلب انضمامك من إدارة النادي."
                 : "Club administrators use your details to respond to your message or review your membership request."}
             </p>
-            {(!configured || setupRequired) && (
-              <p role="status" className="text-sm text-muted-foreground">
-                {ar
-                  ? "استقبال الطلبات غير متاح حاليًا. يُرجى العودة لاحقًا."
-                  : "Submissions are currently unavailable. Please check back later."}
-              </p>
-            )}
             {message && (
               <p role="alert" className="text-primary">
                 {message}
               </p>
             )}
-            <BrandButton type="submit" disabled={busy || !configured || setupRequired}>
+            <BrandButton
+              type="submit"
+              disabled={busy || (join && (!registration?.open || registrationUnavailable))}
+            >
               {busy ? (ar ? "جارٍ الإرسال…" : "Sending…") : ar ? "إرسال" : "Submit"}
             </BrandButton>
           </form>
@@ -833,6 +877,8 @@ function ContentPage() {
     .replace(/\/$/, "");
   const [page, id] = path.split("/");
   if (page === "admin") return <AdminPanel />;
+  if (page === "join" || page === "contact")
+    return <PublicForm key={page} join={page === "join"} />;
   if (loading)
     return (
       <p role="status" className="py-20 text-center">
@@ -849,8 +895,7 @@ function ContentPage() {
     );
   if (!page) return <Home />;
   if (page === "about") return <About />;
-  if (page === "join" || page === "contact")
-    return <PublicForm key={page} join={page === "join"} />;
+
   if (collections.includes(page as ContentCollection))
     return id ? (
       <Detail kind={page as ContentCollection} id={id} />
