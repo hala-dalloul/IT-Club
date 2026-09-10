@@ -645,6 +645,8 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   );
 }
 function PublicForm({ join }: { join: boolean }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const { lang, settings } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
@@ -756,7 +758,9 @@ function PublicForm({ join }: { join: boolean }) {
     <>
       <Heading ar={join ? "انضم إلينا" : "تواصل معنا"} en={join ? "Join the club" : "Contact us"} />
       <div className="mx-auto max-w-2xl rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
-        {success ? (
+        {!ready ? (
+          <p role="status">{ar ? "جارٍ تجهيز النموذج…" : "Preparing the form…"}</p>
+        ) : success ? (
           <div
             role="status"
             className="rounded-2xl bg-brand-gradient-soft p-6 text-primary font-bold"
