@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "build:static": "vite build --config vite.static.config.ts",
-    "test": "node --test tests/supabase.test.mjs"
+    "test": "node --test tests/supabase.test.mjs",
+    "build:cloudflare": "npm run build:static && node scripts/prepare-cloudflare.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
