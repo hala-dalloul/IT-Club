@@ -68,11 +68,16 @@ export const categories = [
   ["games", "الألعاب", "Games"],
   ["multimedia", "الوسائط المتعددة", "Multimedia"],
 ] as const;
+export const majors = [
+  "تصميم و برمجة تطبيقات الموبايل",
+  "تصميم و برمجة الألعاب الموبايل",
+  "تصميم و برمجة صفحات الويب",
+  "تكنولوجيا الوسائط المتعددة",
+] as const;
 export const committees = [
   ["media", "الإعلام", "Media"],
   ["relations", "العلاقات العامة", "Public relations"],
   ["activities", "الأنشطة", "Activities"],
-  ["development", "التطوير التقني", "Technical development"],
 ] as const;
 export function local(
   item: Content,
@@ -100,9 +105,12 @@ export const joinSchema = z.object({
   fullName: text,
   email: z.string().trim().email().max(254),
   phone: z.string().trim().max(30),
-  studentId: z.string().trim().min(3).max(30),
-  major: text,
-  preferredCommittee: z.enum(["media", "relations", "activities", "development"]),
+  studentId: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{9}$/),
+  major: z.enum(majors),
+  preferredCommittee: z.enum(["media", "relations", "activities"]),
   message: z.string().trim().min(10).max(4000),
 });
 export const contentSchema = z

@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   ExternalLink,
+  ImageOff,
 } from "lucide-react";
 import "./club.css";
 import logo from "@/assets/ucas-logo.png";
@@ -32,6 +33,7 @@ import {
   collections,
   categories,
   committees,
+  majors,
   labels,
   local,
   safeUrl,
@@ -225,10 +227,10 @@ function Shell({ children }: { children: ReactNode }) {
 function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
   const { lang } = useClub();
   const title = local(item, "title", lang);
-  const image = safeUrl(item.images?.[0]);
+  const image = item.images?.map(safeUrl).find(Boolean);
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
-      {image && (
+      {image ? (
         <img
           src={image}
           alt={title}
@@ -237,7 +239,14 @@ function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
           height={360}
           className={`w-full ${kind === "members" ? "aspect-square object-cover" : kind === "partners" ? "aspect-video object-contain p-6" : "aspect-video object-cover"}`}
         />
-      )}
+      ) : kind === "projects" ? (
+        <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-brand-gradient-soft text-muted-foreground">
+          <ImageOff aria-hidden="true" size={32} />
+          <span className="text-sm">
+            {lang === "ar" ? "لم تُضف صورة للمشروع بعد" : "No project image added yet"}
+          </span>
+        </div>
+      ) : null}
       <div className="p-6">
         {item.date && (
           <time dateTime={item.date} className="text-sm text-muted-foreground">
@@ -509,7 +518,9 @@ function Listing({ kind }: { kind: ContentCollection }) {
       )}
       {kind === "members" ? (
         <>
-          <h2 className="mb-6 text-2xl font-black">{ar ? "المؤسسون" : "Founders"}</h2>
+          <h2 className="mb-6 text-2xl font-black">
+            {ar ? "الهيئة الإدارية" : "Administrative board"}
+          </h2>
           <Grid kind={kind} items={items.filter((x) => x.isFounder)} />
           {committees.map(([key, a, e]) => (
             <section key={key} className="mt-10">
@@ -634,13 +645,17 @@ function PublicForm({ join }: { join: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
-  const [committee, setCommittee] = useState("development");
+  const [major, setMajor] = useState("");
+  const [committee, setCommittee] = useState<string>(committees[0][0]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     const form = e.currentTarget;
     const values = Object.fromEntries(new FormData(form)) as Record<string, string>;
-    if (join) values["preferredCommittee"] = committee;
+    if (join) {
+      values["preferredCommittee"] = committee;
+      values["major"] = major;
+    }
     const parsed = (join ? joinSchema : contactSchema).safeParse(values);
     if (!parsed.success) {
       setMessage(
@@ -672,7 +687,6 @@ function PublicForm({ join }: { join: boolean }) {
         ["email", "البريد الإلكتروني", "Email", "email"],
         ["phone", "الهاتف (اختياري)", "Phone (optional)", "tel"],
         ["studentId", "الرقم الجامعي", "Student ID", "text"],
-        ["major", "التخصص", "Major", "text"],
       ]
     : [
         ["name", "الاسم", "Name", "text"],
@@ -700,7 +714,27 @@ function PublicForm({ join }: { join: boolean }) {
                   name={name!}
                   type={type!}
                   required={name !== "phone"}
-                  maxLength={name === "email" ? 254 : 200}
+                  maxLength={name === "studentId" ? 9 : name === "email" ? 254 : 200}
+                  minLength={name === "studentId" ? 9 : undefined}
+                  inputMode={name === "studentId" ? "numeric" : undefined}
+                  pattern={name === "studentId" ? "[0-9]{9}" : undefined}
+                  title={
+                    name === "studentId"
+                      ? ar
+                        ? "أدخل الرقم الجامعي المكوّن من 9 أرقام"
+                        : "Enter a 9-digit student ID"
+                      : undefined
+                  }
+                  onInput={
+                    name === "studentId"
+                      ? (e) => {
+                          e.currentTarget.value = e.currentTarget.value
+                            .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
+                            .replace(/[^0-9]/g, "")
+                            .slice(0, 9);
+                        }
+                      : undefined
+                  }
                   autoComplete={
                     name === "email"
                       ? "email"
@@ -713,6 +747,23 @@ function PublicForm({ join }: { join: boolean }) {
                 />
               </label>
             ))}
+            {join && (
+              <label className="block text-sm font-bold">
+                <span className="mb-2 block">{ar ? "التخصص" : "Major"}</span>
+                <Select dir={ar ? "rtl" : "ltr"} value={major} onValueChange={setMajor} required>
+                  <SelectTrigger className="h-auto min-h-10 whitespace-normal text-start">
+                    <SelectValue placeholder={ar ? "اختاري التخصص" : "Select a major"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {majors.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            )}
             {join && (
               <label className="block text-sm font-bold">
                 <span className="mb-2 block">{ar ? "اللجنة المرغوبة" : "Preferred committee"}</span>
@@ -734,7 +785,15 @@ function PublicForm({ join }: { join: boolean }) {
               <span className="mb-2 block">
                 {ar ? (join ? "عرّفنا بنفسك" : "الرسالة") : join ? "Introduce yourself" : "Message"}
               </span>
-              <Textarea name="message" required minLength={10} maxLength={4000} rows={5} />
+              <Textarea
+                name="message"
+                required
+                minLength={10}
+                maxLength={4000}
+                rows={5}
+                wrap="soft"
+                className="resize-y whitespace-pre-wrap [overflow-wrap:anywhere] leading-7"
+              />
             </label>
             <p className="text-sm text-muted-foreground">
               {ar

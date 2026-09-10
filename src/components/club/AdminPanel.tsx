@@ -534,7 +534,11 @@ function ContentEditor({
   const [images, setImages] = useState(item?.images || []);
   const [selectedMembers, setSelectedMembers] = useState(item?.memberIds || []);
   const [category, setCategory] = useState(item?.category || "web");
-  const [committee, setCommittee] = useState(item?.committee || "development");
+  const [committee, setCommittee] = useState(
+    item?.committee && committees.some(([key]) => key === item.committee)
+      ? item.committee
+      : committees[0][0],
+  );
   const [status, setStatus] = useState(item?.status || "upcoming");
   const [founder, setFounder] = useState(item?.isFounder || false);
   const [busy, setBusy] = useState(false);
@@ -782,7 +786,7 @@ function ContentEditor({
               checked={founder}
               onCheckedChange={(checked) => setFounder(checked === true)}
             />
-            {ar ? "من المؤسسين" : "Founding member"}
+            {ar ? "عضو الهيئة الإدارية" : "Administrative board member"}
           </label>
         </>
       )}
@@ -810,6 +814,18 @@ function ContentEditor({
       </details>
       <fieldset className="rounded-2xl border border-border p-5">
         <legend className="px-2 font-bold">{ar ? "الصور" : "Images"}</legend>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {ar
+            ? "اختاري الصور من المكتبة أو ارفعي صورة، ثم اضغطي حفظ ونشر لإظهارها في الموقع. أول صورة هي صورة الغلاف."
+            : "Choose images from the library or upload one, then Save and publish. The first image is the cover."}
+        </p>
+        {kind === "projects" && images.length === 0 && (
+          <p role="status" className="mb-4 text-sm text-primary">
+            {ar
+              ? "هذا المشروع بدون صور. رفع الصورة إلى المكتبة وحده لا يربطها بالمشروع."
+              : "This project has no images. Uploading to the library alone does not attach an image to this project."}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {images.map((url) => (
             <div key={url}>
