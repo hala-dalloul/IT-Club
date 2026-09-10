@@ -72,7 +72,7 @@ function ClubLink({
   className?: string;
   navigation?: boolean;
 }) {
-  const target = path ? `/club/${path}` : "/club";
+  const target = path ? `/club/${path}` : "/";
   return (
     <Link
       to={target}
@@ -203,9 +203,6 @@ function Shell({ children }: { children: ReactNode }) {
             <ClubLink path="join" className="text-primary">
               {ar ? "انضم إلينا" : "Join us"}
             </ClubLink>
-            <Link to="/" className="text-primary">
-              {ar ? "اكتشف مسارك" : "Discover your path (Arabic)"}
-            </Link>
             <ClubLink path="admin" className="text-muted-foreground">
               {ar ? "الإدارة" : "Admin"}
             </ClubLink>
@@ -372,20 +369,6 @@ function Home() {
       <section className="mt-14">
         <h2 className="mb-6 text-2xl font-black">{ar ? "من أخبار النادي" : "Club news"}</h2>
         <Grid items={data.events.slice(0, 1)} kind="events" />
-      </section>
-      <section className="mt-14 rounded-[2rem] bg-brand-gradient-soft p-8 text-center">
-        <Gamepad2 className="mx-auto h-10 w-10 text-primary" />
-        <h2 className="mt-4 text-2xl font-black">
-          {ar ? "مش عارف أي تخصص يناسبك؟" : "Which technology path fits you?"}
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          {ar
-            ? "اكتشف ميولك عبر رحلة من سبعة مواقف تقنية."
-            : "Explore your interests in seven technology scenarios. The game is currently in Arabic."}
-        </p>
-        <Link to="/" className={linkClass + " mt-6"}>
-          {ar ? "ابدأ رحلة اكتشاف مسارك" : "Open the pathfinder game"}
-        </Link>
       </section>
     </>
   );

@@ -1,8 +1,10 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { prepareImage } from "./images";
 import { contentSchema, type Content, type ContentCollection, type Settings } from "./model";
-const url = import.meta.env.VITE_SUPABASE_URL || "";
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+// Public browser configuration; RLS still controls all data access.
+const url = import.meta.env.VITE_SUPABASE_URL || "https://jxweaxenswbjpxxjmihb.supabase.co";
+const key =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_kHJik-SCyMiMQ7nn2SRHbQ_0FR6CpOZ";
 export const configured = Boolean(url && key);
 let client: SupabaseClient | undefined;
 export function supabase() {
