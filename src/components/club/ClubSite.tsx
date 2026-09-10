@@ -206,9 +206,6 @@ function Shell({ children }: { children: ReactNode }) {
             <ClubLink path="contact" className="text-primary">
               {ar ? "تواصل معنا" : "Contact us"}
             </ClubLink>
-            <ClubLink path="admin" className="text-muted-foreground">
-              {ar ? "الإدارة" : "Admin"}
-            </ClubLink>
             {(["facebook", "instagram", "linkedin", "github"] as const).map(
               (key) =>
                 safeUrl(settings[key]) && (
