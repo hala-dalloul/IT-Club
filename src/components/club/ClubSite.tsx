@@ -650,6 +650,10 @@ function PublicForm({ join }: { join: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const feedback = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (message) feedback.current?.focus();
+  }, [message]);
   const requestId = useRef<string | undefined>(undefined);
   const [registration, setRegistration] = useState<Registration>();
   const [registrationUnavailable, setRegistrationUnavailable] = useState(false);
@@ -689,10 +693,35 @@ function PublicForm({ join }: { join: boolean }) {
     }
     const parsed = (join ? joinSchema : contactSchema).safeParse(values);
     if (!parsed.success) {
+      const errors: Record<string, [string, string]> = {
+        name: ["أدخلي الاسم من حرفين إلى 200 حرف.", "Enter a name of 2–200 characters."],
+        fullName: [
+          "أدخلي الاسم الكامل من حرفين إلى 200 حرف.",
+          "Enter a full name of 2–200 characters.",
+        ],
+        email: ["أدخلي بريدًا إلكترونيًا صحيحًا.", "Enter a valid email address."],
+        studentId: [
+          "الرقم الجامعي يجب أن يتكوّن من 9 أرقام.",
+          "Student ID must contain exactly 9 digits.",
+        ],
+        major: ["اختاري التخصص من القائمة.", "Select your major."],
+        preferredCommittee: ["اختاري اللجنة المرغوبة.", "Select a committee."],
+        phone: ["رقم الهاتف يجب ألا يتجاوز 30 خانة.", "Phone must be at most 30 characters."],
+        message: [
+          "النص يجب أن يكون بين 10 و4000 حرف.",
+          "Your message must contain 10–4000 characters.",
+        ],
+      };
       setMessage(
-        ar
-          ? "تحقق من الحقول: بريد صحيح ورسالة لا تقل عن 10 أحرف."
-          : "Check your fields: use a valid email and a message of at least 10 characters.",
+        [
+          ...new Set(
+            parsed.error.issues.map(
+              (issue) =>
+                errors[String(issue.path[0])]?.[ar ? 0 : 1] ||
+                (ar ? "تحققي من الحقول." : "Check your fields."),
+            ),
+          ),
+        ].join(" "),
       );
       return;
     }
@@ -754,7 +783,7 @@ function PublicForm({ join }: { join: boolean }) {
                   : "New membership applications are closed."}
           </p>
         ) : (
-          <form onSubmit={submit} className="space-y-5">
+          <form noValidate onSubmit={submit} className="space-y-5" aria-busy={busy}>
             {fields.map(([name, a, en, type]) => (
               <label key={name} className="block text-sm font-bold">
                 <span className="mb-2 block">{ar ? a : en}</span>
@@ -849,8 +878,20 @@ function PublicForm({ join }: { join: boolean }) {
                 : "Club administrators use your details to respond to your message or review your membership request."}
             </p>
             {message && (
-              <p role="alert" className="text-primary">
+              <p
+                ref={feedback}
+                tabIndex={-1}
+                role="alert"
+                className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-primary"
+              >
                 {message}
+              </p>
+            )}
+            {busy && (
+              <p role="status" className="text-primary">
+                {ar
+                  ? "جارٍ إرسال الطلب إلى Google Sheets، انتظري تأكيد الحفظ…"
+                  : "Sending to Google Sheets. Please wait for confirmation…"}
               </p>
             )}
             <BrandButton
