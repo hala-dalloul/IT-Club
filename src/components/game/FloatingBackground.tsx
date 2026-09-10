@@ -10,26 +10,8 @@ export function FloatingBackground({ entrancePulse = false }: { entrancePulse?: 
   const [showPulse, setShowPulse] = useState(false);
   useEffect(() => {
     if (!entrancePulse || pulseDocument === document) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const logos = Array.from(
-      document.querySelectorAll<HTMLImageElement>('.club-site img[alt="UCAS IT CLUB"]'),
-    );
-    void Promise.all([
-      document.fonts.ready,
-      ...logos.map((image) => image.decode().catch(() => undefined)),
-    ]).then(() => {
-      if (cancelled) return;
-      timer = setTimeout(() => {
-        if (cancelled || pulseDocument === document) return;
-        pulseDocument = document;
-        setShowPulse(true);
-      }, 500);
-    });
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+    pulseDocument = document;
+    setShowPulse(true);
   }, [entrancePulse]);
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
