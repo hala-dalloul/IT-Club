@@ -101,16 +101,16 @@
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  border: 1px solid rgb(204 204 204 / 90%);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 50%;
   box-shadow:
-    0 0 12px 3px rgb(204 204 204 / 55%),
-    inset 0 0 10px 2px rgb(204 204 204 / 40%),
-    0 0 22px 1px color-mix(in oklab, var(--primary) 8%, transparent);
+    0 0 12px 3px rgb(255 255 255 / 6%),
+    inset 0 0 10px 2px rgb(255 255 255 / 4%),
+    0 0 22px 1px rgb(255 255 255 / 3%);
   animation: club-grid-reveal 2.8s ease-out both;
 }
 .club-grid-pulse-second {
-  animation-delay: 0.55s;
+  animation-delay: 0.18s;
 }
 @keyframes club-grid-reveal {
   0% {
@@ -119,7 +119,7 @@
     opacity: 0;
   }
   8% {
-    opacity: 0.85;
+    opacity: 1;
   }
   65% {
     opacity: 0.5;
