@@ -47,6 +47,7 @@ import {
   type Registration,
 } from "@/lib/club/sheets";
 import { AdminPanel } from "./AdminPanel";
+import { ContactPage } from "./ContactPage";
 const nav = [
   ["", "الرئيسية", "Home"],
   ["about", "من نحن", "About"],
@@ -196,6 +197,9 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
           </p>
           <div className="flex flex-wrap gap-4 text-sm font-bold">
+            <ClubLink path="join" className="text-primary">
+              {ar ? "انضم إلينا" : "Join us"}
+            </ClubLink>
             <ClubLink path="contact" className="text-primary">
               {ar ? "تواصل معنا" : "Contact us"}
             </ClubLink>
@@ -798,8 +802,8 @@ function ContentPage() {
     .replace(/\/$/, "");
   const [page, id] = path.split("/");
   if (page === "admin") return <AdminPanel />;
-  if (page === "join" || page === "contact")
-    return <PublicForm key={page} join={page === "join"} />;
+  if (page === "join") return <PublicForm join />;
+  if (page === "contact") return <ContactPage />;
   if (loading)
     return (
       <p role="status" className="py-20 text-center">
