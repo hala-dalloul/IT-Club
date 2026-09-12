@@ -10,7 +10,6 @@ import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/cl
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
   events: [],
-  achievements: [],
   partners: [],
 };
 const Context = createContext({

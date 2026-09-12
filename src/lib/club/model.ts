@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const collections = ["members", "events", "achievements", "partners"] as const;
+export const collections = ["members", "events", "partners"] as const;
 export type ContentCollection = (typeof collections)[number];
 export type Lang = "ar" | "en";
 export type Content = {
@@ -58,7 +58,6 @@ export const emptySettings: Settings = {
 export const labels: Record<ContentCollection, [string, string]> = {
   members: ["الفريق", "Team"],
   events: ["الأخبار والفعاليات", "News & events"],
-  achievements: ["الإنجازات", "Achievements"],
   partners: ["الشراكات", "Partners"],
 };
 export const categories = [

@@ -8,7 +8,6 @@ import {
   Smartphone,
   Palette,
   Users,
-  Trophy,
   CalendarDays,
   Menu,
   X,
@@ -52,7 +51,6 @@ const nav = [
   ["", "الرئيسية", "Home"],
   ["about", "من نحن", "About"],
   ["members", "الفريق", "Team"],
-  ["achievements", "الإنجازات", "Achievements"],
   ["partners", "الشراكات", "Partners"],
   ["events", "الفعاليات", "Events"],
   ["contact", "تواصل معنا", "Contact"],
@@ -327,11 +325,10 @@ function Home() {
           </ClubLink>
         </div>
       </section>
-      <div className="my-14 grid grid-cols-3 gap-3">
+      <div className="my-14 grid grid-cols-2 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
-            [Trophy, data.achievements.length, ar ? "الإنجازات" : "Achievements"],
             [
               CalendarDays,
               data.events.filter((x) => x.status === "past").length,
@@ -413,7 +410,7 @@ function Listing({ kind }: { kind: ContentCollection }) {
   const ar = lang === "ar";
   const [status, setStatus] = useState("all");
   let items = data[kind].filter((x) => status === "all" || x.status === status);
-  if (kind === "events" || kind === "achievements")
+  if (kind === "events")
     items = [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   return (
     <>
@@ -449,18 +446,6 @@ function Listing({ kind }: { kind: ContentCollection }) {
             </section>
           ))}
         </>
-      ) : kind === "achievements" ? (
-        items.length ? (
-          <ol className="space-y-8 border-s-2 border-primary/25 ps-6">
-            {items.map((item) => (
-              <li key={item.id}>
-                <Card item={item} kind={kind} />
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <Empty />
-        )
       ) : (
         <Grid items={items} kind={kind} />
       )}

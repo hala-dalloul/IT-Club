@@ -302,9 +302,8 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       )}
       {tab === "media" && <MediaLibrary />}
       {tab === "dashboard" && (
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2">
           {[
-            [data.achievements.length, ar ? "إنجازات منشورة" : "Published achievements"],
             [data.members.length, ar ? "أعضاء الفريق" : "Team members"],
             [data.events.length, ar ? "الفعاليات" : "Events"],
           ].map(([count, label]) => (
@@ -509,7 +508,7 @@ function ContentEditor({
       value.committee = committee;
       value.isFounder = founder;
     }
-    if (kind === "events" || kind === "achievements") value.date = values["date"] || "";
+    if (kind === "events") value.date = values["date"] || "";
     if (kind === "events") value.status = status;
     if (kind === "partners") {
       value.partnershipType = values["partnershipType"] || "";

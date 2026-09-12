@@ -4,7 +4,6 @@ const titles: Record<string, string> = {
   about: "من نحن | About",
   members: "الفريق | Team",
   events: "الفعاليات | Events",
-  achievements: "الإنجازات | Achievements",
   partners: "الشراكات | Partners",
   join: "انضم إلينا | Join",
   contact: "تواصل معنا | Contact",

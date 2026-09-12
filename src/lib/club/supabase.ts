@@ -99,7 +99,6 @@ export async function loadPublic() {
   const data: Record<ContentCollection, Content[]> = {
     members: [],
     events: [],
-    achievements: [],
     partners: [],
   };
   for (const row of content) {
