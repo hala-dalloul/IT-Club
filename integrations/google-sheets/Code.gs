@@ -92,11 +92,14 @@ function validate_(kind, data) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail_('INVALID_INPUT');
   const message = text_(data, 'message', 10, 4000);
   if (kind === 'contact') return [text_(data, 'name', 2, 200), email, message];
+  if (!/@smail\.ucas\.edu\.ps$/.test(email)) fail_('INVALID_INPUT');
+  const phone = text_(data, 'phone', 0, 10);
+  if (phone && !/^05[69][0-9]{6,7}$/.test(phone)) fail_('INVALID_INPUT');
   const studentId = text_(data, 'studentId', 9, 9);
   const major = text_(data, 'major', 2, 200);
   const committee = text_(data, 'preferredCommittee', 2, 30);
   if (!/^[0-9]{9}$/.test(studentId) || MAJORS.indexOf(major) < 0 || ['media', 'relations', 'activities'].indexOf(committee) < 0) fail_('INVALID_INPUT');
-  return [text_(data, 'fullName', 2, 200), email, text_(data, 'phone', 0, 30), studentId, major, committee, message];
+  return [text_(data, 'fullName', 2, 200), email, phone, studentId, major, committee, message];
 }
 function exists_(sheet, column, value) {
   if (sheet.getLastRow() < 2) return false;

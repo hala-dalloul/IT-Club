@@ -10,7 +10,7 @@ function harness(kind = "join") {
   props.set("FORM_KIND", kind);
   context.setup();return {context,props,post:b=>context.doPost({postData:{contents:JSON.stringify(b)}})};
 }
-const data={fullName:'Test Student',email:'test@example.com',phone:'',studentId:'012345678',major:'تصميم و برمجة تطبيقات الموبايل',preferredCommittee:'media',message:'=HYPERLINK("test")'};
+const data={fullName:'Test Student',email:'test@smail.ucas.edu.ps',phone:'',studentId:'012345678',major:'تصميم و برمجة تطبيقات الموبايل',preferredCommittee:'media',message:'=HYPERLINK("test")'};
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 test('closed by default; exactly 40 applications; duplicate retries do not count',()=>{
  const {context,props,post}=harness();
@@ -39,4 +39,14 @@ test('separate contact deployment cannot accept join or configure registration',
  const {post}=harness('contact');
  assert.equal(post({action:'join',requestId:id(1),data}).code,'INVALID_INPUT');
  assert.equal(post({action:'configure',enabled:true,limit:100}).code,'INVALID_INPUT');
+});
+test('join validates university email and numeric phone and student ID',()=>{
+ for(const patch of [{phone:'0571234567'},{phone:'05912345'},{phone:'05612345678'},{phone:'059abcdefg'},{email:'test@example.com'},{email:'test@smail.ucas.edu.ps.evil.com'},{studentId:'12345678'},{studentId:'12345678a'}]) {
+  const {props,post}=harness();props.set('JOIN_SETTINGS',JSON.stringify({enabled:true,limit:40}));
+  assert.equal(post({action:'join',requestId:id(1),data:{...data,...patch}}).code,'INVALID_INPUT');
+ }
+ for(const phone of ['056123456','059123456','0561234567','0591234567','']) {
+  const {props,post}=harness();props.set('JOIN_SETTINGS',JSON.stringify({enabled:true,limit:40}));
+  assert.equal(post({action:'join',requestId:id(1),data:{...data,phone}}).ok,true);
+ }
 });

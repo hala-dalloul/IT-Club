@@ -101,8 +101,13 @@ export const contactSchema = z.object({
 });
 export const joinSchema = z.object({
   fullName: text,
-  email: z.string().trim().email().max(254),
-  phone: z.string().trim().max(30),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(254)
+    .regex(/@smail\.ucas\.edu\.ps$/),
+  phone: z.string().regex(/^(?:05[69][0-9]{6,7})?$/),
   studentId: z
     .string()
     .trim()

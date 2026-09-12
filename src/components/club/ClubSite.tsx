@@ -580,14 +580,20 @@ function PublicForm({ join }: { join: boolean }) {
           "أدخلي الاسم الكامل من حرفين إلى 200 حرف.",
           "Enter a full name of 2–200 characters.",
         ],
-        email: ["أدخلي بريدًا إلكترونيًا صحيحًا.", "Enter a valid email address."],
+        email: [
+          "أدخلي بريدًا جامعيًا ينتهي بـ @smail.ucas.edu.ps.",
+          "Enter your @smail.ucas.edu.ps email address.",
+        ],
         studentId: [
           "الرقم الجامعي يجب أن يتكوّن من 9 أرقام.",
           "Student ID must contain exactly 9 digits.",
         ],
         major: ["اختاري التخصص من القائمة.", "Select your major."],
         preferredCommittee: ["اختاري اللجنة المرغوبة.", "Select a committee."],
-        phone: ["رقم الهاتف يجب ألا يتجاوز 30 خانة.", "Phone must be at most 30 characters."],
+        phone: [
+          "رقم الهاتف يجب أن يبدأ بـ 056 أو 059 ويتكوّن من 9 أو 10 أرقام.",
+          "Phone must start with 056 or 059 and contain 9 or 10 digits.",
+        ],
         message: [
           "النص يجب أن يكون بين 10 و4000 حرف.",
           "Your message must contain 10–4000 characters.",
@@ -645,7 +651,7 @@ function PublicForm({ join }: { join: boolean }) {
             className="rounded-2xl bg-brand-gradient-soft p-6 text-primary font-bold"
           >
             {ar
-              ? "تم حفظ طلبك بنجاح. شكرًا لك."
+              ? "تهانينا على وصول طلب الإنضمام قريبا سيتم مراجعة طلبك و إرسالة رسالة القبول"
               : "Your submission has been saved successfully. Thank you."}
           </div>
         ) : join && (registrationUnavailable || !registration || !registration.open) ? (
@@ -674,10 +680,20 @@ function PublicForm({ join }: { join: boolean }) {
                   name={name!}
                   type={type!}
                   required={name !== "phone"}
-                  maxLength={name === "studentId" ? 9 : name === "email" ? 254 : 200}
-                  minLength={name === "studentId" ? 9 : undefined}
-                  inputMode={name === "studentId" ? "numeric" : undefined}
-                  pattern={name === "studentId" ? "[0-9]{9}" : undefined}
+                  maxLength={
+                    name === "studentId" ? 9 : name === "phone" ? 10 : name === "email" ? 254 : 200
+                  }
+                  minLength={name === "studentId" || name === "phone" ? 9 : undefined}
+                  inputMode={name === "studentId" || name === "phone" ? "numeric" : undefined}
+                  pattern={
+                    name === "studentId"
+                      ? "[0-9]{9}"
+                      : name === "phone"
+                        ? "05[69][0-9]{6,7}"
+                        : name === "email" && join
+                          ? "[^@]+@smail\\.ucas\\.edu\\.ps"
+                          : undefined
+                  }
                   title={
                     name === "studentId"
                       ? ar
@@ -686,12 +702,11 @@ function PublicForm({ join }: { join: boolean }) {
                       : undefined
                   }
                   onInput={
-                    name === "studentId"
+                    name === "studentId" || name === "phone"
                       ? (e) => {
                           e.currentTarget.value = e.currentTarget.value
-                            .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
                             .replace(/[^0-9]/g, "")
-                            .slice(0, 9);
+                            .slice(0, name === "phone" ? 10 : 9);
                         }
                       : undefined
                   }
