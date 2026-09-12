@@ -22,7 +22,6 @@ import {
 import {
   collections,
   labels,
-  categories,
   committees,
   contentSchema,
   safeUrl,
@@ -305,7 +304,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       {tab === "dashboard" && (
         <div className="grid gap-5 sm:grid-cols-3">
           {[
-            [data.projects.length, ar ? "مشاريع منشورة" : "Published projects"],
+            [data.achievements.length, ar ? "إنجازات منشورة" : "Published achievements"],
             [data.members.length, ar ? "أعضاء الفريق" : "Team members"],
             [data.events.length, ar ? "الفعاليات" : "Events"],
           ].map(([count, label]) => (
@@ -465,8 +464,6 @@ function ContentEditor({
   const { lang, data } = useClub();
   const ar = lang === "ar";
   const [images, setImages] = useState(item?.images || []);
-  const [selectedMembers, setSelectedMembers] = useState(item?.memberIds || []);
-  const [category, setCategory] = useState(item?.category || "web");
   const [committee, setCommittee] = useState(
     item?.committee && committees.some(([key]) => key === item.committee)
       ? item.committee
@@ -506,15 +503,6 @@ function ContentEditor({
       description_en: values["description_en"]!.trim(),
       images,
     };
-    if (kind === "projects") {
-      value.category = category;
-      value.year = Number(values["year"]);
-      value.technologies = (values["technologies"] || "")
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-      value.memberIds = selectedMembers;
-    }
     if (kind === "members") {
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
@@ -527,7 +515,7 @@ function ContentEditor({
       value.partnershipType = values["partnershipType"] || "";
       value.partnershipType_en = values["partnershipType_en"] || "";
     }
-    for (const key of ["websiteUrl", "githubUrl", "linkedinUrl", "demoUrl", "apkUrl"] as const) {
+    for (const key of ["websiteUrl", "githubUrl", "linkedinUrl"] as const) {
       const url = values[key]?.trim();
       if (url) {
         if (!safeUrl(url)) {
@@ -571,32 +559,25 @@ function ContentEditor({
     }
   }
   const extraFields: [keyof Content, string, string, string][] =
-    kind === "projects"
+    kind === "members"
       ? [
-          ["year", "السنة", "Year", "number"],
+          ["role", "الدور بالعربية", "Role in Arabic", "text"],
+          ["role_en", "الدور بالإنجليزية", "Role in English", "text"],
           ["githubUrl", "رابط GitHub", "GitHub URL", "url"],
-          ["demoUrl", "رابط العرض", "Demo URL", "url"],
-          ["apkUrl", "رابط APK", "APK URL", "url"],
+          ["linkedinUrl", "رابط LinkedIn", "LinkedIn URL", "url"],
         ]
-      : kind === "members"
+      : kind === "partners"
         ? [
-            ["role", "الدور بالعربية", "Role in Arabic", "text"],
-            ["role_en", "الدور بالإنجليزية", "Role in English", "text"],
-            ["githubUrl", "رابط GitHub", "GitHub URL", "url"],
-            ["linkedinUrl", "رابط LinkedIn", "LinkedIn URL", "url"],
+            ["partnershipType", "نوع الشراكة بالعربية", "Partnership type in Arabic", "text"],
+            [
+              "partnershipType_en",
+              "نوع الشراكة بالإنجليزية",
+              "Partnership type in English",
+              "text",
+            ],
+            ["websiteUrl", "موقع الشريك", "Partner website", "url"],
           ]
-        : kind === "partners"
-          ? [
-              ["partnershipType", "نوع الشراكة بالعربية", "Partnership type in Arabic", "text"],
-              [
-                "partnershipType_en",
-                "نوع الشراكة بالإنجليزية",
-                "Partnership type in English",
-                "text",
-              ],
-              ["websiteUrl", "موقع الشريك", "Partner website", "url"],
-            ]
-          : [["date", "التاريخ", "Date", "date"]];
+        : [["date", "التاريخ", "Date", "date"]];
   return (
     <form
       onSubmit={save}
@@ -652,51 +633,6 @@ function ContentEditor({
           </label>
         ))}
       </div>
-      {kind === "projects" && (
-        <>
-          <label className="block">
-            <span className="mb-2 block">{ar ? "المجال" : "Category"}</span>
-            <Select dir={ar ? "rtl" : "ltr"} value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(([key, a, en]) => (
-                  <SelectItem key={key} value={key}>
-                    {ar ? a : en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-          <label className="block">
-            <span className="mb-2 block">
-              {ar ? "التقنيات (افصل بفاصلة إنجليزية)" : "Technologies (comma separated)"}
-            </span>
-            <Input name="technologies" defaultValue={item?.technologies?.join(", ") || ""} />
-          </label>
-          <fieldset>
-            <legend className="mb-3 font-bold">
-              {ar ? "الأعضاء المشاركون" : "Project members"}
-            </legend>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {data.members.map((member) => (
-                <label key={member.id} className="flex items-center gap-3">
-                  <Checkbox
-                    checked={selectedMembers.includes(member.id)}
-                    onCheckedChange={(checked) =>
-                      setSelectedMembers((prev) =>
-                        checked ? [...prev, member.id] : prev.filter((id) => id !== member.id),
-                      )
-                    }
-                  />
-                  {ar ? member.title : member.title_en}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </>
-      )}
       {kind === "members" && (
         <>
           <label className="block">
@@ -752,13 +688,6 @@ function ContentEditor({
             ? "اختاري الصور من المكتبة أو ارفعي صورة، ثم اضغطي حفظ ونشر لإظهارها في الموقع. أول صورة هي صورة الغلاف."
             : "Choose images from the library or upload one, then Save and publish. The first image is the cover."}
         </p>
-        {kind === "projects" && images.length === 0 && (
-          <p role="status" className="mb-4 text-sm text-primary">
-            {ar
-              ? "هذا المشروع بدون صور. رفع الصورة إلى المكتبة وحده لا يربطها بالمشروع."
-              : "This project has no images. Uploading to the library alone does not attach an image to this project."}
-          </p>
-        )}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {images.map((url) => (
             <div key={url}>

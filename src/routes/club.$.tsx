@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClubSite } from "@/components/club/ClubSite";
 const titles: Record<string, string> = {
   about: "من نحن | About",
-  projects: "المشاريع | Projects",
   members: "الفريق | Team",
   events: "الفعاليات | Events",
   achievements: "الإنجازات | Achievements",
@@ -17,7 +16,7 @@ export const Route = createFileRoute("/club/$")({
       { title: `${titles[params._splat?.split("/")[0] || ""] || "UCAS"} — UCAS IT CLUB` },
       {
         name: "description",
-        content: "تعرّف على مجتمع نادي تكنولوجيا المعلومات ومشاريعه وأنشطته في UCAS.",
+        content: "تعرّف على مجتمع نادي تكنولوجيا المعلومات وأنشطته في UCAS.",
       },
       ...(params._splat?.startsWith("admin")
         ? [{ name: "robots", content: "noindex,nofollow" }]

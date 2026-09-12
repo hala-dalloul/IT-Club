@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const collections = ["projects", "members", "events", "achievements", "partners"] as const;
+export const collections = ["members", "events", "achievements", "partners"] as const;
 export type ContentCollection = (typeof collections)[number];
 export type Lang = "ar" | "en";
 export type Content = {
@@ -56,7 +56,6 @@ export const emptySettings: Settings = {
   github: "",
 };
 export const labels: Record<ContentCollection, [string, string]> = {
-  projects: ["المشاريع", "Projects"],
   members: ["الفريق", "Team"],
   events: ["الأخبار والفعاليات", "News & events"],
   achievements: ["الإنجازات", "Achievements"],

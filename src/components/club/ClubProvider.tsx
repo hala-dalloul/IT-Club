@@ -8,7 +8,6 @@ import {
 } from "@/lib/club/model";
 import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/club/supabase";
 const emptyData: Record<ContentCollection, Content[]> = {
-  projects: [],
   members: [],
   events: [],
   achievements: [],

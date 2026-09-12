@@ -8,12 +8,11 @@ import {
   Smartphone,
   Palette,
   Users,
-  FolderOpen,
+  Trophy,
   CalendarDays,
   Menu,
   X,
   ExternalLink,
-  ImageOff,
 } from "lucide-react";
 import "./club.css";
 import logo from "@/assets/ucas-logo.png";
@@ -52,7 +51,6 @@ import { AdminPanel } from "./AdminPanel";
 const nav = [
   ["", "الرئيسية", "Home"],
   ["about", "من نحن", "About"],
-  ["projects", "المشاريع", "Projects"],
   ["members", "الفريق", "Team"],
   ["achievements", "الإنجازات", "Achievements"],
   ["partners", "الشراكات", "Partners"],
@@ -200,9 +198,6 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
           </p>
           <div className="flex flex-wrap gap-4 text-sm font-bold">
-            <ClubLink path="join" className="text-primary">
-              {ar ? "انضم إلينا" : "Join us"}
-            </ClubLink>
             <ClubLink path="contact" className="text-primary">
               {ar ? "تواصل معنا" : "Contact us"}
             </ClubLink>
@@ -241,13 +236,6 @@ function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
           height={360}
           className={`w-full ${kind === "members" ? "aspect-square object-cover" : kind === "partners" ? "aspect-video object-contain p-6" : "aspect-video object-cover"}`}
         />
-      ) : kind === "projects" ? (
-        <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-brand-gradient-soft text-muted-foreground">
-          <ImageOff aria-hidden="true" size={32} />
-          <span className="text-sm">
-            {lang === "ar" ? "لم تُضف صورة للمشروع بعد" : "No project image added yet"}
-          </span>
-        </div>
       ) : null}
       <div className="p-6">
         {item.date && (
@@ -324,8 +312,8 @@ function Home() {
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-loose text-muted-foreground">
           {ar
-            ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على مشاريع النادي وفريقه وفعالياته، وكن جزءًا من التجربة."
-            : "A student community for technology enthusiasts. Explore our projects, meet the team, and take part in club activities."}
+            ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
+            : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <ClubLink
@@ -337,14 +325,13 @@ function Home() {
           >
             {ar ? "انضم إلينا" : "Join the club"}
           </ClubLink>
-          <ClubLink path="projects">{ar ? "استكشف المشاريع" : "Explore projects"}</ClubLink>
         </div>
       </section>
       <div className="my-14 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
-            [FolderOpen, data.projects.length, ar ? "المشاريع" : "Projects"],
+            [Trophy, data.achievements.length, ar ? "الإنجازات" : "Achievements"],
             [
               CalendarDays,
               data.events.filter((x) => x.status === "past").length,
@@ -362,10 +349,6 @@ function Home() {
           </div>
         ))}
       </div>
-      <section>
-        <h2 className="mb-6 text-2xl font-black">{ar ? "أحدث المشاريع" : "Latest projects"}</h2>
-        <Grid items={data.projects.slice(0, 3)} kind="projects" />
-      </section>
       <section className="mt-14">
         <h2 className="mb-6 text-2xl font-black">{ar ? "من أخبار النادي" : "Club news"}</h2>
         <Grid items={data.events.slice(0, 1)} kind="events" />
@@ -428,64 +411,13 @@ function About() {
 function Listing({ kind }: { kind: ContentCollection }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [year, setYear] = useState("all");
   const [status, setStatus] = useState("all");
-  let items = data[kind].filter(
-    (x) =>
-      (!search ||
-        `${x.title} ${x.title_en} ${x.description} ${x.description_en}`
-          .toLowerCase()
-          .includes(search.toLowerCase())) &&
-      (category === "all" || x.category === category) &&
-      (year === "all" || String(x.year) === year) &&
-      (status === "all" || x.status === status),
-  );
+  let items = data[kind].filter((x) => status === "all" || x.status === status);
   if (kind === "events" || kind === "achievements")
     items = [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   return (
     <>
       <Heading ar={labels[kind][0]} en={labels[kind][1]} />
-      {kind === "projects" && (
-        <div className="club-project-filters mb-8 grid gap-4 sm:grid-cols-3">
-          <Input
-            aria-label={ar ? "ابحث في المشاريع" : "Search projects"}
-            placeholder={ar ? "ابحث في المشاريع…" : "Search projects…"}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Select dir={ar ? "rtl" : "ltr"} value={category} onValueChange={setCategory}>
-            <SelectTrigger aria-label={ar ? "المجال" : "Category"}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{ar ? "كل المجالات" : "All categories"}</SelectItem>
-              {categories.map(([key, a, e]) => (
-                <SelectItem key={key} value={key}>
-                  {ar ? a : e}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select dir={ar ? "rtl" : "ltr"} value={year} onValueChange={setYear}>
-            <SelectTrigger aria-label={ar ? "السنة" : "Year"}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{ar ? "كل السنوات" : "All years"}</SelectItem>
-              {Array.from(new Set(data.projects.map((x) => x.year).filter(Boolean)))
-                .sort()
-                .reverse()
-                .map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
       {kind === "events" && (
         <div className="mb-8 flex flex-wrap gap-3">
           {[
@@ -546,9 +478,6 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
         <ClubLink path={kind}>{ar ? "العودة للقائمة" : "Back to list"}</ClubLink>
       </>
     );
-  const people =
-    kind === "projects" ? data.members.filter((m) => item.memberIds?.includes(m.id)) : [];
-  const projects = kind === "members" ? data.projects.filter((p) => p.memberIds?.includes(id)) : [];
   return (
     <>
       <Heading ar={item.title} en={item.title_en} />
@@ -562,13 +491,6 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
         <p className="mt-5 whitespace-pre-line text-base leading-loose text-muted-foreground">
           {local(item, "description", lang)}
         </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {item.technologies?.map((x) => (
-            <span key={x} className="rounded-full bg-brand-gradient-soft px-4 py-2 text-primary">
-              {x}
-            </span>
-          ))}
-        </div>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {item.images
             ?.filter((x) => safeUrl(x))
@@ -588,8 +510,6 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
           {(
             [
               ["githubUrl", "GitHub"],
-              ["demoUrl", ar ? "عرض المشروع" : "Demo"],
-              ["apkUrl", "APK"],
               ["linkedinUrl", "LinkedIn"],
             ] as const
           ).map(
@@ -609,18 +529,6 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
           )}
         </div>
       </article>
-      {people.length > 0 && (
-        <section className="mt-10">
-          <h2 className="mb-5 text-2xl font-black">{ar ? "فريق المشروع" : "Project team"}</h2>
-          <Grid items={people} kind="members" />
-        </section>
-      )}
-      {kind === "members" && (
-        <section className="mt-10">
-          <h2 className="mb-5 text-2xl font-black">{ar ? "المشاريع" : "Projects"}</h2>
-          <Grid items={projects} kind="projects" />
-        </section>
-      )}
       <div className="mt-8">
         <ClubLink path={kind}>{ar ? "العودة للقائمة" : "Back to list"}</ClubLink>
       </div>

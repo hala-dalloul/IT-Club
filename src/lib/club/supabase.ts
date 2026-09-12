@@ -97,7 +97,6 @@ export async function loadPublic() {
   ]);
   check(settings.error);
   const data: Record<ContentCollection, Content[]> = {
-    projects: [],
     members: [],
     events: [],
     achievements: [],
