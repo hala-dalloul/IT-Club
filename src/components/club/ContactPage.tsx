@@ -35,7 +35,7 @@ export function ContactPage() {
   const { lang } = useClub();
   const ar = lang === "ar";
   return (
-    <section className="py-4 text-center sm:py-8" aria-labelledby="contact-heading">
+    <section className="text-center" aria-labelledby="contact-heading">
       <p className="text-sm font-bold tracking-widest text-primary">UCAS IT CLUB</p>
       <h1 id="contact-heading" className="mt-3 text-3xl font-black text-gradient-brand sm:text-5xl">
         {ar ? "خلّينا على تواصل" : "Let’s stay in touch"}

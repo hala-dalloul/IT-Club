@@ -8,6 +8,7 @@ import {
   Smartphone,
   Palette,
   Users,
+  Eye,
   CalendarDays,
   Menu,
   X,
@@ -197,9 +198,6 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
           </p>
           <div className="flex flex-wrap gap-4 text-sm font-bold">
-            <ClubLink path="join" className="text-primary">
-              {ar ? "انضم إلينا" : "Join us"}
-            </ClubLink>
             <ClubLink path="contact" className="text-primary">
               {ar ? "تواصل معنا" : "Contact us"}
             </ClubLink>
@@ -291,7 +289,7 @@ function Grid({ items, kind }: { items: Content[]; kind: ContentCollection }) {
   );
 }
 function Home() {
-  const { lang, data } = useClub();
+  const { lang, data, visitorCount } = useClub();
   const ar = lang === "ar";
   return (
     <>
@@ -329,10 +327,11 @@ function Home() {
           </ClubLink>
         </div>
       </section>
-      <div className="my-14 grid grid-cols-2 gap-3">
+      <div className="my-14 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
+            [Eye, visitorCount ?? "—", ar ? "الزيارات" : "Visits"],
             [
               CalendarDays,
               data.events.filter((x) => x.status === "past").length,
@@ -806,9 +805,10 @@ function ContentPage() {
   if (page === "contact") return <ContactPage />;
   if (loading)
     return (
-      <p role="status" className="py-20 text-center">
-        {lang === "ar" ? "جارٍ تحميل المحتوى…" : "Loading content…"}
-      </p>
+      <div role="status" className="flex min-h-[45vh] items-center justify-center">
+        <img src={logo} alt="UCAS IT CLUB" className="h-64 w-64 object-contain sm:h-80 sm:w-80" />
+        <span className="sr-only">{lang === "ar" ? "تحميل الموقع" : "Loading website"}</span>
+      </div>
     );
   if (error)
     return (

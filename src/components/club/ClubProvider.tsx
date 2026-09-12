@@ -7,6 +7,7 @@ import {
   type Settings,
 } from "@/lib/club/model";
 import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/club/supabase";
+import { recordVisit } from "@/lib/club/visits";
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
   events: [],
@@ -17,11 +18,24 @@ const Context = createContext({
   setLang: (_lang: Lang) => {},
   data: emptyData,
   settings: emptySettings,
+  visitorCount: null as number | null,
   loading: false,
   error: false,
   setupRequired: false,
 });
 export function ClubProvider({ children }: { children: ReactNode }) {
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  useEffect(() => {
+    let active = true;
+    void recordVisit()
+      .then((count) => {
+        if (active) setVisitorCount(count);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [lang, setLang] = useState<Lang>("ar");
   const [data, setData] = useState(emptyData);
   const [settings, setSettings] = useState<Settings>(emptySettings);
@@ -70,7 +84,9 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     [],
   );
   return (
-    <Context.Provider value={{ lang, setLang, data, settings, loading, error, setupRequired }}>
+    <Context.Provider
+      value={{ lang, setLang, data, settings, loading, error, setupRequired, visitorCount }}
+    >
       {children}
     </Context.Provider>
   );
