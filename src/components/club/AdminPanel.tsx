@@ -39,7 +39,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -464,12 +463,13 @@ function ContentEditor({
   const ar = lang === "ar";
   const [images, setImages] = useState(item?.images || []);
   const [committee, setCommittee] = useState(
-    item?.committee && committees.some(([key]) => key === item.committee)
-      ? item.committee
-      : committees[0][0],
+    item?.isFounder || item?.committee === "administrative"
+      ? "administrative"
+      : item?.committee && committees.some(([key]) => key === item.committee)
+        ? item.committee
+        : committees[0][0],
   );
   const [status, setStatus] = useState(item?.status || "upcoming");
-  const [founder, setFounder] = useState(item?.isFounder || false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState("");
@@ -506,7 +506,7 @@ function ContentEditor({
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
       value.committee = committee;
-      value.isFounder = founder;
+      value.isFounder = committee === "administrative";
     }
     if (kind === "events") value.date = values["date"] || "";
     if (kind === "events") value.status = status;
@@ -641,6 +641,9 @@ function ContentEditor({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="administrative">
+                  {ar ? "الهيئة الإدارية" : "Administrative board"}
+                </SelectItem>
                 {committees.map(([key, a, en]) => (
                   <SelectItem key={key} value={key}>
                     {ar ? a : en}
@@ -648,13 +651,6 @@ function ContentEditor({
                 ))}
               </SelectContent>
             </Select>
-          </label>
-          <label className="flex items-center gap-3">
-            <Checkbox
-              checked={founder}
-              onCheckedChange={(checked) => setFounder(checked === true)}
-            />
-            {ar ? "عضو الهيئة الإدارية" : "Administrative board member"}
           </label>
         </>
       )}
