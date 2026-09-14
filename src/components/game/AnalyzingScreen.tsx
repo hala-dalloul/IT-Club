@@ -14,7 +14,9 @@ export function AnalyzingScreen({ onDone }: AnalyzingScreenProps) {
     const phraseTimer = window.setInterval(() => {
       setPhraseIndex((i) => Math.min(i + 1, PHRASES.length - 1));
     }, 700);
+
     const doneTimer = window.setTimeout(onDone, 2200);
+
     return () => {
       window.clearInterval(phraseTimer);
       window.clearTimeout(doneTimer);

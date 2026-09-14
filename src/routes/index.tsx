@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClubSite } from "@/components/club/ClubSite";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
