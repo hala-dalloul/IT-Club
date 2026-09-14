@@ -12,7 +12,10 @@ export interface GameResult {
 /** If the top two paths are within this many points, both are recommended. */
 const CLOSE_THRESHOLD = 2;
 
-export function computeScores(answers: (number | null)[], characterId: SpecId | null): Record<SpecId, number> {
+export function computeScores(
+  answers: (number | null)[],
+  characterId: SpecId | null,
+): Record<SpecId, number> {
   const totals: Record<SpecId, number> = {
     multimedia: 0,
     web: 0,
@@ -24,14 +27,18 @@ export function computeScores(answers: (number | null)[], characterId: SpecId | 
   answers.forEach((optionIndex, qIndex) => {
     if (optionIndex === null) return;
     const option = QUESTIONS[qIndex]?.options[optionIndex];
+
     if (!option) return;
+
     for (const [spec, points] of Object.entries(option.scores)) {
+      // SAFETY: option.scores is keyed by SpecId only.
       totals[spec as SpecId] += points ?? 0;
     }
   });
 
   if (characterId) {
     const character = CHARACTERS.find((c) => c.id === characterId);
+
     if (character) totals[character.id] += character.boost;
   }
 
@@ -40,10 +47,12 @@ export function computeScores(answers: (number | null)[], characterId: SpecId | 
 
 export function computeResult(answers: (number | null)[], characterId: SpecId | null): GameResult {
   const totals = computeScores(answers, characterId);
+  // SAFETY: totals is a Record<SpecId, number>, so its entries are keyed by SpecId only.
   const ranked = (Object.entries(totals) as [SpecId, number][]).sort((a, b) => b[1] - a[1]);
 
   const first = ranked[0];
   const second = ranked[1];
+
   if (!first || !second) {
     return { top: SPEC_BY_ID.multimedia, second: null, closeMatch: false };
   }

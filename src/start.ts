@@ -2,14 +2,20 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 
+function hasStatusCode(value: unknown): value is { statusCode: unknown } {
+  return value != null && typeof value === "object" && "statusCode" in value;
+}
+
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
   } catch (error) {
-    if (error != null && typeof error === "object" && "statusCode" in error) {
+    if (hasStatusCode(error)) {
       throw error;
     }
+
     console.error(error);
+
     return new Response(renderErrorPage(), {
       status: 500,
       headers: { "content-type": "text/html; charset=utf-8" },

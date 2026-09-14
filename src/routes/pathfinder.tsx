@@ -46,6 +46,7 @@ function Index() {
   const [character, setCharacter] = useState<SpecId | null>(null);
 
   useEffect(() => {
+    // SAFETY: browsers support "instant" for scroll behavior; lib.dom's ScrollBehavior type just hasn't caught up.
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [stage, questionIndex]);
 
@@ -68,6 +69,7 @@ function Index() {
     setAnswers((prev) => {
       const next = [...prev];
       next[questionIndex] = optionIndex;
+
       return next;
     });
   };

@@ -34,6 +34,7 @@ const channels = [
 export function ContactPage() {
   const { lang } = useClub();
   const ar = lang === "ar";
+
   return (
     <section className="text-center" aria-labelledby="contact-heading">
       <p className="text-sm font-bold tracking-widest text-primary">UCAS IT CLUB</p>
