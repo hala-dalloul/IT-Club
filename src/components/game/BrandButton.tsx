@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import type { ButtonHTMLAttributes } from "react";
 
 type Variant = "primary" | "accent" | "outline" | "ghost";
+
 type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {

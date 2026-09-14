@@ -21,6 +21,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+
 export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
@@ -54,16 +55,21 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
   useEffect(() => {
     if (!file) {
       setPreview("");
+
       return;
     }
+
     const value = URL.createObjectURL(file);
     setPreview(value);
+
     return () => URL.revokeObjectURL(value);
   }, [file]);
+
   async function upload() {
     if (!file || busy) return;
     setBusy(true);
     setError("");
+
     try {
       await uploadImage(file);
       setFile(null);
@@ -77,7 +83,9 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
       setBusy(false);
     }
   }
+
   const allContent = Object.values(data).flat();
+
   return (
     <section className="mt-6 space-y-6">
       <div>
@@ -145,6 +153,7 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
                 onSelect={onSelect}
                 usage={asset.usedBy.map((id) => {
                   const item = allContent.find((c) => c.id === id);
+
                   return item ? (ar ? item.title : item.title_en) : id;
                 })}
               />
@@ -161,6 +170,7 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
     </section>
   );
 }
+
 function AssetCard({
   asset,
   onSelect,
@@ -175,9 +185,11 @@ function AssetCard({
   const [name, setName] = useState(asset.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
   async function action(work: () => Promise<void>) {
     setBusy(true);
     setError("");
+
     try {
       await work();
     } catch {
@@ -190,6 +202,7 @@ function AssetCard({
       setBusy(false);
     }
   }
+
   return (
     <article className="rounded-3xl border border-border bg-card p-5 shadow-card">
       <img

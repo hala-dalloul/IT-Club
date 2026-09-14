@@ -24,7 +24,9 @@ export function computeScores(answers: (number | null)[], characterId: SpecId | 
   answers.forEach((optionIndex, qIndex) => {
     if (optionIndex === null) return;
     const option = QUESTIONS[qIndex]?.options[optionIndex];
+
     if (!option) return;
+
     for (const [spec, points] of Object.entries(option.scores)) {
       totals[spec as SpecId] += points ?? 0;
     }
@@ -32,6 +34,7 @@ export function computeScores(answers: (number | null)[], characterId: SpecId | 
 
   if (characterId) {
     const character = CHARACTERS.find((c) => c.id === characterId);
+
     if (character) totals[character.id] += character.boost;
   }
 
@@ -44,6 +47,7 @@ export function computeResult(answers: (number | null)[], characterId: SpecId | 
 
   const first = ranked[0];
   const second = ranked[1];
+
   if (!first || !second) {
     return { top: SPEC_BY_ID.multimedia, second: null, closeMatch: false };
   }

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClubSite } from "@/components/club/ClubSite";
+
 const titles: Record<string, string> = {
   about: "من نحن | About",
   members: "الفريق | Team",
@@ -9,6 +10,7 @@ const titles: Record<string, string> = {
   contact: "تواصل معنا | Contact",
   admin: "الإدارة | Admin",
 };
+
 export const Route = createFileRoute("/club/$")({
   head: ({ params }) => ({
     meta: [

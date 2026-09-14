@@ -9,6 +9,7 @@ import {
   submissionError,
   type Registration,
 } from "@/lib/club/sheets";
+
 export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
   const { lang } = useClub();
   const ar = lang === "ar";
@@ -20,6 +21,7 @@ export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
   const [unavailable, setUnavailable] = useState(false);
   useEffect(() => {
     let active = true;
+
     const load = () =>
       loadRegistration()
         .then((value) => {
@@ -31,6 +33,7 @@ export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
         .catch(() => {
           if (active) setUnavailable(true);
         });
+
     void loadRegistration()
       .then((value) => {
         if (active) {
@@ -42,14 +45,17 @@ export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
       .catch(() => {
         if (active) setUnavailable(true);
       });
+
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 15000);
+
     return () => {
       active = false;
       clearInterval(timer);
     };
   }, []);
+
   return (
     <section className="space-y-5 rounded-3xl border border-border bg-card p-6">
       <h2 className="text-2xl font-black">
@@ -86,9 +92,11 @@ export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
               className="space-y-4"
               onSubmit={async (e) => {
                 e.preventDefault();
+
                 if (busy) return;
                 setBusy(true);
                 setNotice("");
+
                 try {
                   const value = await configureRegistration(enabled, Number(limit));
                   setStatus(value);
