@@ -25,19 +25,33 @@ export type Registration = z.infer<typeof registrationSchema>;
 
 export class SheetsError extends Error {}
 
-async function request(kind: keyof typeof endpoints, body?: object) {
+type RequestBody = Record<string, string | number | boolean | Record<string, string>>;
+
+function isStringCode(value: unknown): value is { code: string } {
+  return (
+    typeof value === "object" && value !== null && "code" in value && typeof value.code === "string"
+  );
+}
+
+async function request(kind: keyof typeof endpoints, body?: RequestBody) {
   let result: Response;
 
+  const init: RequestInit = {
+    credentials: "omit",
+    redirect: "follow",
+    signal: AbortSignal.timeout(45000),
+  };
+
+  if (body) {
+    init.method = "POST";
+    init.headers = { "Content-Type": "text/plain;charset=utf-8" };
+    init.body = JSON.stringify(body);
+  } else {
+    init.method = "GET";
+  }
+
   try {
-    result = await fetch(endpoints[kind], {
-      method: body ? "POST" : "GET",
-      credentials: "omit",
-      redirect: "follow",
-      ...(body
-        ? { headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }
-        : {}),
-      signal: AbortSignal.timeout(45000),
-    });
+    result = await fetch(endpoints[kind], init);
   } catch {
     throw new SheetsError("UNAVAILABLE");
   }
@@ -52,8 +66,7 @@ async function request(kind: keyof typeof endpoints, body?: object) {
     throw new SheetsError("UNAVAILABLE");
   }
 
-  if (value?.ok !== true)
-    throw new SheetsError(typeof value?.code === "string" ? value.code : "UNAVAILABLE");
+  if (value?.ok !== true) throw new SheetsError(isStringCode(value) ? value.code : "UNAVAILABLE");
 
   return value;
 }
@@ -93,8 +106,8 @@ export async function submitToSheet(
   await request(join ? "join" : "contact", { action: join ? "join" : "contact", requestId, data });
 }
 
-export function submissionError(error: unknown, ar: boolean) {
-  const code = error instanceof Error ? error.message : "";
+export function submissionError(cause: unknown, ar: boolean) {
+  const code = cause instanceof Error ? cause.message : "";
 
   if (code === "JOIN_CLOSED")
     return ar ? "تم وقف استقبال الأعضاء الجدد" : "New membership applications are closed.";

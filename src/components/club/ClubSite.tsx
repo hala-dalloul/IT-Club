@@ -373,26 +373,32 @@ function Home() {
 }
 
 function About() {
-  const { lang, settings, setupRequired } = useClub();
+  const { lang, settings } = useClub();
   const ar = lang === "ar";
 
   return (
     <>
       <Heading ar="من نحن" en="About the club" />
       <div className="grid gap-6 sm:grid-cols-2">
-        {(["vision", "mission"] as const).map((key) => (
-          <article key={key} className="rounded-3xl border border-border bg-card p-8 shadow-card">
-            <h2 className="text-2xl font-black text-primary">
-              {key === "vision" ? (ar ? "رؤيتنا" : "Our vision") : ar ? "رسالتنا" : "Our mission"}
-            </h2>
-            <p className="mt-4 whitespace-pre-line text-base leading-loose text-muted-foreground">
-              {settings[ar ? key : (`${key}_en` as "vision_en" | "mission_en")] ||
-                (ar
-                  ? "سيُنشر النص الرسمي المعتمد قريبًا."
-                  : "The approved official statement will be published here.")}
-            </p>
-          </article>
-        ))}
+        {(["vision", "mission"] as const).map((key) => {
+          // SAFETY: key is "vision" | "mission" from the as-const array above, so
+          // `${key}_en` is exactly "vision_en" | "mission_en".
+          const enKey = `${key}_en` as "vision_en" | "mission_en";
+
+          return (
+            <article key={key} className="rounded-3xl border border-border bg-card p-8 shadow-card">
+              <h2 className="text-2xl font-black text-primary">
+                {key === "vision" ? (ar ? "رؤيتنا" : "Our vision") : ar ? "رسالتنا" : "Our mission"}
+              </h2>
+              <p className="mt-4 whitespace-pre-line text-base leading-loose text-muted-foreground">
+                {settings[ar ? key : enKey] ||
+                  (ar
+                    ? "سيُنشر النص الرسمي المعتمد قريبًا."
+                    : "The approved official statement will be published here.")}
+              </p>
+            </article>
+          );
+        })}
       </div>
       <h2 className="mt-12 mb-6 text-2xl font-black">{ar ? "أهدافنا" : "Our goals"}</h2>
       {settings[ar ? "goals" : "goals_en"] ? (
@@ -599,6 +605,7 @@ function PublicForm({ join }: { join: boolean }) {
 
     if (busy) return;
     const form = e.currentTarget;
+    // SAFETY: this form has no file inputs, so every FormData entry value is a string.
     const values = Object.fromEntries(new FormData(form)) as Record<string, string>;
 
     if (join) {
@@ -609,7 +616,7 @@ function PublicForm({ join }: { join: boolean }) {
     const parsed = (join ? joinSchema : contactSchema).safeParse(values);
 
     if (!parsed.success) {
-      const errors: Record<string, [string, string]> = {
+      const errors = {
         name: ["أدخلي الاسم من حرفين إلى 200 حرف.", "Enter a name of 2–200 characters."],
         fullName: [
           "أدخلي الاسم الكامل من حرفين إلى 200 حرف.",
@@ -633,6 +640,13 @@ function PublicForm({ join }: { join: boolean }) {
           "النص يجب أن يكون بين 10 و4000 حرف.",
           "Your message must contain 10–4000 characters.",
         ],
+      } satisfies Record<string, [string, string]>;
+
+      const errorFor = (field: string) => {
+        if (!Object.hasOwn(errors, field)) return undefined;
+
+        // SAFETY: hasOwn above confirms field is one of errors' known keys.
+        return errors[field as keyof typeof errors];
       };
 
       setMessage(
@@ -640,7 +654,7 @@ function PublicForm({ join }: { join: boolean }) {
           ...new Set(
             parsed.error.issues.map(
               (issue) =>
-                errors[String(issue.path[0])]?.[ar ? 0 : 1] ||
+                errorFor(String(issue.path[0]))?.[ar ? 0 : 1] ||
                 (ar ? "تحققي من الحقول." : "Check your fields."),
             ),
           ),
@@ -888,7 +902,10 @@ function ContentPage() {
 
   if (page === "about") return <About />;
 
+  // SAFETY: the cast only satisfies Array<ContentCollection>.includes's parameter type;
+  // the membership check below is still a plain, correct string comparison.
   if (collections.includes(page as ContentCollection))
+    // SAFETY: collections.includes above just confirmed page is a ContentCollection.
     return id ? (
       <Detail kind={page as ContentCollection} id={id} />
     ) : (

@@ -35,3 +35,11 @@ dist-ssr
 .env.*
 !.env.example
 
+# Dev environment / tooling (not part of the app)
+.oxlintrc.json
+tools/
+.agents/
+.claude/
+.mcp.json
+skills-lock.json
+
