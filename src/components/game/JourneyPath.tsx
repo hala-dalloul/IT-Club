@@ -37,6 +37,7 @@ export function JourneyPath({ current, total }: JourneyPathProps) {
             const stage = i + 1;
             const done = stage < current;
             const active = stage === current;
+
             return (
               <li key={stage} className="relative grid place-items-center">
                 <span
