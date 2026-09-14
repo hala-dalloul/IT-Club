@@ -49,6 +49,7 @@ import {
 } from "@/lib/club/sheets";
 import { AdminPanel } from "./AdminPanel";
 import { ContactPage } from "./ContactPage";
+
 const nav = [
   ["", "الرئيسية", "Home"],
   ["about", "من نحن", "About"],
@@ -57,8 +58,10 @@ const nav = [
   ["events", "الفعاليات", "Events"],
   ["contact", "تواصل معنا", "Contact"],
 ];
+
 const linkClass =
   "club-action inline-flex items-center justify-center gap-2 rounded-full border-2 border-primary/30 bg-card px-6 py-3 text-base font-bold text-primary transition-colors hover:bg-primary/5";
+
 function ClubLink({
   path = "",
   children,
@@ -71,6 +74,7 @@ function ClubLink({
   navigation?: boolean;
 }) {
   const target = path ? `/club/${path}` : "/";
+
   return (
     <Link
       to={target}
@@ -82,8 +86,10 @@ function ClubLink({
     </Link>
   );
 }
+
 function Heading({ ar, en, children }: { ar: string; en: string; children?: ReactNode }) {
   const { lang } = useClub();
+
   return (
     <div className="mb-10 text-center">
       <p className="text-sm font-bold text-primary">UCAS IT CLUB</p>
@@ -98,8 +104,10 @@ function Heading({ ar, en, children }: { ar: string; en: string; children?: Reac
     </div>
   );
 }
+
 function Empty() {
   const { lang } = useClub();
+
   return (
     <p className="rounded-3xl border border-border bg-card p-10 text-center text-muted-foreground">
       {lang === "ar"
@@ -108,10 +116,12 @@ function Empty() {
     </p>
   );
 }
+
 function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
   const ar = lang === "ar";
+
   return (
     <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
       <FloatingBackground entrancePulse={!loading} />
@@ -221,10 +231,12 @@ function Shell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
 function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
   const { lang } = useClub();
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
+
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
       {image ? (
@@ -277,6 +289,7 @@ function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
     </article>
   );
 }
+
 function Grid({ items, kind }: { items: Content[]; kind: ContentCollection }) {
   return items.length ? (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -288,9 +301,11 @@ function Grid({ items, kind }: { items: Content[]; kind: ContentCollection }) {
     <Empty />
   );
 }
+
 function Home() {
   const { lang, data, visitorCount } = useClub();
   const ar = lang === "ar";
+
   return (
     <>
       <section className="mx-auto max-w-4xl text-center">
@@ -356,9 +371,11 @@ function Home() {
     </>
   );
 }
+
 function About() {
   const { lang, settings, setupRequired } = useClub();
   const ar = lang === "ar";
+
   return (
     <>
       <Heading ar="من نحن" en="About the club" />
@@ -397,6 +414,7 @@ function About() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map(([key, a, e], i) => {
           const Icon = [Smartphone, Globe, Gamepad2, Palette][i]!;
+
           return (
             <div key={key} className="rounded-3xl border border-border bg-card p-6">
               <Icon className="h-9 w-9 text-primary" />
@@ -408,13 +426,16 @@ function About() {
     </>
   );
 }
+
 function Listing({ kind }: { kind: ContentCollection }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
   const [status, setStatus] = useState("all");
   let items = data[kind].filter((x) => status === "all" || x.status === status);
+
   if (kind === "events")
     items = [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
   return (
     <>
       <Heading ar={labels[kind][0]} en={labels[kind][1]} />
@@ -455,10 +476,12 @@ function Listing({ kind }: { kind: ContentCollection }) {
     </>
   );
 }
+
 function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   const { data, lang } = useClub();
   const item = data[kind].find((x) => x.id === id);
   const ar = lang === "ar";
+
   if (!item)
     return (
       <>
@@ -466,6 +489,7 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
         <ClubLink path={kind}>{ar ? "العودة للقائمة" : "Back to list"}</ClubLink>
       </>
     );
+
   return (
     <>
       <Heading ar={item.title} en={item.title_en} />
@@ -523,6 +547,7 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
     </>
   );
 }
+
 function PublicForm({ join }: { join: boolean }) {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
@@ -541,9 +566,11 @@ function PublicForm({ join }: { join: boolean }) {
   useEffect(() => {
     if (!join) return;
     let active = true;
+
     const refresh = async () => {
       try {
         const value = await loadRegistration();
+
         if (active) {
           setRegistration(value);
           setRegistrationUnavailable(false);
@@ -552,10 +579,13 @@ function PublicForm({ join }: { join: boolean }) {
         if (active) setRegistrationUnavailable(true);
       }
     };
+
     void refresh();
+
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
     }, 15000);
+
     return () => {
       active = false;
       clearInterval(timer);
@@ -563,16 +593,21 @@ function PublicForm({ join }: { join: boolean }) {
   }, [join]);
   const [major, setMajor] = useState("");
   const [committee, setCommittee] = useState<string>(committees[0][0]);
+
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     if (busy) return;
     const form = e.currentTarget;
     const values = Object.fromEntries(new FormData(form)) as Record<string, string>;
+
     if (join) {
       values["preferredCommittee"] = committee;
       values["major"] = major;
     }
+
     const parsed = (join ? joinSchema : contactSchema).safeParse(values);
+
     if (!parsed.success) {
       const errors: Record<string, [string, string]> = {
         name: ["أدخلي الاسم من حرفين إلى 200 حرف.", "Enter a name of 2–200 characters."],
@@ -599,6 +634,7 @@ function PublicForm({ join }: { join: boolean }) {
           "Your message must contain 10–4000 characters.",
         ],
       };
+
       setMessage(
         [
           ...new Set(
@@ -610,10 +646,13 @@ function PublicForm({ join }: { join: boolean }) {
           ),
         ].join(" "),
       );
+
       return;
     }
+
     setBusy(true);
     setMessage("");
+
     try {
       requestId.current ??= crypto.randomUUID();
       await submitToSheet(join, parsed.data, requestId.current);
@@ -621,6 +660,7 @@ function PublicForm({ join }: { join: boolean }) {
       form.reset();
     } catch (error) {
       setMessage(submissionError(error, ar));
+
       if (error instanceof Error && error.message === "JOIN_CLOSED") {
         setRegistration((prev) => (prev ? { ...prev, open: false } : prev));
       }
@@ -628,6 +668,7 @@ function PublicForm({ join }: { join: boolean }) {
       setBusy(false);
     }
   }
+
   const fields = join
     ? [
         ["fullName", "الاسم الكامل", "Full name", "text"],
@@ -639,6 +680,7 @@ function PublicForm({ join }: { join: boolean }) {
         ["name", "الاسم", "Name", "text"],
         ["email", "البريد الإلكتروني", "Email", "email"],
       ];
+
   return (
     <>
       <Heading ar={join ? "انضم إلينا" : "تواصل معنا"} en={join ? "Join the club" : "Contact us"} />
@@ -809,15 +851,22 @@ function PublicForm({ join }: { join: boolean }) {
     </>
   );
 }
+
 function ContentPage() {
   const { loading, error, lang } = useClub();
+
   const path = useLocation()
     .pathname.replace(/^\/club\/?/, "")
     .replace(/\/$/, "");
+
   const [page, id] = path.split("/");
+
   if (page === "admin") return <AdminPanel />;
+
   if (page === "join") return <PublicForm join />;
+
   if (page === "contact") return <ContactPage />;
+
   if (loading)
     return (
       <div role="status" className="flex min-h-[45vh] items-center justify-center">
@@ -825,6 +874,7 @@ function ContentPage() {
         <span className="sr-only">{lang === "ar" ? "تحميل الموقع" : "Loading website"}</span>
       </div>
     );
+
   if (error)
     return (
       <p role="alert" className="py-20 text-center">
@@ -833,7 +883,9 @@ function ContentPage() {
           : "Content could not be loaded. Please refresh and try again."}
       </p>
     );
+
   if (!page) return <Home />;
+
   if (page === "about") return <About />;
 
   if (collections.includes(page as ContentCollection))
@@ -842,8 +894,10 @@ function ContentPage() {
     ) : (
       <Listing key={page} kind={page as ContentCollection} />
     );
+
   return <Heading ar="الصفحة غير موجودة" en="Page not found" />;
 }
+
 export function ClubSite() {
   return (
     <ClubProvider>

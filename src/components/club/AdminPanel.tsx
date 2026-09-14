@@ -51,6 +51,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Plus, LogOut, Trash2, Pencil, Upload } from "lucide-react";
+
 type InboxRow = {
   id: string;
   name?: string;
@@ -65,8 +66,11 @@ type InboxRow = {
   isRead?: boolean;
   submittedAt?: string;
 };
+
 type AdminRow = { id: string; name: string; email: string; role: string };
+
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
+
 export function AdminPanel() {
   const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
@@ -78,14 +82,18 @@ export function AdminPanel() {
   useEffect(() => {
     if (!configured) return;
     let stopRole = () => {};
+
     const stopAuth = observeAuth((current) => {
       stopRole();
       setUser(current);
       setRole("");
+
       if (!current) {
         setChecking(false);
+
         return;
       }
+
       setChecking(true);
       stopRole = watchQuery(
         () => loadRole(current.id),
@@ -100,16 +108,19 @@ export function AdminPanel() {
         30000,
       );
     });
+
     return () => {
       stopAuth();
       stopRole();
     };
   }, []);
+
   async function login(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
     const values = new FormData(e.currentTarget);
+
     try {
       await signIn(String(values.get("email")), String(values.get("password")));
     } catch {
@@ -122,6 +133,7 @@ export function AdminPanel() {
       setBusy(false);
     }
   }
+
   if (setupRequired)
     return (
       <div className="rounded-3xl border border-border bg-card p-8">
@@ -135,6 +147,7 @@ export function AdminPanel() {
         </p>
       </div>
     );
+
   if (!configured)
     return (
       <div className="mx-auto max-w-xl rounded-3xl border border-border bg-card p-8">
@@ -146,7 +159,9 @@ export function AdminPanel() {
         </p>
       </div>
     );
+
   if (checking) return <p role="status">{ar ? "جارٍ التحقق من الصلاحيات…" : "Checking access…"}</p>;
+
   if (!user)
     return (
       <form
@@ -168,6 +183,7 @@ export function AdminPanel() {
         </BrandButton>
       </form>
     );
+
   if (!["editor", "super_admin"].includes(role))
     return (
       <div>
@@ -181,11 +197,14 @@ export function AdminPanel() {
         </BrandButton>
       </div>
     );
+
   return <AdminWorkspace key={user.id + role} role={role} user={user} />;
 }
+
 function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
   const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -213,6 +232,7 @@ function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; labe
     </AlertDialog>
   );
 }
+
 function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
@@ -227,12 +247,17 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           ? "تعذر تحميل بيانات الإدارة. تحقق من إعداد Supabase."
           : "Could not load admin data. Check Supabase setup.",
       );
+
     const stops: (() => void)[] = [];
+
     if (role === "super_admin") stops.push(watchQuery(loadAdmins, setAdmins, fail));
+
     return () => stops.forEach((stop) => stop());
   }, [role, ar]);
+
   async function run(action: () => Promise<void>) {
     setNotice("");
+
     try {
       await action();
       setNotice(ar ? "تم الحفظ بنجاح." : "Saved successfully.");
@@ -244,6 +269,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       );
     }
   }
+
   const tabs = [
     ["dashboard", ar ? "نظرة عامة" : "Overview"],
     ["media", ar ? "مكتبة الصور" : "Media library"],
@@ -257,6 +283,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         ]
       : []),
   ];
+
   return (
     <>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -397,6 +424,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               const f = e.currentTarget;
               const values = new FormData(f);
               const uid = String(values.get("uid")).trim();
+
               if (uid === user.id || uid.includes("/") || !uid) return;
               void run(async () => {
                 await saveAdmin(
@@ -448,6 +476,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
     </>
   );
 }
+
 function ContentEditor({
   kind,
   item,
@@ -462,6 +491,7 @@ function ContentEditor({
   const { lang, data } = useClub();
   const ar = lang === "ar";
   const [images, setImages] = useState(item?.images || []);
+
   const [committee, setCommittee] = useState(
     item?.isFounder || item?.committee === "administrative"
       ? "administrative"
@@ -469,6 +499,7 @@ function ContentEditor({
         ? item.committee
         : committees[0][0],
   );
+
   const [status, setStatus] = useState(item?.status || "upcoming");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -477,23 +508,31 @@ function ContentEditor({
   useEffect(() => {
     if (!file) {
       setPreview("");
+
       return;
     }
+
     const url = URL.createObjectURL(file);
     setPreview(url);
+
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     if (busy || file) return;
     const values = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     const parsed = contentSchema.safeParse(values);
+
     if (!parsed.success) {
       setError(
         ar ? "أدخل العنوان والوصف باللغتين." : "Enter the title and description in both languages.",
       );
+
       return;
     }
+
     const value: Omit<Content, "id"> = {
       ...blank,
       title: values["title"]!.trim(),
@@ -502,30 +541,40 @@ function ContentEditor({
       description_en: values["description_en"]!.trim(),
       images,
     };
+
     if (kind === "members") {
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
       value.committee = committee;
       value.isFounder = committee === "administrative";
     }
+
     if (kind === "events") value.date = values["date"] || "";
+
     if (kind === "events") value.status = status;
+
     if (kind === "partners") {
       value.partnershipType = values["partnershipType"] || "";
       value.partnershipType_en = values["partnershipType_en"] || "";
     }
+
     for (const key of ["websiteUrl", "githubUrl", "linkedinUrl"] as const) {
       const url = values[key]?.trim();
+
       if (url) {
         if (!safeUrl(url)) {
           setError(ar ? "استخدم روابط HTTPS صحيحة." : "Use valid HTTPS links.");
+
           return;
         }
+
         value[key] = url;
       }
     }
+
     setBusy(true);
     setError("");
+
     try {
       await saveContent(kind, value, item?.id);
       onSaved();
@@ -539,10 +588,12 @@ function ContentEditor({
       setBusy(false);
     }
   }
+
   async function upload() {
     if (!file) return;
     setBusy(true);
     setError("");
+
     try {
       const url = await uploadImage(file);
       setImages((prev) => [...prev, url]);
@@ -557,6 +608,7 @@ function ContentEditor({
       setBusy(false);
     }
   }
+
   const extraFields: [keyof Content, string, string, string][] =
     kind === "members"
       ? [
@@ -577,6 +629,7 @@ function ContentEditor({
             ["websiteUrl", "موقع الشريك", "Partner website", "url"],
           ]
         : [["date", "التاريخ", "Date", "date"]];
+
   return (
     <form
       onSubmit={save}
@@ -744,6 +797,7 @@ function ContentEditor({
     </form>
   );
 }
+
 function SettingsEditor({
   initial,
   onSave,
@@ -754,6 +808,7 @@ function SettingsEditor({
   const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
+
   const fields: Record<keyof Settings, [string, string]> = {
     vision: ["الرؤية بالعربية", "Vision in Arabic"],
     vision_en: ["الرؤية بالإنجليزية", "Vision in English"],
@@ -767,6 +822,7 @@ function SettingsEditor({
     linkedin: ["LinkedIn", "LinkedIn"],
     github: ["GitHub", "GitHub"],
   };
+
   return (
     <form
       className="grid gap-5 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
@@ -774,6 +830,7 @@ function SettingsEditor({
         e.preventDefault();
         setBusy(true);
         const values = Object.fromEntries(new FormData(e.currentTarget)) as Settings;
+
         try {
           await onSave(values);
         } finally {

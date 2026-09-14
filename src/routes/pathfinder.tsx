@@ -68,6 +68,7 @@ function Index() {
     setAnswers((prev) => {
       const next = [...prev];
       next[questionIndex] = optionIndex;
+
       return next;
     });
   };

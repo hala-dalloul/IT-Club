@@ -23,6 +23,7 @@ export function CharacterScreen({ selected, onSelect, onNext, onBack }: Characte
         {CHARACTERS.map((character, i) => {
           const isSelected = selected === character.id;
           const Icon = character.icon;
+
           return (
             <button
               key={character.id}
