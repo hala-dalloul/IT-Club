@@ -82,6 +82,13 @@ export const majors = [
   "تكنولوجيا الوسائط المتعددة",
 ] as const;
 
+export const majorEnglishLabels: Record<(typeof majors)[number], string> = {
+  "تصميم و برمجة تطبيقات الموبايل": "Mobile Application Design and Programming",
+  "تصميم و برمجة الألعاب الموبايل": "Mobile Game Design and Programming",
+  "تصميم و برمجة صفحات الويب": "Web Page Design and Programming",
+  "تكنولوجيا الوسائط المتعددة": "Multimedia Technology",
+};
+
 export const committees = [
   ["media", "الإعلام", "Media"],
   ["relations", "العلاقات العامة", "Public relations"],

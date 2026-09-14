@@ -33,6 +33,7 @@ import {
   categories,
   committees,
   majors,
+  majorEnglishLabels,
   labels,
   local,
   safeUrl,
@@ -788,7 +789,7 @@ function PublicForm({ join }: { join: boolean }) {
                   <SelectContent>
                     {majors.map((name) => (
                       <SelectItem key={name} value={name}>
-                        {name}
+                        {ar ? name : majorEnglishLabels[name]}
                       </SelectItem>
                     ))}
                   </SelectContent>
