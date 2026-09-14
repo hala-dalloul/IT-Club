@@ -40,7 +40,9 @@ function check(error: { message: string; code?: string | undefined } | null) {
 
 export const changed = () => window.dispatchEvent(new Event("club-data-changed"));
 
-type Row = Record<string, unknown>;
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+type Row = Record<string, JsonValue>;
 
 async function rows(table: string, order = "id", tie = "id") {
   const result: Row[] = [];
@@ -133,10 +135,14 @@ export async function loadPublic() {
   };
 
   for (const row of content) {
+    // SAFETY: kind is unverified until the hasOwn check below drops rows that
+    // aren't one of the three ContentCollection keys.
     const kind = row["kind"] as ContentCollection;
 
     if (!Object.hasOwn(data, kind)) continue;
     data[kind].push({
+      // SAFETY: club_content.data is only ever written by saveContent, which
+      // validates the value against contentSchema before insert.
       ...(row["data"] as Omit<Content, "id">),
       id: String(row["id"]),
       updatedAt: row["updated_at"],
@@ -144,6 +150,7 @@ export async function loadPublic() {
     });
   }
 
+  // SAFETY: club_settings.data is only ever written by saveSettings, which takes a Settings value.
   return { data, settings: settings.data?.data as Settings | undefined };
 }
 
@@ -243,6 +250,9 @@ export type InboxRow = {
 export type AdminRow = { id: string; name: string; email: string; role: string };
 
 export async function loadInbox() {
+  // SAFETY: club_submissions.data is written by the join/contact intake pipeline, whose
+  // fields (name, email, message, ...) are all plain strings; the mapped object below
+  // fills every other InboxRow field explicitly, so the result matches InboxRow & { kind: string }.
   return (await rows("club_submissions", "submitted_at")).map((row) => ({
     ...(row["data"] as Record<string, string>),
     id: String(row["id"]),
@@ -266,7 +276,9 @@ export async function updateSubmission(id: string, patch: { status?: string; isR
 }
 
 export async function loadAdmins() {
-  return (await rows("club_admins")) as unknown as AdminRow[];
+  // SAFETY: club_admins rows are only ever written by saveAdmin, which always sets
+  // id, name, email, and role as strings.
+  return (await rows("club_admins")) as AdminRow[];
 }
 
 export async function saveAdmin(id: string, name: string, email: string) {

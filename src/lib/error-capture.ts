@@ -5,8 +5,16 @@ let lastCapturedError: { error: unknown; at: number } | undefined;
 
 const TTL_MS = 5_000;
 
-function record(error: unknown) {
-  lastCapturedError = { error, at: Date.now() };
+function record(cause: unknown) {
+  lastCapturedError = { error: cause, at: Date.now() };
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === "number";
 }
 
 // h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —
@@ -17,13 +25,13 @@ const CAUSE_DEPTH_LIMIT = 5;
 
 const DESCRIPTION_LENGTH_LIMIT = 8_000;
 
-export function describeError(error: unknown): string {
+export function describeError(cause: unknown): string {
   const parts: string[] = [];
-  let current: unknown = error;
+  let current: unknown = cause;
 
   for (let depth = 0; depth < CAUSE_DEPTH_LIMIT && current != null; depth++) {
     if (!(current instanceof Error)) {
-      parts.push(typeof current === "string" ? current : safeStringify(current));
+      parts.push(isString(current) ? current : safeStringify(current));
       break;
     }
 
@@ -37,17 +45,19 @@ export function describeError(error: unknown): string {
 }
 
 function describeStatus(error: Error): string {
+  // SAFETY: h3's HTTPError and fetch-layer errors attach status/statusCode that
+  // aren't part of the Error type; isNumber below discards anything else.
   const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
   const value = status ?? statusCode;
 
-  return typeof value === "number" ? ` (status ${value})` : "";
+  return isNumber(value) ? ` (status ${value})` : "";
 }
 
-function safeStringify(value: unknown): string {
+function safeStringify(cause: unknown): string {
   try {
-    return JSON.stringify(value) ?? String(value);
+    return JSON.stringify(cause) ?? String(cause);
   } catch {
-    return String(value);
+    return String(cause);
   }
 }
 
@@ -71,14 +81,20 @@ console.error = (...args: unknown[]) => {
   originalConsoleError(...expanded);
 };
 
-if (typeof globalThis.addEventListener === "function") {
-  globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
-  globalThis.addEventListener("unhandledrejection", (event) =>
-    record((event as PromiseRejectionEvent).reason),
-  );
+if ("addEventListener" in globalThis) {
+  globalThis.addEventListener("error", (event) => {
+    // SAFETY: this listener is only ever registered for the "error" event, whose
+    // event object the DOM spec guarantees is an ErrorEvent.
+    record((event as ErrorEvent).error ?? event);
+  });
+  globalThis.addEventListener("unhandledrejection", (event) => {
+    // SAFETY: this listener is only ever registered for "unhandledrejection", whose
+    // event object the spec guarantees is a PromiseRejectionEvent.
+    record((event as PromiseRejectionEvent).reason);
+  });
 }
 
-export function consumeLastCapturedError(): unknown {
+export function consumeLastCapturedError() {
   if (!lastCapturedError) return undefined;
 
   if (Date.now() - lastCapturedError.at > TTL_MS) {

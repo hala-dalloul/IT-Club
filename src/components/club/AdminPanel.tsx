@@ -52,21 +52,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, LogOut, Trash2, Pencil, Upload } from "lucide-react";
 
-type InboxRow = {
-  id: string;
-  name?: string;
-  fullName?: string;
-  email: string;
-  phone?: string;
-  studentId?: string;
-  major?: string;
-  preferredCommittee?: string;
-  message: string;
-  status?: string;
-  isRead?: boolean;
-  submittedAt?: string;
-};
-
 type AdminRow = { id: string; name: string; email: string; role: string };
 
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
@@ -202,7 +187,7 @@ export function AdminPanel() {
 }
 
 function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
-  const { lang, setupRequired } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
 
   return (
@@ -237,6 +222,13 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
   const [tab, setTab] = useState("dashboard");
+
+  // SAFETY: the ternary itself performs the ContentCollection membership check;
+  // the cast only satisfies Array<ContentCollection>.includes's parameter type.
+  const activeCollection = collections.includes(tab as ContentCollection)
+    ? (tab as ContentCollection)
+    : null;
+
   const [editing, setEditing] = useState<Content | null | undefined>(undefined);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
@@ -340,11 +332,11 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           ))}
         </div>
       )}
-      {collections.includes(tab as ContentCollection) &&
+      {activeCollection &&
         (editing !== undefined ? (
           <ContentEditor
             key={tab + (editing?.id || "new")}
-            kind={tab as ContentCollection}
+            kind={activeCollection}
             item={editing}
             onCancel={() => setEditing(undefined)}
             onSaved={() => {
@@ -359,10 +351,10 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
             <div className="space-y-3">
-              {data[tab as ContentCollection].length === 0 && (
+              {data[activeCollection].length === 0 && (
                 <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
               )}
-              {data[tab as ContentCollection].map((item) => (
+              {data[activeCollection].map((item) => (
                 <article
                   key={item.id}
                   className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5"
@@ -380,7 +372,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                     </BrandButton>
                     <DeleteButton
                       label={item.title}
-                      onDelete={() => run(() => removeContent(tab as ContentCollection, item.id))}
+                      onDelete={() => run(() => removeContent(activeCollection, item.id))}
                     />
                   </div>
                 </article>
@@ -488,7 +480,7 @@ function ContentEditor({
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const { lang, data } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
   const [images, setImages] = useState(item?.images || []);
 
@@ -522,6 +514,7 @@ function ContentEditor({
     e.preventDefault();
 
     if (busy || file) return;
+    // SAFETY: this form has no file inputs, so every FormData entry value is a string.
     const values = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     const parsed = contentSchema.safeParse(values);
 
@@ -805,7 +798,7 @@ function SettingsEditor({
   initial: Settings;
   onSave: (value: Settings) => Promise<void>;
 }) {
-  const { lang, setupRequired } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
 
@@ -823,12 +816,16 @@ function SettingsEditor({
     github: ["GitHub", "GitHub"],
   };
 
+  // SAFETY: key ranges over Object.entries(fields), and fields is a Record<keyof Settings, ...>,
+  // so key is always a Settings key.
   return (
     <form
       className="grid gap-5 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
+        // SAFETY: every field below is named after a Settings key, so the form's
+        // FormData entries exactly match Settings' shape.
         const values = Object.fromEntries(new FormData(e.currentTarget)) as Settings;
 
         try {

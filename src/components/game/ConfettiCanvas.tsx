@@ -13,7 +13,7 @@ interface Particle {
   vr: number;
   life: number;
   maxLife: number;
-  shape: "rect" | "circle";
+  kind: "rect" | "circle";
 }
 
 /** One-shot brand-colored confetti burst. Skipped for reduced-motion users. */
@@ -49,7 +49,7 @@ export function ConfettiCanvas() {
         vr: (Math.random() - 0.5) * 0.3,
         life: 0,
         maxLife: 140 + Math.random() * 60,
-        shape: Math.random() > 0.5 ? "rect" : "circle",
+        kind: Math.random() > 0.5 ? "rect" : "circle",
       };
     });
 
@@ -77,7 +77,7 @@ export function ConfettiCanvas() {
         ctx.rotate(p.rotation);
         ctx.fillStyle = p.color;
 
-        if (p.shape === "rect") {
+        if (p.kind === "rect") {
           ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
         } else {
           ctx.beginPath();
@@ -100,5 +100,11 @@ export function ConfettiCanvas() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 h-full w-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 z-50 h-full w-full"
+    />
+  );
 }

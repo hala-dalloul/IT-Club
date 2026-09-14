@@ -16,10 +16,12 @@ const emptyData: Record<ContentCollection, Content[]> = {
 };
 
 const Context = createContext({
+  // SAFETY: "ar" is a valid member of Lang; widened so setLang's default matches the type below.
   lang: "ar" as Lang,
   setLang: (_lang: Lang) => {},
   data: emptyData,
   settings: emptySettings,
+  // SAFETY: no visit count is known yet; widened so ClubProvider's setVisitorCount(number) fits.
   visitorCount: null as number | null,
   loading: false,
   error: false,
