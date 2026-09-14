@@ -12,6 +12,7 @@ interface SpecializationCardProps {
 
 export function SpecializationCard({ spec, rank, className, style }: SpecializationCardProps) {
   const Icon = spec.icon;
+
   return (
     <article
       className={cn(

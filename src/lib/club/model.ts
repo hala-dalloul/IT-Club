@@ -1,7 +1,11 @@
 import { z } from "zod";
+
 export const collections = ["members", "events", "partners"] as const;
+
 export type ContentCollection = (typeof collections)[number];
+
 export type Lang = "ar" | "en";
+
 export type Content = {
   id: string;
   title: string;
@@ -29,6 +33,7 @@ export type Content = {
   updatedAt?: unknown;
   updatedBy?: string;
 };
+
 export type Settings = {
   vision: string;
   vision_en: string;
@@ -42,6 +47,7 @@ export type Settings = {
   linkedin: string;
   github: string;
 };
+
 export const emptySettings: Settings = {
   vision: "",
   vision_en: "",
@@ -55,28 +61,33 @@ export const emptySettings: Settings = {
   linkedin: "",
   github: "",
 };
+
 export const labels: Record<ContentCollection, [string, string]> = {
   members: ["الفريق", "Team"],
   events: ["الأخبار والفعاليات", "News & events"],
   partners: ["الشراكات", "Partners"],
 };
+
 export const categories = [
   ["mobile", "تطبيقات الموبايل", "Mobile apps"],
   ["web", "مواقع الويب", "Websites"],
   ["games", "الألعاب", "Games"],
   ["multimedia", "الوسائط المتعددة", "Multimedia"],
 ] as const;
+
 export const majors = [
   "تصميم و برمجة تطبيقات الموبايل",
   "تصميم و برمجة الألعاب الموبايل",
   "تصميم و برمجة صفحات الويب",
   "تكنولوجيا الوسائط المتعددة",
 ] as const;
+
 export const committees = [
   ["media", "الإعلام", "Media"],
   ["relations", "العلاقات العامة", "Public relations"],
   ["activities", "الأنشطة", "Activities"],
 ] as const;
+
 export function local(
   item: Content,
   key: "title" | "description" | "role" | "partnershipType",
@@ -84,21 +95,27 @@ export function local(
 ) {
   return (lang === "en" ? item[`${key}_en`] : item[key]) || item[key] || "";
 }
+
 export function safeUrl(value: string | undefined) {
   if (!value) return undefined;
+
   try {
     const u = new URL(value);
+
     return u.protocol === "https:" ? u.href : undefined;
   } catch {
     return undefined;
   }
 }
+
 const text = z.string().trim().min(2).max(200);
+
 export const contactSchema = z.object({
   name: text,
   email: z.string().trim().email().max(254),
   message: z.string().trim().min(10).max(4000),
 });
+
 export const joinSchema = z.object({
   fullName: text,
   email: z
@@ -116,6 +133,7 @@ export const joinSchema = z.object({
   preferredCommittee: z.enum(["media", "relations", "activities"]),
   message: z.string().trim().min(10).max(4000),
 });
+
 export const contentSchema = z
   .object({
     title: text,

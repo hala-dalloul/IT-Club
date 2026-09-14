@@ -36,6 +36,7 @@ export function QuestionScreen({ question, index, total, selected, onSelect, onN
           {question.options.map((option, i) => {
             const isSelected = selected === i;
             const Icon = option.icon;
+
             return (
               <button
                 key={i}

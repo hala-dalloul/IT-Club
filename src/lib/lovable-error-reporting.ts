@@ -4,10 +4,19 @@ type LovableErrorOptions = {
   severity?: "error" | "warning" | "info";
 };
 
+type LovableContextValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | LovableContextValue[]
+  | { [key: string]: LovableContextValue };
+
 type LovableEvents = {
   captureException?: (
-    error: unknown,
-    context?: Record<string, unknown>,
+    cause: unknown,
+    context?: Record<string, LovableContextValue>,
     options?: LovableErrorOptions,
   ) => void;
 };
@@ -23,10 +32,13 @@ declare global {
   }
 }
 
-export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
+export function reportLovableError(
+  cause: unknown,
+  context: Record<string, LovableContextValue> = {},
+) {
   if (typeof window === "undefined") return;
   window.__lovableEvents?.captureException?.(
-    error,
+    cause,
     {
       source: "react_error_boundary",
       route: window.location.pathname,
@@ -38,18 +50,20 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
       severity: "error",
     },
   );
+
   // Prod React does not rethrow boundary-caught errors to window.onerror, so the
   // editor's telemetry never sees them. Forward to lovable.js's reporting hook,
   // which is present only inside the editor preview.
   // Loaders and server fns commonly throw a raw Response; String(it) is the
   // opaque "[object Response]", so pull out the status and URL instead.
   const message =
-    error instanceof Response
-      ? `Response ${error.status}${error.url ? ` at ${error.url}` : ""}`
-      : error instanceof Error
-        ? error.message
-        : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
+    cause instanceof Response
+      ? `Response ${cause.status}${cause.url ? ` at ${cause.url}` : ""}`
+      : cause instanceof Error
+        ? cause.message
+        : String(cause);
+
+  const stack = cause instanceof Error ? cause.stack : undefined;
   window.__lovableReportRuntimeError?.({
     message,
     ...(stack !== undefined && { stack }),

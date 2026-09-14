@@ -51,22 +51,11 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Plus, LogOut, Trash2, Pencil, Upload } from "lucide-react";
-type InboxRow = {
-  id: string;
-  name?: string;
-  fullName?: string;
-  email: string;
-  phone?: string;
-  studentId?: string;
-  major?: string;
-  preferredCommittee?: string;
-  message: string;
-  status?: string;
-  isRead?: boolean;
-  submittedAt?: string;
-};
+
 type AdminRow = { id: string; name: string; email: string; role: string };
+
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
+
 export function AdminPanel() {
   const { lang, setupRequired } = useClub();
   const ar = lang === "ar";
@@ -78,14 +67,18 @@ export function AdminPanel() {
   useEffect(() => {
     if (!configured) return;
     let stopRole = () => {};
+
     const stopAuth = observeAuth((current) => {
       stopRole();
       setUser(current);
       setRole("");
+
       if (!current) {
         setChecking(false);
+
         return;
       }
+
       setChecking(true);
       stopRole = watchQuery(
         () => loadRole(current.id),
@@ -100,16 +93,19 @@ export function AdminPanel() {
         30000,
       );
     });
+
     return () => {
       stopAuth();
       stopRole();
     };
   }, []);
+
   async function login(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
     const values = new FormData(e.currentTarget);
+
     try {
       await signIn(String(values.get("email")), String(values.get("password")));
     } catch {
@@ -122,6 +118,7 @@ export function AdminPanel() {
       setBusy(false);
     }
   }
+
   if (setupRequired)
     return (
       <div className="rounded-3xl border border-border bg-card p-8">
@@ -135,6 +132,7 @@ export function AdminPanel() {
         </p>
       </div>
     );
+
   if (!configured)
     return (
       <div className="mx-auto max-w-xl rounded-3xl border border-border bg-card p-8">
@@ -146,7 +144,9 @@ export function AdminPanel() {
         </p>
       </div>
     );
+
   if (checking) return <p role="status">{ar ? "جارٍ التحقق من الصلاحيات…" : "Checking access…"}</p>;
+
   if (!user)
     return (
       <form
@@ -168,6 +168,7 @@ export function AdminPanel() {
         </BrandButton>
       </form>
     );
+
   if (!["editor", "super_admin"].includes(role))
     return (
       <div>
@@ -181,11 +182,14 @@ export function AdminPanel() {
         </BrandButton>
       </div>
     );
+
   return <AdminWorkspace key={user.id + role} role={role} user={user} />;
 }
+
 function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
-  const { lang, setupRequired } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -213,10 +217,18 @@ function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; labe
     </AlertDialog>
   );
 }
+
 function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
   const [tab, setTab] = useState("dashboard");
+
+  // SAFETY: the ternary itself performs the ContentCollection membership check;
+  // the cast only satisfies Array<ContentCollection>.includes's parameter type.
+  const activeCollection = collections.includes(tab as ContentCollection)
+    ? (tab as ContentCollection)
+    : null;
+
   const [editing, setEditing] = useState<Content | null | undefined>(undefined);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
@@ -227,12 +239,17 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           ? "تعذر تحميل بيانات الإدارة. تحقق من إعداد Supabase."
           : "Could not load admin data. Check Supabase setup.",
       );
+
     const stops: (() => void)[] = [];
+
     if (role === "super_admin") stops.push(watchQuery(loadAdmins, setAdmins, fail));
+
     return () => stops.forEach((stop) => stop());
   }, [role, ar]);
+
   async function run(action: () => Promise<void>) {
     setNotice("");
+
     try {
       await action();
       setNotice(ar ? "تم الحفظ بنجاح." : "Saved successfully.");
@@ -244,6 +261,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       );
     }
   }
+
   const tabs = [
     ["dashboard", ar ? "نظرة عامة" : "Overview"],
     ["media", ar ? "مكتبة الصور" : "Media library"],
@@ -257,6 +275,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         ]
       : []),
   ];
+
   return (
     <>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -313,11 +332,11 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           ))}
         </div>
       )}
-      {collections.includes(tab as ContentCollection) &&
+      {activeCollection &&
         (editing !== undefined ? (
           <ContentEditor
             key={tab + (editing?.id || "new")}
-            kind={tab as ContentCollection}
+            kind={activeCollection}
             item={editing}
             onCancel={() => setEditing(undefined)}
             onSaved={() => {
@@ -332,10 +351,10 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
             <div className="space-y-3">
-              {data[tab as ContentCollection].length === 0 && (
+              {data[activeCollection].length === 0 && (
                 <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
               )}
-              {data[tab as ContentCollection].map((item) => (
+              {data[activeCollection].map((item) => (
                 <article
                   key={item.id}
                   className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5"
@@ -353,7 +372,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                     </BrandButton>
                     <DeleteButton
                       label={item.title}
-                      onDelete={() => run(() => removeContent(tab as ContentCollection, item.id))}
+                      onDelete={() => run(() => removeContent(activeCollection, item.id))}
                     />
                   </div>
                 </article>
@@ -397,6 +416,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               const f = e.currentTarget;
               const values = new FormData(f);
               const uid = String(values.get("uid")).trim();
+
               if (uid === user.id || uid.includes("/") || !uid) return;
               void run(async () => {
                 await saveAdmin(
@@ -448,6 +468,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
     </>
   );
 }
+
 function ContentEditor({
   kind,
   item,
@@ -459,9 +480,10 @@ function ContentEditor({
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const { lang, data } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
   const [images, setImages] = useState(item?.images || []);
+
   const [committee, setCommittee] = useState(
     item?.isFounder || item?.committee === "administrative"
       ? "administrative"
@@ -469,6 +491,7 @@ function ContentEditor({
         ? item.committee
         : committees[0][0],
   );
+
   const [status, setStatus] = useState(item?.status || "upcoming");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -477,23 +500,32 @@ function ContentEditor({
   useEffect(() => {
     if (!file) {
       setPreview("");
+
       return;
     }
+
     const url = URL.createObjectURL(file);
     setPreview(url);
+
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     if (busy || file) return;
+    // SAFETY: this form has no file inputs, so every FormData entry value is a string.
     const values = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     const parsed = contentSchema.safeParse(values);
+
     if (!parsed.success) {
       setError(
         ar ? "أدخل العنوان والوصف باللغتين." : "Enter the title and description in both languages.",
       );
+
       return;
     }
+
     const value: Omit<Content, "id"> = {
       ...blank,
       title: values["title"]!.trim(),
@@ -502,30 +534,40 @@ function ContentEditor({
       description_en: values["description_en"]!.trim(),
       images,
     };
+
     if (kind === "members") {
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
       value.committee = committee;
       value.isFounder = committee === "administrative";
     }
+
     if (kind === "events") value.date = values["date"] || "";
+
     if (kind === "events") value.status = status;
+
     if (kind === "partners") {
       value.partnershipType = values["partnershipType"] || "";
       value.partnershipType_en = values["partnershipType_en"] || "";
     }
+
     for (const key of ["websiteUrl", "githubUrl", "linkedinUrl"] as const) {
       const url = values[key]?.trim();
+
       if (url) {
         if (!safeUrl(url)) {
           setError(ar ? "استخدم روابط HTTPS صحيحة." : "Use valid HTTPS links.");
+
           return;
         }
+
         value[key] = url;
       }
     }
+
     setBusy(true);
     setError("");
+
     try {
       await saveContent(kind, value, item?.id);
       onSaved();
@@ -539,10 +581,12 @@ function ContentEditor({
       setBusy(false);
     }
   }
+
   async function upload() {
     if (!file) return;
     setBusy(true);
     setError("");
+
     try {
       const url = await uploadImage(file);
       setImages((prev) => [...prev, url]);
@@ -557,6 +601,7 @@ function ContentEditor({
       setBusy(false);
     }
   }
+
   const extraFields: [keyof Content, string, string, string][] =
     kind === "members"
       ? [
@@ -577,6 +622,7 @@ function ContentEditor({
             ["websiteUrl", "موقع الشريك", "Partner website", "url"],
           ]
         : [["date", "التاريخ", "Date", "date"]];
+
   return (
     <form
       onSubmit={save}
@@ -744,6 +790,7 @@ function ContentEditor({
     </form>
   );
 }
+
 function SettingsEditor({
   initial,
   onSave,
@@ -751,9 +798,10 @@ function SettingsEditor({
   initial: Settings;
   onSave: (value: Settings) => Promise<void>;
 }) {
-  const { lang, setupRequired } = useClub();
+  const { lang } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
+
   const fields: Record<keyof Settings, [string, string]> = {
     vision: ["الرؤية بالعربية", "Vision in Arabic"],
     vision_en: ["الرؤية بالإنجليزية", "Vision in English"],
@@ -767,13 +815,19 @@ function SettingsEditor({
     linkedin: ["LinkedIn", "LinkedIn"],
     github: ["GitHub", "GitHub"],
   };
+
+  // SAFETY: key ranges over Object.entries(fields), and fields is a Record<keyof Settings, ...>,
+  // so key is always a Settings key.
   return (
     <form
       className="grid gap-5 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
+        // SAFETY: every field below is named after a Settings key, so the form's
+        // FormData entries exactly match Settings' shape.
         const values = Object.fromEntries(new FormData(e.currentTarget)) as Settings;
+
         try {
           await onSave(values);
         } finally {

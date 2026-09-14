@@ -8,21 +8,26 @@ import {
 } from "@/lib/club/model";
 import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/club/supabase";
 import { recordVisit } from "@/lib/club/visits";
+
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
   events: [],
   partners: [],
 };
+
 const Context = createContext({
+  // SAFETY: "ar" is a valid member of Lang; widened so setLang's default matches the type below.
   lang: "ar" as Lang,
   setLang: (_lang: Lang) => {},
   data: emptyData,
   settings: emptySettings,
+  // SAFETY: no visit count is known yet; widened so ClubProvider's setVisitorCount(number) fits.
   visitorCount: null as number | null,
   loading: false,
   error: false,
   setupRequired: false,
 });
+
 export function ClubProvider({ children }: { children: ReactNode }) {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   useEffect(() => {
@@ -32,6 +37,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
         if (active) setVisitorCount(count);
       })
       .catch(() => {});
+
     return () => {
       active = false;
     };
@@ -52,6 +58,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+
     try {
       localStorage.setItem("ucas-language", lang);
     } catch {
@@ -60,6 +67,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   }, [lang]);
   useEffect(() => {
     if (!configured) return;
+
     return watchQuery(
       loadPublic,
       (value) => {
@@ -83,6 +91,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
   return (
     <Context.Provider
       value={{ lang, setLang, data, settings, loading, error, setupRequired, visitorCount }}
@@ -91,4 +100,5 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   );
 }
+
 export const useClub = () => useContext(Context);

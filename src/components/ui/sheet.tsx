@@ -28,6 +28,7 @@ const SheetOverlay = React.forwardRef<
     ref={ref}
   />
 ));
+
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
@@ -69,11 +70,13 @@ const SheetContent = React.forwardRef<
     </SheetPrimitive.Content>
   </SheetPortal>
 ));
+
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
 );
+
 SheetHeader.displayName = "SheetHeader";
 
 const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -82,6 +85,7 @@ const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
     {...props}
   />
 );
+
 SheetFooter.displayName = "SheetFooter";
 
 const SheetTitle = React.forwardRef<
@@ -94,6 +98,7 @@ const SheetTitle = React.forwardRef<
     {...props}
   />
 ));
+
 SheetTitle.displayName = SheetPrimitive.Title.displayName;
 
 const SheetDescription = React.forwardRef<
@@ -106,6 +111,7 @@ const SheetDescription = React.forwardRef<
     {...props}
   />
 ));
+
 SheetDescription.displayName = SheetPrimitive.Description.displayName;
 
 export {
