@@ -334,6 +334,57 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           </BrandButton>
         ))}
       </nav>
+      {(tab === "dashboard" || activeCollection === "events") && (
+        <section
+          aria-label={ar ? "ترتيب الأخبار والفعاليات" : "News and events ordering"}
+          className="mb-6 rounded-2xl border border-border bg-card p-5"
+        >
+          <h2 className="mb-3 font-bold">
+            {ar
+              ? "ترتيب الأخبار والفعاليات في لوحة الإدارة"
+              : "News and events ordering in the admin panel"}
+          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <BrandButton
+              variant={eventDateOrder ? "primary" : "outline"}
+              type="button"
+              role="switch"
+              aria-checked={eventDateOrder}
+              onClick={() => {
+                const enabled = !eventDateOrder;
+                setEventDateOrder(enabled);
+                try {
+                  localStorage.setItem("club-admin-event-date-order", String(enabled));
+                } catch {
+                  /* Storage is optional. */
+                }
+              }}
+            >
+              {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
+              <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">
+                {eventDateOrder ? (ar ? "مفعّل" : "On") : ar ? "متوقف" : "Off"}
+              </span>
+            </BrandButton>
+            {data.events.some((item) => !item.createdAt) && (
+              <p role="status" className="text-sm text-muted-foreground">
+                {ar
+                  ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
+                  : "Apply the database migration to track creation dates; using last update temporarily."}
+              </p>
+            )}
+            <span className="text-sm text-muted-foreground">
+              {eventDateOrder
+                ? ar
+                  ? "موعد الفعالية: الأحدث أولًا"
+                  : "Event date: newest first"
+                : ar
+                  ? "تاريخ الإضافة: الأحدث أولًا"
+                  : "Date added: newest first"}
+            </span>
+          </div>
+        </section>
+      )}
+
       {notice && (
         <p role="status" className="mb-6 rounded-2xl bg-brand-gradient-soft p-4">
           {notice}
@@ -371,42 +422,6 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               <Plus size={18} />
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
-            {activeCollection === "events" && (
-              <div className="mb-6 flex flex-wrap items-center gap-3">
-                <BrandButton
-                  variant={eventDateOrder ? "primary" : "outline"}
-                  role="switch"
-                  aria-checked={eventDateOrder}
-                  onClick={() => {
-                    const enabled = !eventDateOrder;
-                    setEventDateOrder(enabled);
-                    try {
-                      localStorage.setItem("club-admin-event-date-order", String(enabled));
-                    } catch {
-                      /* Storage is optional. */
-                    }
-                  }}
-                >
-                  {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
-                </BrandButton>
-                {data.events.some((item) => !item.createdAt) && (
-                  <p role="status" className="text-sm text-muted-foreground">
-                    {ar
-                      ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
-                      : "Apply the database migration to track creation dates; using last update temporarily."}
-                  </p>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {eventDateOrder
-                    ? ar
-                      ? "موعد الفعالية: الأحدث أولًا"
-                      : "Event date: newest first"
-                    : ar
-                      ? "تاريخ الإضافة: الأحدث أولًا"
-                      : "Date added: newest first"}
-                </span>
-              </div>
-            )}
             <div className="space-y-3">
               {data[activeCollection].length === 0 && (
                 <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
