@@ -145,6 +145,7 @@ export async function loadPublic() {
       // validates the value against contentSchema before insert.
       ...(row["data"] as Omit<Content, "id">),
       id: String(row["id"]),
+      createdAt: typeof row["created_at"] === "string" ? row["created_at"] : "",
       updatedAt: row["updated_at"],
       updatedBy: String(row["updated_by"] || ""),
     });

@@ -233,7 +233,15 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
+function Card({
+  item,
+  kind,
+  compact = false,
+}: {
+  item: Content;
+  kind: ContentCollection;
+  compact?: boolean;
+}) {
   const { lang } = useClub();
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
@@ -257,7 +265,9 @@ function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
           </time>
         )}
         <h2 className="mt-2 text-xl font-extrabold">{title}</h2>
-        <p className="mt-3 line-clamp-3 text-base leading-relaxed text-muted-foreground">
+        <p
+          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : "line-clamp-3"}`}
+        >
           {local(item, "description", lang)}
         </p>
         {kind === "partners" ? (
@@ -291,11 +301,19 @@ function Card({ item, kind }: { item: Content; kind: ContentCollection }) {
   );
 }
 
-function Grid({ items, kind }: { items: Content[]; kind: ContentCollection }) {
+function Grid({
+  items,
+  kind,
+  compact = false,
+}: {
+  items: Content[];
+  kind: ContentCollection;
+  compact?: boolean;
+}) {
   return items.length ? (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <Card key={item.id} item={item} kind={kind} />
+        <Card key={item.id} item={item} kind={kind} compact={compact} />
       ))}
     </div>
   ) : (
@@ -367,7 +385,7 @@ function Home() {
       </div>
       <section className="mt-14">
         <h2 className="mb-6 text-2xl font-black">{ar ? "من أخبار النادي" : "Club news"}</h2>
-        <Grid items={data.events.slice(0, 1)} kind="events" />
+        <Grid items={data.events.slice(0, 1)} kind="events" compact />
       </section>
     </>
   );

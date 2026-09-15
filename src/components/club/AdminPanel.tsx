@@ -67,8 +67,11 @@ export function AdminPanel() {
   useEffect(() => {
     if (!configured) return;
     let stopRole = () => {};
+    let currentUserId: string | null | undefined;
 
     const stopAuth = observeAuth((current) => {
+      if (currentUserId === (current?.id ?? null)) return;
+      currentUserId = current?.id ?? null;
       stopRole();
       setUser(current);
       setRole("");
@@ -222,6 +225,24 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
   const [tab, setTab] = useState("dashboard");
+  const [eventDateOrder, setEventDateOrder] = useState(false);
+  useEffect(() => {
+    try {
+      setEventDateOrder(localStorage.getItem("club-admin-event-date-order") === "true");
+    } catch {
+      /* Storage is optional. */
+    }
+  }, []);
+  const eventItems = [...data.events].sort((a, b) => {
+    const created = (item: Content) =>
+      Date.parse(item.createdAt || (typeof item.updatedAt === "string" ? item.updatedAt : "")) || 0;
+    const eventDate = (item: Content) => Date.parse(item.date || "") || 0;
+    return (
+      (eventDateOrder ? eventDate(b) - eventDate(a) : 0) ||
+      created(b) - created(a) ||
+      a.id.localeCompare(b.id)
+    );
+  });
 
   // SAFETY: the ternary itself performs the ContentCollection membership check;
   // the cast only satisfies Array<ContentCollection>.includes's parameter type.
@@ -350,11 +371,47 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               <Plus size={18} />
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
+            {activeCollection === "events" && (
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <BrandButton
+                  variant={eventDateOrder ? "primary" : "outline"}
+                  role="switch"
+                  aria-checked={eventDateOrder}
+                  onClick={() => {
+                    const enabled = !eventDateOrder;
+                    setEventDateOrder(enabled);
+                    try {
+                      localStorage.setItem("club-admin-event-date-order", String(enabled));
+                    } catch {
+                      /* Storage is optional. */
+                    }
+                  }}
+                >
+                  {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
+                </BrandButton>
+                {data.events.some((item) => !item.createdAt) && (
+                  <p role="status" className="text-sm text-muted-foreground">
+                    {ar
+                      ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
+                      : "Apply the database migration to track creation dates; using last update temporarily."}
+                  </p>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {eventDateOrder
+                    ? ar
+                      ? "موعد الفعالية: الأحدث أولًا"
+                      : "Event date: newest first"
+                    : ar
+                      ? "تاريخ الإضافة: الأحدث أولًا"
+                      : "Date added: newest first"}
+                </span>
+              </div>
+            )}
             <div className="space-y-3">
               {data[activeCollection].length === 0 && (
                 <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
               )}
-              {data[activeCollection].map((item) => (
+              {(activeCollection === "events" ? eventItems : data[activeCollection]).map((item) => (
                 <article
                   key={item.id}
                   className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5"

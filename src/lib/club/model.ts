@@ -30,6 +30,7 @@ export type Content = {
   partnershipType?: string;
   partnershipType_en?: string;
   status?: string;
+  createdAt?: string;
   updatedAt?: unknown;
   updatedBy?: string;
 };
