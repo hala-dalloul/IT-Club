@@ -334,7 +334,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           </BrandButton>
         ))}
       </nav>
-      {(tab === "dashboard" || activeCollection === "events") && (
+      {activeCollection === "events" && (
         <section
           aria-label={ar ? "ترتيب الأخبار والفعاليات" : "News and events ordering"}
           className="mb-6 rounded-2xl border border-border bg-card p-5"
