@@ -22,6 +22,9 @@ before(async () => {
     `create role anon;create role authenticated;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,storage to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;grant select,insert,delete on storage.objects to authenticated;create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;`,
   );
   await db.exec(readFileSync("supabase/migrations/202609090001_club.sql", "utf8"));
+  await db.exec(
+    readFileSync("supabase/migrations/202609150002_administrative_committee.sql", "utf8"),
+  );
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -211,4 +214,43 @@ test("editor cannot write into another uploader folder", async () => {
       owner + "/wrong.webp",
     ]),
   );
+});
+
+test("editor can move a member into and out of the administrative committee", async () => {
+  await as(editor);
+  const member = {
+    title: "Test member",
+    title_en: "Test member",
+    description: "Member description",
+    description_en: "Member description",
+    images: [],
+    committee: "media",
+    isFounder: false,
+  };
+  const inserted = await db.query(
+    "insert into club_content(kind,data) values('members',$1) returning id",
+    [JSON.stringify(member)],
+  );
+  const id = inserted.rows[0].id;
+  const board = { ...member, committee: "administrative", isFounder: true };
+  await db.query("update club_content set data=$1 where id=$2", [JSON.stringify(board), id]);
+  let saved = (await db.query("select data from club_content where id=$1", [id])).rows[0].data;
+  assert.equal(saved.committee, "administrative");
+  assert.equal(saved.isFounder, true);
+  await db.query("update club_content set data=$1 where id=$2", [JSON.stringify(member), id]);
+  saved = (await db.query("select data from club_content where id=$1", [id])).rows[0].data;
+  assert.equal(saved.committee, "media");
+  assert.equal(saved.isFounder, false);
+  await assert.rejects(() =>
+    db.query("update club_content set data=$1 where id=$2", [
+      JSON.stringify({ ...member, committee: "invalid" }),
+      id,
+    ]),
+  );
+  await as(outsider);
+  const denied = await db.query("update club_content set data=$1 where id=$2 returning id", [
+    JSON.stringify(board),
+    id,
+  ]);
+  assert.equal(denied.rows.length, 0);
 });

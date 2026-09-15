@@ -628,11 +628,20 @@ function ContentEditor({
     try {
       await saveContent(kind, value, item?.id);
       onSaved();
-    } catch {
+    } catch (error) {
+      const rejectedBoard =
+        kind === "members" &&
+        committee === "administrative" &&
+        error instanceof Error &&
+        error.message.includes("club_content_data_check");
       setError(
-        ar
-          ? "تعذر حفظ المحتوى. تحقق من الصلاحيات والاتصال."
-          : "Content could not be saved. Check permissions and connection.",
+        rejectedBoard
+          ? ar
+            ? "قاعدة البيانات ترفض بيانات الهيئة الإدارية. تأكد من تشغيل تحديث اللجنة الإدارية في Supabase."
+            : "The database rejected the board member data. Check that the administrative committee migration has been applied in Supabase."
+          : ar
+            ? "تعذر حفظ المحتوى. تحقق من الصلاحيات والاتصال."
+            : "Content could not be saved. Check permissions and connection.",
       );
     } finally {
       setBusy(false);
