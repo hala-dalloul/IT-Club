@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   emptySettings,
@@ -80,7 +80,12 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   });
 
   const data = query.data?.data ?? emptyData;
-  const settings: Settings = { ...emptySettings, ...query.data?.settings };
+
+  const settings = useMemo<Settings>(
+    () => ({ ...emptySettings, ...query.data?.settings }),
+    [query.data?.settings],
+  );
+
   const loading = configured && query.isLoading;
   const setupRequired = query.error instanceof SetupRequiredError;
   const error = Boolean(query.error) && !setupRequired;
@@ -93,13 +98,12 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  return (
-    <Context.Provider
-      value={{ lang, setLang, data, settings, loading, error, setupRequired, visitorCount }}
-    >
-      {children}
-    </Context.Provider>
+  const value = useMemo(
+    () => ({ lang, setLang, data, settings, loading, error, setupRequired, visitorCount }),
+    [lang, setLang, data, settings, loading, error, setupRequired, visitorCount],
   );
+
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
 export const useClub = () => useContext(Context);
