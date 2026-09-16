@@ -3,7 +3,8 @@ import { sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
-import { useClub } from "./ClubProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import { useClub, clubPublicKey } from "./ClubProvider";
 import {
   configured,
   observeAuth,
@@ -18,6 +19,7 @@ import {
   removeContent,
   uploadImage,
   saveSettings,
+  loadPublic,
 } from "@/lib/club/supabase";
 import {
   collections,
@@ -224,6 +226,17 @@ function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; labe
 function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
+  const queryClient = useQueryClient();
+
+  async function deleteContent(kind: ContentCollection, id: string) {
+    await removeContent(kind, id);
+    queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(
+      clubPublicKey,
+      (old) =>
+        old && { ...old, data: { ...old.data, [kind]: old.data[kind].filter((c) => c.id !== id) } },
+    );
+  }
+
   const [tab, setTab] = useState("dashboard");
   const [eventDateOrder, setEventDateOrder] = useState(false);
   useEffect(() => {
@@ -472,7 +485,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                     </BrandButton>
                     <DeleteButton
                       label={item.title}
-                      onDelete={() => run(() => removeContent(activeCollection, item.id))}
+                      onDelete={() => run(() => deleteContent(activeCollection, item.id))}
                     />
                   </div>
                 </article>
@@ -589,6 +602,7 @@ function ContentEditor({
 }) {
   const { lang } = useClub();
   const ar = lang === "ar";
+  const queryClient = useQueryClient();
   const [dirty, setDirty] = useState(false);
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
   useEffect(() => {
@@ -690,6 +704,21 @@ function ContentEditor({
 
     try {
       await saveContent(kind, value, item?.id);
+
+      if (item?.id) {
+        queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(
+          clubPublicKey,
+          (old) =>
+            old && {
+              ...old,
+              data: {
+                ...old.data,
+                [kind]: old.data[kind].map((c) => (c.id === item.id ? { ...c, ...value } : c)),
+              },
+            },
+        );
+      }
+
       onSaved();
     } catch (error) {
       const rejectedBoard =

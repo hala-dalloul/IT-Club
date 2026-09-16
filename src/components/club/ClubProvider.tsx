@@ -16,7 +16,7 @@ const emptyData: Record<ContentCollection, Content[]> = {
   partners: [],
 };
 
-const clubPublicKey = ["club-public"];
+export const clubPublicKey = ["club-public"];
 
 const Context = createContext({
   // SAFETY: "ar" is a valid member of Lang; widened so setLang's default matches the type below.
