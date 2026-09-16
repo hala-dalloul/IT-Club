@@ -622,6 +622,7 @@ function ContentEditor({
 
     return () => URL.revokeObjectURL(url);
   }, [file]);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -852,16 +853,21 @@ function ContentEditor({
           </Select>
         </label>
       )}
-      <details className="rounded-2xl border border-border p-5">
+      <details
+        className="rounded-2xl border border-border p-5"
+        onToggle={(e) => setMediaPickerOpen(e.currentTarget.open)}
+      >
         <summary className="cursor-pointer font-bold">
           {ar ? "اختيار من مكتبة الصور" : "Choose from media library"}
         </summary>
-        <MediaLibrary
-          onSelect={(url) => {
-            setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
-            setDirty(true);
-          }}
-        />
+        {mediaPickerOpen && (
+          <MediaLibrary
+            onSelect={(url) => {
+              setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+              setDirty(true);
+            }}
+          />
+        )}
       </details>
       <fieldset className="rounded-2xl border border-border p-5">
         <legend className="px-2 font-bold">{ar ? "الصور" : "Images"}</legend>

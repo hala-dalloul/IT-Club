@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useClub } from "./ClubProvider";
 import {
   watchQuery,
@@ -84,7 +84,28 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
     }
   }
 
-  const allContent = Object.values(data).flat();
+  const titleById = useMemo(() => {
+    const map = new Map<string, { title: string; title_en: string }>();
+
+    for (const item of Object.values(data).flat()) map.set(item.id, item);
+
+    return map;
+  }, [data]);
+
+  const visibleAssets = useMemo(
+    () =>
+      assets
+        .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+        .map((asset) => ({
+          asset,
+          usage: asset.usedBy.map((id) => {
+            const item = titleById.get(id);
+
+            return item ? (ar ? item.title : item.title_en) : id;
+          }),
+        })),
+    [assets, search, titleById, ar],
+  );
 
   return (
     <section className="mt-6 space-y-6">
@@ -144,20 +165,9 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
         <p role="status">{ar ? "جارٍ التحميل…" : "Loading…"}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {assets
-            .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
-            .map((asset) => (
-              <AssetCard
-                key={asset.id}
-                asset={asset}
-                onSelect={onSelect}
-                usage={asset.usedBy.map((id) => {
-                  const item = allContent.find((c) => c.id === id);
-
-                  return item ? (ar ? item.title : item.title_en) : id;
-                })}
-              />
-            ))}
+          {visibleAssets.map(({ asset, usage }) => (
+            <AssetCard key={asset.id} asset={asset} onSelect={onSelect} usage={usage} />
+          ))}
         </div>
       )}
       {!loading && !assets.length && (
