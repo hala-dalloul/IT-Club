@@ -317,7 +317,13 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             {role === "super_admin" ? (ar ? "مدير عام" : "Super admin") : ar ? "محرر" : "Editor"}
           </p>
         </div>
-        <BrandButton variant="outline" onClick={() => void signOut()}>
+        <BrandButton
+          variant="outline"
+          onClick={() => {
+            if (!confirmDiscard()) return;
+            void signOut();
+          }}
+        >
           <LogOut size={18} />
           {ar ? "خروج" : "Sign out"}
         </BrandButton>
