@@ -107,11 +107,8 @@
   box-shadow:
     0 0 3px 1px rgb(235 245 251 / 100%),
     inset 0 0 3px 1px rgb(235 245 251 / 95%),
-    0 0 12px 4px rgb(235 245 251 / 80%),
-    inset 0 0 12px 3px rgb(235 245 251 / 65%),
-    0 0 28px 8px rgb(235 245 251 / 35%),
-    0 0 46px 12px rgb(235 245 251 / 15%),
-    0 0 4px 2px rgb(235 245 251 / 30%);
+    0 0 16px 6px rgb(235 245 251 / 55%),
+    0 0 40px 12px rgb(235 245 251 / 20%);
   animation: club-grid-reveal 2.8s ease-out both;
 }
 .club-grid-pulse-second {
