@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClub } from "./ClubProvider";
 import {
-  watchQuery,
+  configured,
   loadMedia,
   uploadImage,
   renameMedia,
@@ -22,36 +23,43 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
+export const mediaKey = ["club-media"];
+
+const noAssets: MediaAsset[] = [];
+
 export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
-  const [assets, setAssets] = useState<MediaAsset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(
-    () =>
-      watchQuery(
-        loadMedia,
-        (value) => {
-          setAssets(value);
-          setLoading(false);
-          setError("");
-        },
-        () => {
-          setLoading(false);
-          setError(
-            ar
-              ? "تعذر تحميل مكتبة الصور. تحقق من تفعيل قاعدة البيانات والتخزين."
-              : "Could not load media. Check database and storage setup.",
-          );
-        },
-      ),
-    [ar],
-  );
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const onChanged = () => void queryClient.invalidateQueries({ queryKey: mediaKey });
+    window.addEventListener("club-data-changed", onChanged);
+
+    return () => window.removeEventListener("club-data-changed", onChanged);
+  }, [queryClient]);
+
+  const query = useQuery({
+    queryKey: mediaKey,
+    queryFn: loadMedia,
+    enabled: configured,
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+
+  const assets = query.data ?? noAssets;
+  const loading = configured && query.isLoading;
+
+  const loadError =
+    query.isError &&
+    (ar
+      ? "تعذر تحميل مكتبة الصور. تحقق من تفعيل قاعدة البيانات والتخزين."
+      : "Could not load media. Check database and storage setup.");
+
+  const [uploadError, setUploadError] = useState("");
   useEffect(() => {
     if (!file) {
       setPreview("");
@@ -68,13 +76,13 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
   async function upload() {
     if (!file || busy) return;
     setBusy(true);
-    setError("");
+    setUploadError("");
 
     try {
       await uploadImage(file);
       setFile(null);
     } catch {
-      setError(
+      setUploadError(
         ar
           ? "تعذر رفع الصورة. استخدم JPG أو PNG أو WebP حتى 5 ميغابايت."
           : "Upload failed. Use JPG, PNG or WebP up to 5 MB.",
@@ -156,9 +164,9 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      {error && (
+      {(uploadError || loadError) && (
         <p role="alert" className="rounded-xl bg-brand-gradient-soft p-4">
-          {error}
+          {uploadError || loadError}
         </p>
       )}
       {loading ? (
