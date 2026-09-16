@@ -251,6 +251,14 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
     : null;
 
   const [editing, setEditing] = useState<Content | null | undefined>(undefined);
+  const [dirty, setDirty] = useState(false);
+  const confirmDiscard = () =>
+    !dirty ||
+    window.confirm(
+      ar
+        ? "لديك تعديلات غير محفوظة. تجاهل التعديلات والمتابعة؟"
+        : "You have unsaved changes. Discard them and continue?",
+    );
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -325,8 +333,10 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             variant={tab === key ? "primary" : "outline"}
             aria-pressed={tab === key}
             onClick={() => {
+              if (!confirmDiscard()) return;
               setTab(key!);
               setEditing(undefined);
+              setDirty(false);
               setNotice("");
             }}
           >
@@ -410,15 +420,27 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             key={tab + (editing?.id || "new")}
             kind={activeCollection}
             item={editing}
-            onCancel={() => setEditing(undefined)}
+            onDirtyChange={setDirty}
+            onCancel={() => {
+              setEditing(undefined);
+              setDirty(false);
+            }}
             onSaved={() => {
               setEditing(undefined);
+              setDirty(false);
               setNotice(ar ? "تم نشر المحتوى." : "Content published.");
             }}
           />
         ) : (
           <>
-            <BrandButton className="mb-6" onClick={() => setEditing(null)}>
+            <BrandButton
+              className="mb-6"
+              onClick={() => {
+                if (!confirmDiscard()) return;
+                setEditing(null);
+                setDirty(false);
+              }}
+            >
               <Plus size={18} />
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
@@ -472,7 +494,12 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         </section>
       )}
       {tab === "settings" && role === "super_admin" && (
-        <SettingsEditor initial={settings} onSave={(value) => run(() => saveSettings(value))} />
+        <SettingsEditor
+          key={tab}
+          initial={settings}
+          onDirtyChange={setDirty}
+          onSave={(value) => run(() => saveSettings(value))}
+        />
       )}
       {tab === "admins" && role === "super_admin" && (
         <>
@@ -546,14 +573,28 @@ function ContentEditor({
   item,
   onCancel,
   onSaved,
+  onDirtyChange,
 }: {
   kind: ContentCollection;
   item: Content | null;
   onCancel: () => void;
   onSaved: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { lang } = useClub();
   const ar = lang === "ar";
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const [images, setImages] = useState(item?.images || []);
 
   const [committee, setCommittee] = useState(
@@ -671,6 +712,7 @@ function ContentEditor({
     try {
       const url = await uploadImage(file);
       setImages((prev) => [...prev, url]);
+      setDirty(true);
       setFile(null);
     } catch {
       setError(
@@ -707,6 +749,7 @@ function ContentEditor({
   return (
     <form
       onSubmit={save}
+      onChange={() => setDirty(true)}
       className="space-y-6 rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-8"
     >
       <h2 className="text-2xl font-black">
@@ -763,7 +806,14 @@ function ContentEditor({
         <>
           <label className="block">
             <span className="mb-2 block">{ar ? "اللجنة" : "Committee"}</span>
-            <Select dir={ar ? "rtl" : "ltr"} value={committee} onValueChange={setCommittee}>
+            <Select
+              dir={ar ? "rtl" : "ltr"}
+              value={committee}
+              onValueChange={(v) => {
+                setCommittee(v);
+                setDirty(true);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -784,7 +834,14 @@ function ContentEditor({
       {kind === "events" && (
         <label className="block">
           <span className="mb-2 block">{ar ? "الحالة" : "Status"}</span>
-          <Select dir={ar ? "rtl" : "ltr"} value={status} onValueChange={setStatus}>
+          <Select
+            dir={ar ? "rtl" : "ltr"}
+            value={status}
+            onValueChange={(v) => {
+              setStatus(v);
+              setDirty(true);
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -800,7 +857,10 @@ function ContentEditor({
           {ar ? "اختيار من مكتبة الصور" : "Choose from media library"}
         </summary>
         <MediaLibrary
-          onSelect={(url) => setImages((prev) => (prev.includes(url) ? prev : [...prev, url]))}
+          onSelect={(url) => {
+            setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+            setDirty(true);
+          }}
         />
       </details>
       <fieldset className="rounded-2xl border border-border p-5">
@@ -822,7 +882,10 @@ function ContentEditor({
                 type="button"
                 size="sm"
                 variant="ghost"
-                onClick={() => setImages((prev) => prev.filter((x) => x !== url))}
+                onClick={() => {
+                  setImages((prev) => prev.filter((x) => x !== url));
+                  setDirty(true);
+                }}
               >
                 {ar ? "إزالة" : "Remove"}
               </BrandButton>
@@ -875,13 +938,27 @@ function ContentEditor({
 function SettingsEditor({
   initial,
   onSave,
+  onDirtyChange,
 }: {
   initial: Settings;
   onSave: (value: Settings) => Promise<void>;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { lang } = useClub();
   const ar = lang === "ar";
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   const fields: Record<keyof Settings, [string, string]> = {
     vision: ["الرؤية بالعربية", "Vision in Arabic"],
@@ -902,6 +979,7 @@ function SettingsEditor({
   return (
     <form
       className="grid gap-5 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
+      onChange={() => setDirty(true)}
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
@@ -911,6 +989,7 @@ function SettingsEditor({
 
         try {
           await onSave(values);
+          setDirty(false);
         } finally {
           setBusy(false);
         }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   emptySettings,
   type Content,
@@ -6,7 +7,7 @@ import {
   type Lang,
   type Settings,
 } from "@/lib/club/model";
-import { configured, loadPublic, watchQuery, SetupRequiredError } from "@/lib/club/supabase";
+import { configured, loadPublic, SetupRequiredError } from "@/lib/club/supabase";
 import { recordVisit } from "@/lib/club/visits";
 
 const emptyData: Record<ContentCollection, Content[]> = {
@@ -14,6 +15,8 @@ const emptyData: Record<ContentCollection, Content[]> = {
   events: [],
   partners: [],
 };
+
+const clubPublicKey = ["club-public"];
 
 const Context = createContext({
   // SAFETY: "ar" is a valid member of Lang; widened so setLang's default matches the type below.
@@ -43,11 +46,6 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     };
   }, []);
   const [lang, setLang] = useState<Lang>("ar");
-  const [data, setData] = useState(emptyData);
-  const [settings, setSettings] = useState<Settings>(emptySettings);
-  const [loading, setLoading] = useState(configured);
-  const [error, setError] = useState(false);
-  const [setupRequired, setSetupRequired] = useState(false);
   useEffect(() => {
     try {
       if (localStorage.getItem("ucas-language") === "en") setLang("en");
@@ -65,25 +63,28 @@ export function ClubProvider({ children }: { children: ReactNode }) {
       /* Storage is optional. */
     }
   }, [lang]);
+  const queryClient = useQueryClient();
   useEffect(() => {
-    if (!configured) return;
+    const onChanged = () => void queryClient.invalidateQueries({ queryKey: clubPublicKey });
+    window.addEventListener("club-data-changed", onChanged);
 
-    return watchQuery(
-      loadPublic,
-      (value) => {
-        setData(value.data);
-        setSettings({ ...emptySettings, ...value.settings });
-        setLoading(false);
-        setError(false);
-        setSetupRequired(false);
-      },
-      (error) => {
-        setLoading(false);
-        setSetupRequired(error instanceof SetupRequiredError);
-        setError(!(error instanceof SetupRequiredError));
-      },
-    );
-  }, []);
+    return () => window.removeEventListener("club-data-changed", onChanged);
+  }, [queryClient]);
+
+  const query = useQuery({
+    queryKey: clubPublicKey,
+    queryFn: loadPublic,
+    enabled: configured,
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+
+  const data = query.data?.data ?? emptyData;
+  const settings: Settings = { ...emptySettings, ...query.data?.settings };
+  const loading = configured && query.isLoading;
+  const setupRequired = query.error instanceof SetupRequiredError;
+  const error = Boolean(query.error) && !setupRequired;
+
   useEffect(
     () => () => {
       document.documentElement.lang = "ar";

@@ -185,6 +185,13 @@ function AssetCard({
   const [name, setName] = useState(asset.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [justSelected, setJustSelected] = useState(false);
+  useEffect(() => {
+    if (!justSelected) return;
+    const timer = window.setTimeout(() => setJustSelected(false), 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [justSelected]);
 
   async function action(work: () => Promise<void>) {
     setBusy(true);
@@ -264,9 +271,12 @@ function AssetCard({
             type="button"
             size="sm"
             disabled={busy || asset.deleting}
-            onClick={() => onSelect(asset.url)}
+            onClick={() => {
+              onSelect(asset.url);
+              setJustSelected(true);
+            }}
           >
-            {ar ? "اختيار" : "Select"}
+            {justSelected ? (ar ? "✓ تمت الإضافة" : "✓ Added") : ar ? "اختيار" : "Select"}
           </BrandButton>
         )}
         <AlertDialog>
