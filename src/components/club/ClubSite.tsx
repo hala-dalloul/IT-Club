@@ -252,7 +252,7 @@ function Card({
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
 
-  const aspect = kind === "members" ? "h-48" : "aspect-video";
+  const aspect = kind === "members" ? "h-[13.5rem]" : "aspect-video";
 
   const card = (
     <article className="h-full overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
@@ -275,19 +275,19 @@ function Card({
           />
         </div>
       )}
-      <div className={kind === "members" ? "px-5 py-4" : "p-6"}>
+      <div className={kind === "members" ? "px-5 py-3" : "p-6"}>
         {item.date && kind !== "members" && (
           <time dateTime={item.date} className="text-sm text-muted-foreground">
             {item.date}
           </time>
         )}
         <h2
-          className={`mt-2 text-xl font-extrabold ${kind === "members" ? "h-7 truncate leading-7" : ""}`}
+          className={`text-xl font-extrabold ${kind === "members" ? "h-7 truncate leading-7" : "mt-2"}`}
         >
           {title}
         </h2>
         <p
-          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : kind === "members" ? "h-[1.625rem] truncate" : "line-clamp-3"}`}
+          className={`text-base leading-relaxed text-muted-foreground ${kind === "members" ? "mt-1" : "mt-3"} ${compact ? "truncate" : kind === "members" ? "h-[1.625rem] truncate" : "line-clamp-3"}`}
         >
           {local(item, "description", lang)}
         </p>
