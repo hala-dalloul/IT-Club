@@ -564,6 +564,7 @@ function ContentEditor({
         : committees[0][0],
   );
 
+  const [gender, setGender] = useState(item?.gender === "female" ? "female" : "male");
   const [status, setStatus] = useState(item?.status || "upcoming");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -611,6 +612,7 @@ function ContentEditor({
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
       value.committee = committee;
+      value.gender = gender === "female" ? "female" : "male";
       value.isFounder = committee === "administrative";
     }
 
@@ -646,14 +648,13 @@ function ContentEditor({
     } catch (error) {
       const rejectedBoard =
         kind === "members" &&
-        committee === "administrative" &&
         error instanceof Error &&
         error.message.includes("club_content_data_check");
       setError(
         rejectedBoard
           ? ar
-            ? "قاعدة البيانات ترفض بيانات الهيئة الإدارية. تأكد من تشغيل تحديث اللجنة الإدارية في Supabase."
-            : "The database rejected the board member data. Check that the administrative committee migration has been applied in Supabase."
+            ? "قاعدة البيانات ترفض بيانات العضو. تأكد من تشغيل تحديث تصنيف أعضاء الفريق في Supabase."
+            : "The database rejected member data. Check that the member group migration has been applied in Supabase."
           : ar
             ? "تعذر حفظ المحتوى. تحقق من الصلاحيات والاتصال."
             : "Content could not be saved. Check permissions and connection.",
@@ -761,6 +762,23 @@ function ContentEditor({
       </div>
       {kind === "members" && (
         <>
+          <label className="block">
+            <span className="mb-2 block">{ar ? "تصنيف العضو" : "Member group"}</span>
+            <Select dir={ar ? "rtl" : "ltr"} value={gender} onValueChange={setGender}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">{ar ? "الطلاب" : "Male students"}</SelectItem>
+                <SelectItem value="female">{ar ? "الطالبات" : "Female students"}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {ar
+                ? "الأعضاء الحاليون ضمن الطلاب افتراضيًا. الهيئة الإدارية تُعرض دون تقسيم."
+                : "Existing members default to male students. The administrative board remains ungrouped."}
+            </p>
+          </label>
           <label className="block">
             <span className="mb-2 block">{ar ? "اللجنة" : "Committee"}</span>
             <Select dir={ar ? "rtl" : "ltr"} value={committee} onValueChange={setCommittee}>

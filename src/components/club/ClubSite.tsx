@@ -1,3 +1,5 @@
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { memberGender } from "@/lib/club/model";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -490,8 +492,38 @@ function Listing({ kind }: { kind: ContentCollection }) {
           <Grid kind={kind} items={items.filter((x) => x.isFounder)} />
           {committees.map(([key, a, e]) => (
             <section key={key} className="mt-10">
-              <h2 className="mb-5 text-xl font-black text-primary">{ar ? a : e}</h2>
-              <Grid kind={kind} items={items.filter((x) => !x.isFounder && x.committee === key)} />
+              <Tabs defaultValue="male" dir={ar ? "rtl" : "ltr"}>
+                <div className="mb-5 flex flex-wrap items-center gap-4">
+                  <h2 className="text-xl font-black text-primary">{ar ? a : e}</h2>
+                  <TabsList
+                    aria-label={ar ? `أعضاء لجنة ${a}` : `${e} members`}
+                    className="h-auto rounded-full border border-primary/20 bg-card p-1"
+                  >
+                    <TabsTrigger
+                      value="male"
+                      className="rounded-full px-5 py-2 text-primary data-[state=active]:bg-brand-gradient data-[state=active]:text-primary-foreground"
+                    >
+                      {ar ? "الطلاب" : "Male students"}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="female"
+                      className="rounded-full px-5 py-2 text-primary data-[state=active]:bg-brand-gradient data-[state=active]:text-primary-foreground"
+                    >
+                      {ar ? "الطالبات" : "Female students"}
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                {(["male", "female"] as const).map((gender) => (
+                  <TabsContent key={gender} value={gender}>
+                    <Grid
+                      kind={kind}
+                      items={items.filter(
+                        (x) => !x.isFounder && x.committee === key && memberGender(x) === gender,
+                      )}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
             </section>
           ))}
         </>

@@ -21,6 +21,7 @@ export type Content = {
   role?: string;
   role_en?: string;
   committee?: string;
+  gender?: "male" | "female";
   isFounder?: boolean;
   websiteUrl?: string;
   githubUrl?: string;
@@ -142,8 +143,13 @@ export const joinSchema = z.object({
   message: z.string().trim().min(10).max(4000),
 });
 
+export function memberGender(item: Content): "male" | "female" {
+  return item.gender === "female" ? "female" : "male";
+}
+
 export const contentSchema = z
   .object({
+    gender: z.enum(["male", "female"]).optional(),
     title: text,
     title_en: text,
     description: z.string().trim().min(2).max(20000),

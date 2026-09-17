@@ -25,6 +25,7 @@ before(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202609150002_administrative_committee.sql", "utf8"),
   );
+  await db.exec(readFileSync("supabase/migrations/202609170001_member_gender.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -253,4 +254,41 @@ test("editor can move a member into and out of the administrative committee", as
     id,
   ]);
   assert.equal(denied.rows.length, 0);
+});
+
+test("member gender accepts both groups and legacy members while rejecting invalid values", async () => {
+  await as(editor);
+  const member = {
+    title: "Test member",
+    title_en: "Test member",
+    description: "Member description",
+    description_en: "Member description",
+    images: [],
+    committee: "media",
+    isFounder: false,
+  };
+  for (const gender of [undefined, "male", "female"]) {
+    const data = gender ? { ...member, gender } : member;
+    const result = await db.query(
+      "insert into club_content(kind,data) values('members',$1) returning id,data",
+      [JSON.stringify(data)],
+    );
+    assert.equal(result.rows[0].data.gender, gender);
+    const id = result.rows[0].id;
+    await db.query("update club_content set data=$1 where id=$2", [
+      JSON.stringify({ ...member, gender: "female" }),
+      id,
+    ]);
+    assert.equal(
+      (await db.query("select data from club_content where id=$1", [id])).rows[0].data.gender,
+      "female",
+    );
+  }
+  for (const gender of ["invalid", null, 12]) {
+    await assert.rejects(() =>
+      db.query("insert into club_content(kind,data) values('members',$1)", [
+        JSON.stringify({ ...member, gender }),
+      ]),
+    );
+  }
 });
