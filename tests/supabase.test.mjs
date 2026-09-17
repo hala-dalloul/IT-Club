@@ -26,6 +26,7 @@ before(async () => {
     readFileSync("supabase/migrations/202609150002_administrative_committee.sql", "utf8"),
   );
   await db.exec(readFileSync("supabase/migrations/202609170001_member_gender.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202609170002_board_order.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -288,6 +289,33 @@ test("member gender accepts both groups and legacy members while rejecting inval
     await assert.rejects(() =>
       db.query("insert into club_content(kind,data) values('members',$1)", [
         JSON.stringify({ ...member, gender }),
+      ]),
+    );
+  }
+});
+
+test("board order accepts optional positive integers and rejects invalid values", async () => {
+  await as(editor);
+  const member = {
+    title: "Board member",
+    title_en: "Board member",
+    description: "Board description",
+    description_en: "Board description",
+    images: [],
+    committee: "administrative",
+    isFounder: true,
+  };
+  for (const displayOrder of [1, 2, 9999]) {
+    const result = await db.query(
+      "insert into club_content(kind,data) values('members',$1) returning data",
+      [JSON.stringify({ ...member, displayOrder })],
+    );
+    assert.equal(result.rows[0].data.displayOrder, displayOrder);
+  }
+  for (const displayOrder of [0, -1, 1.5, 10000, "1", null]) {
+    await assert.rejects(() =>
+      db.query("insert into club_content(kind,data) values('members',$1)", [
+        JSON.stringify({ ...member, displayOrder }),
       ]),
     );
   }

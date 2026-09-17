@@ -23,6 +23,7 @@ export type Content = {
   committee?: string;
   gender?: "male" | "female";
   isFounder?: boolean;
+  displayOrder?: number;
   websiteUrl?: string;
   githubUrl?: string;
   linkedinUrl?: string;
@@ -149,6 +150,7 @@ export function memberGender(item: Content): "male" | "female" {
 
 export const contentSchema = z
   .object({
+    displayOrder: z.number().int().min(1).max(9999).optional(),
     gender: z.enum(["male", "female"]).optional(),
     title: text,
     title_en: text,

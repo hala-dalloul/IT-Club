@@ -238,6 +238,18 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
   }
 
   const [tab, setTab] = useState("dashboard");
+  const [memberSearch, setMemberSearch] = useState("");
+  const normalizeName = (value: string) =>
+    value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "")
+      .toLocaleLowerCase()
+      .trim();
+  const memberItems = data.members.filter((item) =>
+    [item.title, item.title_en].some((name) =>
+      normalizeName(name || "").includes(normalizeName(memberSearch)),
+    ),
+  );
   const [eventDateOrder, setEventDateOrder] = useState(false);
   useEffect(() => {
     try {
@@ -463,11 +475,36 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
               <Plus size={18} />
               {ar ? "إضافة جديد" : "Add new"}
             </BrandButton>
+            {activeCollection === "members" && (
+              <label className="mb-6 block">
+                <span className="mb-2 block text-sm font-bold">
+                  {ar ? "البحث باسم العضو" : "Search members by name"}
+                </span>
+                <Input
+                  type="search"
+                  value={memberSearch}
+                  onChange={(event) => setMemberSearch(event.target.value)}
+                  placeholder={
+                    ar ? "اكتب الاسم بالعربية أو الإنجليزية" : "Enter an Arabic or English name"
+                  }
+                />
+                {memberItems.length === 0 && data.members.length > 0 && (
+                  <p role="status" className="mt-2 text-sm text-muted-foreground">
+                    {ar ? "لا يوجد أعضاء بهذا الاسم." : "No members match this name."}
+                  </p>
+                )}
+              </label>
+            )}
             <div className="space-y-3">
               {data[activeCollection].length === 0 && (
                 <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
               )}
-              {(activeCollection === "events" ? eventItems : data[activeCollection]).map((item) => (
+              {(activeCollection === "events"
+                ? eventItems
+                : activeCollection === "members"
+                  ? memberItems
+                  : data[activeCollection]
+              ).map((item) => (
                 <article
                   key={item.id}
                   className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5"
@@ -676,6 +713,18 @@ function ContentEditor({
       value.committee = committee;
       value.gender = gender === "female" ? "female" : "male";
       value.isFounder = committee === "administrative";
+      if (value.isFounder && values["boardOrder"]?.trim()) {
+        const order = Number(values["boardOrder"]);
+        if (!Number.isInteger(order) || order < 1 || order > 9999) {
+          setError(
+            ar
+              ? "ترتيب العرض يجب أن يكون رقمًا صحيحًا من 1 إلى 9999."
+              : "Display order must be an integer from 1 to 9999.",
+          );
+          return;
+        }
+        value.displayOrder = order;
+      }
     }
 
     if (kind === "events") value.date = values["date"] || "";
@@ -730,8 +779,8 @@ function ContentEditor({
       setError(
         rejectedBoard
           ? ar
-            ? "قاعدة البيانات ترفض بيانات العضو. تأكد من تشغيل تحديث تصنيف أعضاء الفريق في Supabase."
-            : "The database rejected member data. Check that the member group migration has been applied in Supabase."
+            ? "قاعدة البيانات ترفض بيانات العضو. تأكد من تشغيل تحديث ترتيب الهيئة الإدارية في Supabase."
+            : "The database rejected member data. Check that the board order migration has been applied in Supabase."
           : ar
             ? "تعذر حفظ المحتوى. تحقق من الصلاحيات والاتصال."
             : "Content could not be saved. Check permissions and connection.",
@@ -841,6 +890,27 @@ function ContentEditor({
       </div>
       {kind === "members" && (
         <>
+          {committee === "administrative" && (
+            <label className="block">
+              <span className="mb-2 block">
+                {ar ? "ترتيب العرض في الهيئة الإدارية" : "Administrative board display order"}
+              </span>
+              <Input
+                name="boardOrder"
+                type="number"
+                min={1}
+                max={9999}
+                step={1}
+                defaultValue={item?.displayOrder ?? ""}
+                placeholder="1"
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                {ar
+                  ? "الرقم الأصغر أولًا: 1 ثم 2 ثم 3. اتركه فارغًا ليظهر بعد الأعضاء المرتّبين."
+                  : "Lower numbers appear first: 1, 2, 3. Leave blank to appear after ranked members."}
+              </p>
+            </label>
+          )}
           <label className="block">
             <span className="mb-2 block">{ar ? "تصنيف العضو" : "Member group"}</span>
             <Select dir={ar ? "rtl" : "ltr"} value={gender} onValueChange={setGender}>

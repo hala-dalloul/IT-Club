@@ -521,7 +521,12 @@ function Listing({ kind }: { kind: ContentCollection }) {
           <h2 className="mb-6 text-2xl font-black">
             {ar ? "الهيئة الإدارية" : "Administrative board"}
           </h2>
-          <Grid kind={kind} items={items.filter((x) => x.isFounder)} />
+          <Grid
+            kind={kind}
+            items={items
+              .filter((x) => x.isFounder)
+              .sort((a, b) => (a.displayOrder ?? 10000) - (b.displayOrder ?? 10000))}
+          />
           {committees.map(([key, a, e]) => (
             <section key={key} className="mt-10">
               <Tabs defaultValue="male" dir={ar ? "rtl" : "ltr"}>
