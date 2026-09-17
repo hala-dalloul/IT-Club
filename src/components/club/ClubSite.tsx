@@ -252,9 +252,9 @@ function Card({
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
 
-  const aspect = kind === "members" ? "aspect-square" : "aspect-video";
+  const aspect = kind === "members" ? "aspect-[4/3]" : "aspect-video";
 
-  return (
+  const card = (
     <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
       {image ? (
         <img
@@ -275,7 +275,7 @@ function Card({
           />
         </div>
       )}
-      <div className="p-6">
+      <div className={kind === "members" ? "px-5 py-4" : "p-6"}>
         {item.date && (
           <time dateTime={item.date} className="text-sm text-muted-foreground">
             {item.date}
@@ -283,7 +283,7 @@ function Card({
         )}
         <h2 className="mt-2 text-xl font-extrabold">{title}</h2>
         <p
-          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : "line-clamp-3"}`}
+          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : kind === "members" ? "line-clamp-2" : "line-clamp-3"}`}
         >
           {local(item, "description", lang)}
         </p>
@@ -304,7 +304,7 @@ function Card({
               </a>
             )}
           </>
-        ) : (
+        ) : kind !== "members" ? (
           <ClubLink
             path={`${kind}/${item.id}`}
             className="mt-5 inline-flex items-center gap-2 text-primary font-bold"
@@ -312,9 +312,20 @@ function Card({
             {lang === "ar" ? "التفاصيل" : "View details"}
             {lang === "ar" ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
           </ClubLink>
-        )}
+        ) : null}
       </div>
     </article>
+  );
+
+  return kind === "members" ? (
+    <ClubLink
+      path={`members/${item.id}`}
+      className="block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
+    >
+      {card}
+    </ClubLink>
+  ) : (
+    card
   );
 }
 
