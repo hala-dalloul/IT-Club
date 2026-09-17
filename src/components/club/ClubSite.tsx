@@ -282,12 +282,12 @@ function Card({
           </time>
         )}
         <h2
-          className={`mt-2 text-xl font-extrabold ${kind === "members" ? "h-14 line-clamp-2 leading-7" : ""}`}
+          className={`mt-2 text-xl font-extrabold ${kind === "members" ? "h-7 truncate leading-7" : ""}`}
         >
           {title}
         </h2>
         <p
-          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : kind === "members" ? "h-[3.25rem] line-clamp-2" : "line-clamp-3"}`}
+          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "truncate" : kind === "members" ? "h-[1.625rem] truncate" : "line-clamp-3"}`}
         >
           {local(item, "description", lang)}
         </p>
