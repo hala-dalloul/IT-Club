@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClub } from "./ClubProvider";
 import {
-  watchQuery,
+  configured,
   loadMedia,
   uploadImage,
   renameMedia,
@@ -22,36 +23,43 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
+export const mediaKey = ["club-media"];
+
+const noAssets: MediaAsset[] = [];
+
 export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
-  const [assets, setAssets] = useState<MediaAsset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(
-    () =>
-      watchQuery(
-        loadMedia,
-        (value) => {
-          setAssets(value);
-          setLoading(false);
-          setError("");
-        },
-        () => {
-          setLoading(false);
-          setError(
-            ar
-              ? "تعذر تحميل مكتبة الصور. تحقق من تفعيل قاعدة البيانات والتخزين."
-              : "Could not load media. Check database and storage setup.",
-          );
-        },
-      ),
-    [ar],
-  );
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const onChanged = () => void queryClient.invalidateQueries({ queryKey: mediaKey });
+    window.addEventListener("club-data-changed", onChanged);
+
+    return () => window.removeEventListener("club-data-changed", onChanged);
+  }, [queryClient]);
+
+  const query = useQuery({
+    queryKey: mediaKey,
+    queryFn: loadMedia,
+    enabled: configured,
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+
+  const assets = query.data ?? noAssets;
+  const loading = configured && query.isLoading;
+
+  const loadError =
+    query.isError &&
+    (ar
+      ? "تعذر تحميل مكتبة الصور. تحقق من تفعيل قاعدة البيانات والتخزين."
+      : "Could not load media. Check database and storage setup.");
+
+  const [uploadError, setUploadError] = useState("");
   useEffect(() => {
     if (!file) {
       setPreview("");
@@ -68,13 +76,13 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
   async function upload() {
     if (!file || busy) return;
     setBusy(true);
-    setError("");
+    setUploadError("");
 
     try {
       await uploadImage(file);
       setFile(null);
     } catch {
-      setError(
+      setUploadError(
         ar
           ? "تعذر رفع الصورة. استخدم JPG أو PNG أو WebP حتى 5 ميغابايت."
           : "Upload failed. Use JPG, PNG or WebP up to 5 MB.",
@@ -84,7 +92,28 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
     }
   }
 
-  const allContent = Object.values(data).flat();
+  const titleById = useMemo(() => {
+    const map = new Map<string, { title: string; title_en: string }>();
+
+    for (const item of Object.values(data).flat()) map.set(item.id, item);
+
+    return map;
+  }, [data]);
+
+  const visibleAssets = useMemo(
+    () =>
+      assets
+        .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+        .map((asset) => ({
+          asset,
+          usage: asset.usedBy.map((id) => {
+            const item = titleById.get(id);
+
+            return item ? (ar ? item.title : item.title_en) : id;
+          }),
+        })),
+    [assets, search, titleById, ar],
+  );
 
   return (
     <section className="mt-6 space-y-6">
@@ -135,29 +164,18 @@ export function MediaLibrary({ onSelect }: { onSelect?: (url: string) => void })
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      {error && (
+      {(uploadError || loadError) && (
         <p role="alert" className="rounded-xl bg-brand-gradient-soft p-4">
-          {error}
+          {uploadError || loadError}
         </p>
       )}
       {loading ? (
         <p role="status">{ar ? "جارٍ التحميل…" : "Loading…"}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {assets
-            .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
-            .map((asset) => (
-              <AssetCard
-                key={asset.id}
-                asset={asset}
-                onSelect={onSelect}
-                usage={asset.usedBy.map((id) => {
-                  const item = allContent.find((c) => c.id === id);
-
-                  return item ? (ar ? item.title : item.title_en) : id;
-                })}
-              />
-            ))}
+          {visibleAssets.map(({ asset, usage }) => (
+            <AssetCard key={asset.id} asset={asset} onSelect={onSelect} usage={usage} />
+          ))}
         </div>
       )}
       {!loading && !assets.length && (
@@ -185,6 +203,13 @@ function AssetCard({
   const [name, setName] = useState(asset.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [justSelected, setJustSelected] = useState(false);
+  useEffect(() => {
+    if (!justSelected) return;
+    const timer = window.setTimeout(() => setJustSelected(false), 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [justSelected]);
 
   async function action(work: () => Promise<void>) {
     setBusy(true);
@@ -264,9 +289,12 @@ function AssetCard({
             type="button"
             size="sm"
             disabled={busy || asset.deleting}
-            onClick={() => onSelect(asset.url)}
+            onClick={() => {
+              onSelect(asset.url);
+              setJustSelected(true);
+            }}
           >
-            {ar ? "اختيار" : "Select"}
+            {justSelected ? (ar ? "✓ تمت الإضافة" : "✓ Added") : ar ? "اختيار" : "Select"}
           </BrandButton>
         )}
         <AlertDialog>

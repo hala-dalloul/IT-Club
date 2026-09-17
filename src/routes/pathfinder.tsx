@@ -39,11 +39,68 @@ export const Route = createFileRoute("/pathfinder")({
 type Stage =
   "welcome" | "character" | "questions" | "analyzing" | "result" | "explore" | "how" | "about";
 
+type Progress = {
+  stage: Stage;
+  questionIndex: number;
+  answers: (number | null)[];
+  character: SpecId | null;
+};
+
+const progressKey = "pathfinder-progress";
+
+function loadProgress(): Progress | null {
+  try {
+    const raw = sessionStorage.getItem(progressKey);
+
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<Progress>;
+
+    if (!Array.isArray(value.answers) || value.answers.length !== QUESTIONS.length) return null;
+
+    return {
+      stage: value.stage || "welcome",
+      questionIndex: value.questionIndex || 0,
+      answers: value.answers,
+      character: value.character ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearProgress() {
+  try {
+    sessionStorage.removeItem(progressKey);
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
 function Index() {
-  const [stage, setStage] = useState<Stage>("welcome");
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<(number | null)[]>(() => QUESTIONS.map(() => null));
-  const [character, setCharacter] = useState<SpecId | null>(null);
+  const saved = useMemo(loadProgress, []);
+  const [stage, setStage] = useState<Stage>(saved?.stage || "welcome");
+  const [questionIndex, setQuestionIndex] = useState(saved?.questionIndex || 0);
+  const [answers, setAnswers] = useState<(number | null)[]>(
+    () => saved?.answers || QUESTIONS.map(() => null),
+  );
+  const [character, setCharacter] = useState<SpecId | null>(saved?.character ?? null);
+
+  useEffect(() => {
+    if (stage === "welcome") {
+      clearProgress();
+
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(
+        progressKey,
+        JSON.stringify({ stage, questionIndex, answers, character }),
+      );
+    } catch {
+      /* Storage is optional. */
+    }
+  }, [stage, questionIndex, answers, character]);
 
   useEffect(() => {
     // SAFETY: browsers support "instant" for scroll behavior; lib.dom's ScrollBehavior type just hasn't caught up.

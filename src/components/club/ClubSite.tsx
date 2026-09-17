@@ -124,10 +124,11 @@ function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
   const ar = lang === "ar";
+  const isAdmin = useLocation().pathname.replace(/^\/club\/?/, "").split("/")[0] === "admin";
 
   return (
     <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
-      <FloatingBackground entrancePulse={!loading} />
+      {!isAdmin && <FloatingBackground entrancePulse={!loading} />}
       <a href="#club-main" className="sr-only focus:not-sr-only">
         {ar ? "انتقل للمحتوى" : "Skip to content"}
       </a>
@@ -248,6 +249,8 @@ function Card({
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
 
+  const aspect = kind === "members" ? "aspect-square" : "aspect-video";
+
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
       {image ? (
@@ -257,9 +260,18 @@ function Card({
           loading="lazy"
           width={640}
           height={360}
-          className={`w-full ${kind === "members" ? "aspect-square object-cover" : kind === "partners" ? "aspect-video object-contain p-6" : "aspect-video object-cover"}`}
+          className={`w-full ${aspect} ${kind === "partners" ? "object-contain p-6" : "object-cover"}`}
         />
-      ) : null}
+      ) : (
+        <div className={`flex w-full ${aspect} items-center justify-center bg-brand-gradient`}>
+          <img
+            src={logo}
+            alt=""
+            aria-hidden="true"
+            className="h-16 w-14 object-contain brightness-0 invert opacity-90"
+          />
+        </div>
+      )}
       <div className="p-6">
         {item.date && (
           <time dateTime={item.date} className="text-sm text-muted-foreground">
