@@ -245,11 +245,18 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       .replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "")
       .toLocaleLowerCase()
       .trim();
-  const memberItems = data.members.filter((item) =>
-    [item.title, item.title_en].some((name) =>
-      normalizeName(name || "").includes(normalizeName(memberSearch)),
-    ),
-  );
+  const memberItems = data.members
+    .filter((item) =>
+      [item.title, item.title_en].some((name) =>
+        normalizeName(name || "").includes(normalizeName(memberSearch)),
+      ),
+    )
+    .sort((a, b) => {
+      const aBoard = Boolean(a.isFounder || a.committee === "administrative");
+      const bBoard = Boolean(b.isFounder || b.committee === "administrative");
+      if (aBoard !== bBoard) return aBoard ? -1 : 1;
+      return aBoard ? (a.displayOrder ?? 10000) - (b.displayOrder ?? 10000) : 0;
+    });
   const [eventDateOrder, setEventDateOrder] = useState(false);
   useEffect(() => {
     try {
@@ -511,6 +518,13 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                 >
                   <div>
                     <h2 className="font-extrabold">{ar ? item.title : item.title_en}</h2>
+                    {activeCollection === "members" &&
+                      (item.isFounder || item.committee === "administrative") && (
+                        <p className="mt-1 text-sm font-bold text-primary">
+                          {ar ? "ترتيب الهيئة الإدارية" : "Board order"}:{" "}
+                          {item.displayOrder ?? (ar ? "غير محدد" : "Not set")}
+                        </p>
+                      )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {ar ? "آخر تعديل بواسطة" : "Last edited by"}: {item.updatedBy || "—"}
                     </p>
@@ -764,7 +778,12 @@ function ContentEditor({
               ...old,
               data: {
                 ...old.data,
-                [kind]: old.data[kind].map((c) => (c.id === item.id ? { ...c, ...value } : c)),
+                [kind]: old.data[kind].map((c) => {
+                  if (c.id !== item.id) return c;
+                  const updated = { ...c, ...value };
+                  if (value.displayOrder === undefined) delete updated.displayOrder;
+                  return updated;
+                }),
               },
             },
         );

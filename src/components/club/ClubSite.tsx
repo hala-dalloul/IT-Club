@@ -524,7 +524,7 @@ function Listing({ kind }: { kind: ContentCollection }) {
           <Grid
             kind={kind}
             items={items
-              .filter((x) => x.isFounder)
+              .filter((x) => x.isFounder || x.committee === "administrative")
               .sort((a, b) => (a.displayOrder ?? 10000) - (b.displayOrder ?? 10000))}
           />
           {committees.map(([key, a, e]) => (
