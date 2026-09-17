@@ -124,7 +124,10 @@ function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
   const ar = lang === "ar";
-  const isAdmin = useLocation().pathname.replace(/^\/club\/?/, "").split("/")[0] === "admin";
+  const isAdmin =
+    useLocation()
+      .pathname.replace(/^\/club\/?/, "")
+      .split("/")[0] === "admin";
 
   return (
     <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
@@ -325,7 +328,9 @@ function Grid({
   compact?: boolean;
 }) {
   return items.length ? (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      className={`grid gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+    >
       {items.map((item) => (
         <Card key={item.id} item={item} kind={kind} compact={compact} />
       ))}
