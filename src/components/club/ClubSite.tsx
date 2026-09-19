@@ -325,7 +325,7 @@ function Card({
   return kind === "members" ? (
     <ClubLink
       path={`members/${item.id}`}
-      className="block h-full rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
+      className="block h-full min-w-0 rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
     >
       {card}
     </ClubLink>
@@ -345,7 +345,7 @@ function Grid({
 }) {
   return items.length ? (
     <div
-      className={`grid gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+      className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
     >
       {items.map((item) => (
         <Card key={item.id} item={item} kind={kind} compact={compact} />
