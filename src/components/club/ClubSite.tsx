@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Globe,
+  Moon,
+  Sun,
   Gamepad2,
   Smartphone,
   Palette,
@@ -124,6 +126,25 @@ function Empty() {
 function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const sync = () => setDark(document.documentElement.classList.contains("dark"));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  const toggleTheme = () => {
+    const next = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", next);
+    document.documentElement.style.colorScheme = next ? "dark" : "light";
+    setDark(next);
+    try {
+      localStorage.setItem("ucas-theme", next ? "dark" : "light");
+    } catch {
+      /* Optional storage. */
+    }
+  };
   const ar = lang === "ar";
   const isAdmin =
     useLocation()
@@ -136,69 +157,98 @@ function Shell({ children }: { children: ReactNode }) {
       <a href="#club-main" className="sr-only focus:not-sr-only">
         {ar ? "انتقل للمحتوى" : "Skip to content"}
       </a>
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <ClubLink className="flex items-center gap-3">
-            <img
-              src={logo}
-              width={44}
-              height={56}
-              className="h-12 w-10 object-contain"
-              alt="UCAS IT CLUB"
-            />
-            <span className="font-black">UCAS IT CLUB</span>
-          </ClubLink>
-          <nav
-            aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-            className="club-nav-bar hidden items-center gap-1 xl:flex"
-          >
-            {nav.map(([path, a, e]) => (
-              <ClubLink
-                key={path}
-                path={path!}
-                navigation
-                className="club-nav-link rounded-full px-3 py-2 text-sm font-bold"
-              >
-                {ar ? a : e}
-              </ClubLink>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <BrandButton
-              variant="outline"
-              size="sm"
-              onClick={() => setLang(ar ? "en" : "ar")}
-              aria-label={ar ? "Switch to English" : "التبديل للعربية"}
+      <header className="club-header sticky top-3 z-40 mx-auto max-w-7xl px-3 sm:px-4">
+        <div className="club-header-surface">
+          <div className="club-header-row flex items-center justify-between gap-2 px-3 py-2 sm:px-4">
+            <ClubLink className="club-header-brand flex shrink-0 items-center gap-2">
+              <img
+                src={logo}
+                width={44}
+                height={56}
+                className="h-9 w-8 object-contain"
+                alt="UCAS IT CLUB"
+              />
+              <span className="text-sm font-black">UCAS IT CLUB</span>
+            </ClubLink>
+            <nav
+              aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
+              className="club-nav-bar hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex"
             >
-              <Globe size={16} />
-              {ar ? "EN" : "عربي"}
-            </BrandButton>
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-expanded={open}
-              aria-label={ar ? "القائمة" : "Menu"}
-              className="rounded-xl p-2 xl:hidden"
-            >
-              {open ? <X /> : <Menu />}
-            </button>
-          </div>
-        </div>
-        {open && (
-          <nav className="grid grid-cols-2 gap-2 border-t border-border p-4 xl:hidden">
-            {nav.map(([path, a, e]) => (
-              <span key={path} onClick={() => setOpen(false)}>
+              {nav.map(([path, a, e]) => (
                 <ClubLink
+                  key={path}
                   path={path!}
                   navigation
-                  className="club-nav-link block rounded-xl p-3 text-sm font-bold"
+                  className="club-nav-link rounded-full px-3 py-2 text-sm font-bold"
                 >
                   {ar ? a : e}
                 </ClubLink>
-              </span>
-            ))}
-          </nav>
-        )}
+              ))}
+            </nav>
+            <div className="club-header-actions flex shrink-0 items-center gap-1">
+              <BrandButton
+                variant="ghost"
+                size="sm"
+                className="club-language-button"
+                onClick={() => setLang(ar ? "en" : "ar")}
+                aria-label={ar ? "Switch to English" : "التبديل للعربية"}
+              >
+                <Globe size={16} />
+                {ar ? "EN" : "عربي"}
+              </BrandButton>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="club-theme-button rounded-full p-2.5"
+                aria-label={
+                  ar
+                    ? dark
+                      ? "تفعيل الوضع الفاتح"
+                      : "تفعيل الوضع الداكن"
+                    : dark
+                      ? "Use light theme"
+                      : "Use dark theme"
+                }
+                aria-pressed={dark}
+                title={
+                  ar
+                    ? dark
+                      ? "الوضع الفاتح"
+                      : "الوضع الداكن"
+                    : dark
+                      ? "Light theme"
+                      : "Dark theme"
+                }
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                aria-label={ar ? "القائمة" : "Menu"}
+                className="rounded-xl p-2 xl:hidden"
+              >
+                {open ? <X /> : <Menu />}
+              </button>
+            </div>
+          </div>
+          {open && (
+            <nav className="grid grid-cols-2 gap-2 border-t border-border p-4 xl:hidden">
+              {nav.map(([path, a, e]) => (
+                <span key={path} onClick={() => setOpen(false)}>
+                  <ClubLink
+                    path={path!}
+                    navigation
+                    className="club-nav-link block rounded-xl p-3 text-sm font-bold"
+                  >
+                    {ar ? a : e}
+                  </ClubLink>
+                </span>
+              ))}
+            </nav>
+          )}
+        </div>
       </header>
       <main
         id="club-main"

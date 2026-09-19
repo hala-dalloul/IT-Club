@@ -14,11 +14,58 @@
   outline-offset: 4px;
 }
 
-.club-nav-bar {
-  padding: 5px;
+.club-header {
+  margin-top: 12px;
+}
+.club-header-surface {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 32px;
+  background: color-mix(in oklab, var(--background) 94%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 28px -18px color-mix(in oklab, var(--brand-blue) 40%, transparent);
+  overflow: hidden;
+}
+.club-header-brand {
+  padding-inline-end: 14px;
+}
+.club-header-actions {
+  padding-inline-start: 12px;
+  border-inline-start: 1px solid var(--border);
+}
+.club-nav-bar {
+  padding: 0;
+}
+.club-language-button {
+  background: var(--secondary);
+  color: var(--primary);
+  padding-inline: 12px;
+}
+.club-theme-button {
+  color: var(--primary);
+  background: var(--secondary);
+}
+.club-theme-button:hover {
   background: var(--muted);
+}
+@media (min-width: 1280px) {
+  .club-header-brand {
+    border-inline-end: 1px solid var(--border);
+  }
+}
+@media (max-width: 380px) {
+  .club-header-brand span {
+    font-size: 11px;
+  }
+  .club-header-brand {
+    padding-inline-end: 0;
+    gap: 4px;
+  }
+  .club-header-actions {
+    padding-inline-start: 5px;
+  }
+  .club-language-button svg {
+    display: none;
+  }
 }
 
 .club-site .club-nav-link {
@@ -32,35 +79,16 @@
   border: 1px solid transparent;
 }
 
-.club-nav-link::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0;
-  transform: scale(0.4);
-  transition:
-    opacity 240ms ease,
-    transform 240ms ease;
-}
-
 .club-site .club-nav-link:hover {
   color: var(--primary);
   background: var(--secondary);
 }
 
 .club-site .club-nav-link[aria-current="page"] {
-  color: var(--primary);
-  background: var(--card);
-  border-color: var(--border);
-  box-shadow: 0 3px 10px color-mix(in oklab, var(--primary) 12%, transparent);
-}
-
-.club-nav-link[aria-current="page"]::before {
-  opacity: 1;
-  transform: scale(1);
+  color: white;
+  background: linear-gradient(135deg, var(--brand-blue), var(--brand-green));
+  border-color: transparent;
+  box-shadow: 0 3px 10px color-mix(in oklab, var(--brand-blue) 15%, transparent);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {

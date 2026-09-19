@@ -52,7 +52,17 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Plus, LogOut, Trash2, Pencil, Upload } from "lucide-react";
+import {
+  Plus,
+  LogOut,
+  Trash2,
+  Pencil,
+  Upload,
+  Users,
+  CalendarDays,
+  Newspaper,
+  Handshake,
+} from "lucide-react";
 
 type AdminRow = { id: string; name: string; email: string; role: string };
 
@@ -339,18 +349,19 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="club-admin-banner mb-5 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] bg-brand-gradient p-6 text-white sm:p-8">
         <div>
           <h1 className="text-3xl font-black">
             {ar ? "لوحة إدارة النادي" : "Club administration"}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 break-all text-sm text-white/85">
             {user.email} ·{" "}
             {role === "super_admin" ? (ar ? "مدير عام" : "Super admin") : ar ? "محرر" : "Editor"}
           </p>
         </div>
         <BrandButton
           variant="outline"
+          className="border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
           onClick={() => {
             if (!confirmDiscard()) return;
             void signOut();
@@ -360,9 +371,25 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           {ar ? "خروج" : "Sign out"}
         </BrandButton>
       </div>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+        {[
+          { count: data.members.length, label: ar ? "أعضاء الفريق" : "Team members", Icon: Users },
+          { count: data.events.length, label: ar ? "الفعاليات" : "Events", Icon: CalendarDays },
+          { count: data.news.length, label: ar ? "الأخبار" : "News", Icon: Newspaper },
+          { count: data.partners.length, label: ar ? "الشراكات" : "Partners", Icon: Handshake },
+        ].map(({ count, label, Icon }) => (
+          <div key={label} className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+              <Icon size={21} />
+            </span>
+            <strong className="block text-3xl font-black text-primary">{count}</strong>
+            <span className="mt-1 block text-sm text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
       <nav
         aria-label={ar ? "أقسام الإدارة" : "Administration sections"}
-        className="mb-8 flex flex-wrap gap-2"
+        className="mb-5 flex flex-wrap gap-2"
       >
         {tabs.map(([key, label]) => (
           <BrandButton
@@ -382,257 +409,263 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           </BrandButton>
         ))}
       </nav>
-      {activeCollection === "events" && (
-        <section
-          aria-label={ar ? "ترتيب الفعاليات" : "Event ordering"}
-          className="mb-6 rounded-2xl border border-border bg-card p-5"
-        >
-          <h2 className="mb-3 font-bold">
-            {ar ? "ترتيب الفعاليات في لوحة الإدارة" : "Event ordering in the admin panel"}
-          </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <BrandButton
-              variant={eventDateOrder ? "primary" : "outline"}
-              type="button"
-              role="switch"
-              aria-checked={eventDateOrder}
-              onClick={() => {
-                const enabled = !eventDateOrder;
-                setEventDateOrder(enabled);
-                try {
-                  localStorage.setItem("club-admin-event-date-order", String(enabled));
-                } catch {
-                  /* Storage is optional. */
-                }
-              }}
-            >
-              {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
-              <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">
-                {eventDateOrder ? (ar ? "مفعّل" : "On") : ar ? "متوقف" : "Off"}
+      <div className="rounded-[2rem] border border-border bg-card p-4 sm:p-6">
+        {activeCollection === "events" && (
+          <section
+            aria-label={ar ? "ترتيب الفعاليات" : "Event ordering"}
+            className="mb-6 rounded-2xl border border-border bg-card p-5"
+          >
+            <h2 className="mb-3 font-bold">
+              {ar ? "ترتيب الفعاليات في لوحة الإدارة" : "Event ordering in the admin panel"}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <BrandButton
+                variant={eventDateOrder ? "primary" : "outline"}
+                type="button"
+                role="switch"
+                aria-checked={eventDateOrder}
+                onClick={() => {
+                  const enabled = !eventDateOrder;
+                  setEventDateOrder(enabled);
+                  try {
+                    localStorage.setItem("club-admin-event-date-order", String(enabled));
+                  } catch {
+                    /* Storage is optional. */
+                  }
+                }}
+              >
+                {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
+                <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">
+                  {eventDateOrder ? (ar ? "مفعّل" : "On") : ar ? "متوقف" : "Off"}
+                </span>
+              </BrandButton>
+              {data.events.some((item) => !item.createdAt) && (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {ar
+                    ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
+                    : "Apply the database migration to track creation dates; using last update temporarily."}
+                </p>
+              )}
+              <span className="text-sm text-muted-foreground">
+                {eventDateOrder
+                  ? ar
+                    ? "موعد الفعالية: الأحدث أولًا"
+                    : "Event date: newest first"
+                  : ar
+                    ? "تاريخ الإضافة: الأحدث أولًا"
+                    : "Date added: newest first"}
               </span>
-            </BrandButton>
-            {data.events.some((item) => !item.createdAt) && (
-              <p role="status" className="text-sm text-muted-foreground">
-                {ar
-                  ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
-                  : "Apply the database migration to track creation dates; using last update temporarily."}
-              </p>
-            )}
-            <span className="text-sm text-muted-foreground">
-              {eventDateOrder
-                ? ar
-                  ? "موعد الفعالية: الأحدث أولًا"
-                  : "Event date: newest first"
-                : ar
-                  ? "تاريخ الإضافة: الأحدث أولًا"
-                  : "Date added: newest first"}
-            </span>
-          </div>
-        </section>
-      )}
-
-      {notice && (
-        <p role="status" className="mb-6 rounded-2xl bg-brand-gradient-soft p-4">
-          {notice}
-        </p>
-      )}
-      {tab === "media" && <MediaLibrary />}
-      {tab === "dashboard" && (
-        <div className="grid gap-5 sm:grid-cols-2">
-          {[
-            [data.members.length, ar ? "أعضاء الفريق" : "Team members"],
-            [data.events.length, ar ? "الفعاليات" : "Events"],
-            [data.news.length, ar ? "الأخبار" : "News"],
-          ].map(([count, label]) => (
-            <div key={label} className="rounded-3xl border border-border bg-card p-8 shadow-card">
-              <strong className="block text-4xl font-black text-primary">{count}</strong>
-              <span className="mt-3 block">{label}</span>
             </div>
-          ))}
-        </div>
-      )}
-      {activeCollection &&
-        (editing !== undefined ? (
-          <ContentEditor
-            key={tab + (editing?.id || "new")}
-            kind={activeCollection}
-            item={editing}
-            onDirtyChange={setDirty}
-            onCancel={() => {
-              setEditing(undefined);
-              setDirty(false);
-            }}
-            onSaved={() => {
-              setEditing(undefined);
-              setDirty(false);
-              setNotice(ar ? "تم نشر المحتوى." : "Content published.");
-            }}
-          />
-        ) : (
-          <>
-            <BrandButton
-              className="mb-6"
-              onClick={() => {
-                if (!confirmDiscard()) return;
-                setEditing(null);
+          </section>
+        )}
+
+        {notice && (
+          <p role="status" className="mb-6 rounded-2xl bg-brand-gradient-soft p-4">
+            {notice}
+          </p>
+        )}
+        {tab === "media" && <MediaLibrary />}
+        {tab === "dashboard" && (
+          <div className="py-4">
+            <h2 className="text-2xl font-black">{ar ? "نظرة عامة" : "Overview"}</h2>
+            <p className="mt-3 text-muted-foreground">
+              {ar
+                ? "اختر أحد الأقسام أعلاه لإدارة محتوى النادي."
+                : "Choose a section above to manage club content."}
+            </p>
+          </div>
+        )}
+        {activeCollection &&
+          (editing !== undefined ? (
+            <ContentEditor
+              key={tab + (editing?.id || "new")}
+              kind={activeCollection}
+              item={editing}
+              onDirtyChange={setDirty}
+              onCancel={() => {
+                setEditing(undefined);
                 setDirty(false);
               }}
-            >
-              <Plus size={18} />
-              {ar ? "إضافة جديد" : "Add new"}
-            </BrandButton>
-            {activeCollection === "members" && (
-              <label className="mb-6 block">
-                <span className="mb-2 block text-sm font-bold">
-                  {ar ? "البحث باسم العضو" : "Search members by name"}
-                </span>
-                <Input
-                  type="search"
-                  value={memberSearch}
-                  onChange={(event) => setMemberSearch(event.target.value)}
-                  placeholder={
-                    ar ? "اكتب الاسم بالعربية أو الإنجليزية" : "Enter an Arabic or English name"
-                  }
-                />
-                {memberItems.length === 0 && data.members.length > 0 && (
-                  <p role="status" className="mt-2 text-sm text-muted-foreground">
-                    {ar ? "لا يوجد أعضاء بهذا الاسم." : "No members match this name."}
-                  </p>
-                )}
-              </label>
-            )}
-            <div className="space-y-3">
-              {data[activeCollection].length === 0 && (
-                <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
-              )}
-              {(activeCollection === "events"
-                ? eventItems
-                : activeCollection === "members"
-                  ? memberItems
-                  : data[activeCollection]
-              ).map((item) => (
-                <article
-                  key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5"
+              onSaved={() => {
+                setEditing(undefined);
+                setDirty(false);
+                setNotice(ar ? "تم نشر المحتوى." : "Content published.");
+              }}
+            />
+          ) : (
+            <>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-black">{labels[activeCollection][ar ? 0 : 1]}</h2>
+                <BrandButton
+                  size="sm"
+                  onClick={() => {
+                    if (!confirmDiscard()) return;
+                    setEditing(null);
+                    setDirty(false);
+                  }}
                 >
-                  <div>
-                    <h2 className="font-extrabold">{ar ? item.title : item.title_en}</h2>
-                    {activeCollection === "members" &&
-                      (item.isFounder || item.committee === "administrative") && (
-                        <p className="mt-1 text-sm font-bold text-primary">
-                          {ar ? "ترتيب الهيئة الإدارية" : "Board order"}:{" "}
-                          {item.displayOrder ?? (ar ? "غير محدد" : "Not set")}
-                        </p>
-                      )}
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {ar ? "آخر تعديل بواسطة" : "Last edited by"}: {item.updatedBy || "—"}
+                  <Plus size={18} />
+                  {ar ? "إضافة جديد" : "Add new"}
+                </BrandButton>
+              </div>
+              {activeCollection === "members" && (
+                <label className="mb-6 block">
+                  <span className="mb-2 block text-sm font-bold">
+                    {ar ? "البحث باسم العضو" : "Search members by name"}
+                  </span>
+                  <Input
+                    type="search"
+                    value={memberSearch}
+                    onChange={(event) => setMemberSearch(event.target.value)}
+                    placeholder={
+                      ar ? "اكتب الاسم بالعربية أو الإنجليزية" : "Enter an Arabic or English name"
+                    }
+                  />
+                  {memberItems.length === 0 && data.members.length > 0 && (
+                    <p role="status" className="mt-2 text-sm text-muted-foreground">
+                      {ar ? "لا يوجد أعضاء بهذا الاسم." : "No members match this name."}
                     </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <BrandButton variant="outline" size="sm" onClick={() => setEditing(item)}>
-                      <Pencil size={16} />
-                      {ar ? "تعديل" : "Edit"}
-                    </BrandButton>
+                  )}
+                </label>
+              )}
+              <div className="space-y-3">
+                {data[activeCollection].length === 0 && (
+                  <p>{ar ? "لا توجد عناصر بعد." : "No items yet."}</p>
+                )}
+                {(activeCollection === "events"
+                  ? eventItems
+                  : activeCollection === "members"
+                    ? memberItems
+                    : data[activeCollection]
+                ).map((item) => (
+                  <article
+                    key={item.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/50 px-5 py-4"
+                  >
+                    <div>
+                      <h3 className="break-words font-extrabold">
+                        {ar ? item.title : item.title_en}
+                      </h3>
+                      {item.date && (
+                        <p className="mt-1 text-xs text-muted-foreground">{item.date}</p>
+                      )}
+                      {activeCollection === "members" &&
+                        (item.isFounder || item.committee === "administrative") && (
+                          <p className="mt-1 text-sm font-bold text-primary">
+                            {ar ? "ترتيب الهيئة الإدارية" : "Board order"}:{" "}
+                            {item.displayOrder ?? (ar ? "غير محدد" : "Not set")}
+                          </p>
+                        )}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {ar ? "آخر تعديل بواسطة" : "Last edited by"}: {item.updatedBy || "—"}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <BrandButton variant="outline" size="sm" onClick={() => setEditing(item)}>
+                        <Pencil size={16} />
+                        {ar ? "تعديل" : "Edit"}
+                      </BrandButton>
+                      <DeleteButton
+                        label={item.title}
+                        onDelete={() => run(() => deleteContent(activeCollection, item.id))}
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          ))}
+        {tab === "joinRequests" && <RegistrationAdmin canEdit={role === "super_admin"} />}
+        {tab === "contactMessages" && (
+          <section className="rounded-3xl border border-border bg-card p-6 space-y-4">
+            <h2 className="text-2xl font-bold">{ar ? "رسائل التواصل" : "Contact messages"}</h2>
+            <p>
+              {ar
+                ? "الرسائل الجديدة تُحفظ في Google Sheets فقط."
+                : "New messages are stored only in Google Sheets."}
+            </p>
+            <a
+              href={sheetLinks.contact}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-primary underline"
+            >
+              {ar ? "فتح شيت رسائل التواصل" : "Open contact spreadsheet"}
+            </a>
+          </section>
+        )}
+        {tab === "settings" && role === "super_admin" && (
+          <SettingsEditor
+            key={tab}
+            initial={settings}
+            onDirtyChange={setDirty}
+            onSave={(value) => run(() => saveSettings(value))}
+          />
+        )}
+        {tab === "admins" && role === "super_admin" && (
+          <>
+            <p className="mb-5 text-muted-foreground">
+              {ar
+                ? "أضف حساب المحرر الموجود في Supabase Authentication باستخدام معرّفه UID. إزالة المحرر هنا تلغي صلاحياته على الموقع."
+                : "Add an existing Supabase Authentication account by its UID. Removing an editor here revokes their website access."}
+            </p>
+            <form
+              className="mb-8 grid gap-4 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const f = e.currentTarget;
+                const values = new FormData(f);
+                const uid = String(values.get("uid")).trim();
+
+                if (uid === user.id || uid.includes("/") || !uid) return;
+                void run(async () => {
+                  await saveAdmin(
+                    uid,
+                    String(values.get("name")).trim(),
+                    String(values.get("email")).trim(),
+                  );
+                  f.reset();
+                });
+              }}
+            >
+              {[
+                ["uid", "UID"],
+                ["name", ar ? "اسم المحرر" : "Editor name"],
+                ["email", ar ? "البريد الإلكتروني" : "Email"],
+              ].map(([key, label]) => (
+                <label key={key} className="block">
+                  <span className="mb-2 block text-sm font-bold">{label}</span>
+                  <Input
+                    name={key!}
+                    type={key === "email" ? "email" : "text"}
+                    required
+                    maxLength={254}
+                  />
+                </label>
+              ))}
+              <BrandButton type="submit">{ar ? "إضافة محرر" : "Add editor"}</BrandButton>
+            </form>
+            <div className="space-y-3">
+              {admins.map((admin) => (
+                <div
+                  key={admin.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
+                >
+                  <span>
+                    {admin.name} · {admin.email} · {admin.role}
+                  </span>
+                  {admin.id !== user.id && admin.role === "editor" && (
                     <DeleteButton
-                      label={item.title}
-                      onDelete={() => run(() => deleteContent(activeCollection, item.id))}
+                      label={admin.name}
+                      onDelete={() => run(() => removeAdmin(admin.id))}
                     />
-                  </div>
-                </article>
+                  )}
+                </div>
               ))}
             </div>
           </>
-        ))}
-      {tab === "joinRequests" && <RegistrationAdmin canEdit={role === "super_admin"} />}
-      {tab === "contactMessages" && (
-        <section className="rounded-3xl border border-border bg-card p-6 space-y-4">
-          <h2 className="text-2xl font-bold">{ar ? "رسائل التواصل" : "Contact messages"}</h2>
-          <p>
-            {ar
-              ? "الرسائل الجديدة تُحفظ في Google Sheets فقط."
-              : "New messages are stored only in Google Sheets."}
-          </p>
-          <a
-            href={sheetLinks.contact}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-primary underline"
-          >
-            {ar ? "فتح شيت رسائل التواصل" : "Open contact spreadsheet"}
-          </a>
-        </section>
-      )}
-      {tab === "settings" && role === "super_admin" && (
-        <SettingsEditor
-          key={tab}
-          initial={settings}
-          onDirtyChange={setDirty}
-          onSave={(value) => run(() => saveSettings(value))}
-        />
-      )}
-      {tab === "admins" && role === "super_admin" && (
-        <>
-          <p className="mb-5 text-muted-foreground">
-            {ar
-              ? "أضف حساب المحرر الموجود في Supabase Authentication باستخدام معرّفه UID. إزالة المحرر هنا تلغي صلاحياته على الموقع."
-              : "Add an existing Supabase Authentication account by its UID. Removing an editor here revokes their website access."}
-          </p>
-          <form
-            className="mb-8 grid gap-4 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = e.currentTarget;
-              const values = new FormData(f);
-              const uid = String(values.get("uid")).trim();
-
-              if (uid === user.id || uid.includes("/") || !uid) return;
-              void run(async () => {
-                await saveAdmin(
-                  uid,
-                  String(values.get("name")).trim(),
-                  String(values.get("email")).trim(),
-                );
-                f.reset();
-              });
-            }}
-          >
-            {[
-              ["uid", "UID"],
-              ["name", ar ? "اسم المحرر" : "Editor name"],
-              ["email", ar ? "البريد الإلكتروني" : "Email"],
-            ].map(([key, label]) => (
-              <label key={key} className="block">
-                <span className="mb-2 block text-sm font-bold">{label}</span>
-                <Input
-                  name={key!}
-                  type={key === "email" ? "email" : "text"}
-                  required
-                  maxLength={254}
-                />
-              </label>
-            ))}
-            <BrandButton type="submit">{ar ? "إضافة محرر" : "Add editor"}</BrandButton>
-          </form>
-          <div className="space-y-3">
-            {admins.map((admin) => (
-              <div
-                key={admin.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
-              >
-                <span>
-                  {admin.name} · {admin.email} · {admin.role}
-                </span>
-                {admin.id !== user.id && admin.role === "editor" && (
-                  <DeleteButton
-                    label={admin.name}
-                    onDelete={() => run(() => removeAdmin(admin.id))}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </>
   );
 }

@@ -78,6 +78,31 @@
   --ring: var(--brand-blue);
 }
 
+.dark {
+  color-scheme: dark;
+  --background: #0d1726;
+  --foreground: #e8eff8;
+  --card: #152337;
+  --card-foreground: #e8eff8;
+  --popover: #192a40;
+  --popover-foreground: #e8eff8;
+  --primary: #78b7f3;
+  --primary-foreground: #ffffff;
+  --secondary: #20344c;
+  --secondary-foreground: #e8eff8;
+  --muted: #1b2b40;
+  --muted-foreground: #adbdd1;
+  --accent: #86cd62;
+  --accent-foreground: #102414;
+  --border: #30445d;
+  --input: #405670;
+  --ring: #78b7f3;
+  --destructive: #ff8585;
+}
+.dark .text-gradient-brand {
+  background-image: linear-gradient(120deg, #78b7f3 10%, #86cd62 90%);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -147,8 +172,16 @@
 
 @utility bg-grid-pattern {
   background-image:
-    linear-gradient(to left, color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      to left,
+      color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--brand-blue) 7%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 44px 44px;
 }
 

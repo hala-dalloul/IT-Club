@@ -80,7 +80,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "اكتشف مسارك | UCAS IT CLUB" },
       {
         name: "description",
-        content: "لعبة تفاعلية من نادي تكنولوجيا المعلومات في UCAS تساعدك تكتشف التخصص التقني الأقرب لشخصيتك واهتماماتك.",
+        content:
+          "لعبة تفاعلية من نادي تكنولوجيا المعلومات في UCAS تساعدك تكتشف التخصص التقني الأقرب لشخصيتك واهتماماتك.",
       },
       { name: "author", content: "UCAS IT CLUB" },
       { property: "og:title", content: "اكتشف مسارك — رحلتك التقنية تبدأ من هنا" },
@@ -113,8 +114,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var theme=localStorage.getItem('ucas-theme');var dark=theme==='dark';document.documentElement.classList.toggle('dark',dark);document.documentElement.style.colorScheme=dark?'dark':'light';}catch(e){}})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
