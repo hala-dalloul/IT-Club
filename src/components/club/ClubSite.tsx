@@ -1,3 +1,4 @@
+import { AnimatedTeamSection } from "@/components/ui/team-section";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -73,17 +74,20 @@ function ClubLink({
   children,
   className = linkClass,
   navigation = false,
+  title,
 }: {
   path?: string;
   children: ReactNode;
   className?: string;
   navigation?: boolean;
+  title?: string;
 }) {
   const target = path ? `/club/${path}` : "/";
 
   return (
     <Link
       to={target}
+      title={title}
       className={className}
       activeOptions={{ exact: !path, includeSearch: false, includeHash: false }}
       data-club-navigation={navigation || undefined}
@@ -393,6 +397,28 @@ function Grid({
   kind: ContentCollection;
   compact?: boolean;
 }) {
+  const { lang } = useClub();
+  if (kind === "members" && items.length) {
+    return (
+      <AnimatedTeamSection
+        direction={lang === "ar" ? "rtl" : "ltr"}
+        members={items.map((item) => ({
+          id: item.id,
+          name: local(item, "title", lang),
+          image: item.images?.map(safeUrl).find(Boolean) || logo,
+        }))}
+        renderLink={(member, children) => (
+          <ClubLink
+            path={`members/${member.id}`}
+            className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
+            title={member.name}
+          >
+            {children}
+          </ClubLink>
+        )}
+      />
+    );
+  }
   return items.length ? (
     <div
       className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
