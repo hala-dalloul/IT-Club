@@ -1,4 +1,3 @@
-import { MascotBook } from "./MascotBook";
 import { AnimatedTeamSection } from "@/components/ui/team-section";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
@@ -439,8 +438,41 @@ function Home() {
 
   return (
     <>
-      <MascotBook ar={ar} />
-      <div id="club-home-content" className="my-14 grid grid-cols-3 gap-3">
+      <section className="mx-auto max-w-4xl text-center">
+        <img
+          src={logo}
+          alt="UCAS IT CLUB"
+          width={124}
+          height={160}
+          className="mx-auto h-40 w-32 object-contain animate-float-slow"
+        />
+        <p className="mt-7 text-primary font-bold">
+          {ar ? "النادي التكنولوجي" : "Technology Club"}
+          <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+            {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
+          </span>
+        </p>
+        <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
+          {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-loose text-muted-foreground">
+          {ar
+            ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
+            : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <ClubLink
+            path="join"
+            className={
+              linkClass +
+              " bg-brand-gradient text-primary-foreground border-transparent shadow-glow-blue"
+            }
+          >
+            {ar ? "انضم إلينا" : "Join the club"}
+          </ClubLink>
+        </div>
+      </section>
+      <div className="my-14 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
