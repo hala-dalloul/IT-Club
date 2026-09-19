@@ -1,3 +1,4 @@
+import { MascotBook } from "./MascotBook";
 import { AnimatedTeamSection } from "@/components/ui/team-section";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
@@ -438,7 +439,8 @@ function Home() {
 
   return (
     <>
-      <section className="mx-auto max-w-4xl text-center">
+      <MascotBook ar={ar} />
+      <section id="club-home-content" className="mx-auto max-w-4xl text-center">
         <img
           src={logo}
           alt="UCAS IT CLUB"
