@@ -131,12 +131,13 @@ export async function loadPublic() {
   const data: Record<ContentCollection, Content[]> = {
     members: [],
     events: [],
+    news: [],
     partners: [],
   };
 
   for (const row of content) {
     // SAFETY: kind is unverified until the hasOwn check below drops rows that
-    // aren't one of the three ContentCollection keys.
+    // aren't one of the supported ContentCollection keys.
     const kind = row["kind"] as ContentCollection;
 
     if (!Object.hasOwn(data, kind)) continue;
@@ -159,15 +160,19 @@ export async function saveContent(
   kind: ContentCollection,
   value: Omit<Content, "id">,
   id?: string,
+  originalKind: ContentCollection = kind,
 ) {
+  if (kind !== originalKind && ![kind, originalKind].every((x) => x === "events" || x === "news")) {
+    throw new Error("Invalid content type change");
+  }
   contentSchema.parse(value);
 
   const result = id
     ? await supabase()
         .from("club_content")
-        .update({ data: value })
+        .update({ kind, data: value })
         .eq("id", id)
-        .eq("kind", kind)
+        .eq("kind", originalKind)
         .select("id")
         .single()
     : await supabase().from("club_content").insert({ kind, data: value }).select("id").single();

@@ -5,6 +5,7 @@ const titles = {
   about: "من نحن | About",
   members: "الفريق | Team",
   events: "الفعاليات | Events",
+  news: "الأخبار | News",
   partners: "الشراكات | Partners",
   join: "انضم إلينا | Join",
   contact: "تواصل معنا | Contact",

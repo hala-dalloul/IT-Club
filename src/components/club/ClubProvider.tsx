@@ -13,6 +13,7 @@ import { recordVisit } from "@/lib/club/visits";
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
   events: [],
+  news: [],
   partners: [],
 };
 

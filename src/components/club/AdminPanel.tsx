@@ -384,13 +384,11 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       </nav>
       {activeCollection === "events" && (
         <section
-          aria-label={ar ? "ترتيب الأخبار والفعاليات" : "News and events ordering"}
+          aria-label={ar ? "ترتيب الفعاليات" : "Event ordering"}
           className="mb-6 rounded-2xl border border-border bg-card p-5"
         >
           <h2 className="mb-3 font-bold">
-            {ar
-              ? "ترتيب الأخبار والفعاليات في لوحة الإدارة"
-              : "News and events ordering in the admin panel"}
+            {ar ? "ترتيب الفعاليات في لوحة الإدارة" : "Event ordering in the admin panel"}
           </h2>
           <div className="flex flex-wrap items-center gap-3">
             <BrandButton
@@ -444,6 +442,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           {[
             [data.members.length, ar ? "أعضاء الفريق" : "Team members"],
             [data.events.length, ar ? "الفعاليات" : "Events"],
+            [data.news.length, ar ? "الأخبار" : "News"],
           ].map(([count, label]) => (
             <div key={label} className="rounded-3xl border border-border bg-card p-8 shadow-card">
               <strong className="block text-4xl font-black text-primary">{count}</strong>
@@ -667,6 +666,11 @@ function ContentEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   const [images, setImages] = useState(item?.images || []);
+  const isArticle = kind === "events" || kind === "news";
+  const [articleKind, setArticleKind] = useState<"events" | "news">(
+    kind === "news" ? "news" : "events",
+  );
+  const targetKind: ContentCollection = isArticle ? articleKind : kind;
 
   const [committee, setCommittee] = useState(
     item?.isFounder || item?.committee === "administrative"
@@ -741,9 +745,9 @@ function ContentEditor({
       }
     }
 
-    if (kind === "events") value.date = values["date"] || "";
+    if (isArticle) value.date = values["date"] || "";
 
-    if (kind === "events") value.status = status;
+    if (targetKind === "events") value.status = status;
 
     if (kind === "partners") {
       value.partnershipType = values["partnershipType"] || "";
@@ -768,29 +772,36 @@ function ContentEditor({
     setError("");
 
     try {
-      await saveContent(kind, value, item?.id);
+      await saveContent(targetKind, value, item?.id, kind);
 
       if (item?.id) {
-        queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(
-          clubPublicKey,
-          (old) =>
-            old && {
-              ...old,
-              data: {
-                ...old.data,
-                [kind]: old.data[kind].map((c) => {
-                  if (c.id !== item.id) return c;
-                  const updated = { ...c, ...value };
-                  if (value.displayOrder === undefined) delete updated.displayOrder;
-                  return updated;
-                }),
-              },
-            },
-        );
+        queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(clubPublicKey, (old) => {
+          if (!old) return old;
+          const updated = { ...item, ...value };
+          if (value.displayOrder === undefined) delete updated.displayOrder;
+          if (targetKind === "news") delete updated.status;
+          const nextData = { ...old.data };
+          nextData[kind] = old.data[kind].filter((c) => c.id !== item.id);
+          nextData[targetKind] = [updated, ...nextData[targetKind].filter((c) => c.id !== item.id)];
+          return { ...old, data: nextData };
+        });
       }
+      void queryClient.invalidateQueries({ queryKey: clubPublicKey });
 
       onSaved();
     } catch (error) {
+      if (
+        targetKind === "news" &&
+        error instanceof Error &&
+        error.message.includes("club_content_kind_check")
+      ) {
+        setError(
+          ar
+            ? "يلزم تشغيل تحديث فصل الأخبار والفعاليات في Supabase قبل حفظ الأخبار."
+            : "Apply the news/events database migration in Supabase before saving news.",
+        );
+        return;
+      }
       const rejectedBoard =
         kind === "members" &&
         error instanceof Error &&
@@ -849,7 +860,14 @@ function ContentEditor({
             ],
             ["websiteUrl", "موقع الشريك", "Partner website", "url"],
           ]
-        : [["date", "التاريخ", "Date", "date"]];
+        : [
+            [
+              "date",
+              targetKind === "news" ? "تاريخ الخبر" : "موعد الفعالية",
+              targetKind === "news" ? "News date" : "Event date",
+              "date",
+            ],
+          ];
 
   return (
     <form
@@ -860,6 +878,29 @@ function ContentEditor({
       <h2 className="text-2xl font-black">
         {item ? (ar ? "تعديل المحتوى" : "Edit content") : ar ? "إضافة محتوى" : "Add content"}
       </h2>
+      {isArticle && (
+        <label className="block">
+          <span className="mb-2 block">{ar ? "نوع المحتوى" : "Content type"}</span>
+          <Select
+            value={articleKind}
+            dir={ar ? "rtl" : "ltr"}
+            onValueChange={(value) => {
+              if (value === "events" || value === "news") {
+                setArticleKind(value);
+                setDirty(true);
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="events">{ar ? "فعالية" : "Event"}</SelectItem>
+              <SelectItem value="news">{ar ? "خبر" : "News"}</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+      )}
       <div className="grid gap-5 sm:grid-cols-2">
         {(
           [
@@ -974,7 +1015,7 @@ function ContentEditor({
           </label>
         </>
       )}
-      {kind === "events" && (
+      {targetKind === "events" && (
         <label className="block">
           <span className="mb-2 block">{ar ? "الحالة" : "Status"}</span>
           <Select

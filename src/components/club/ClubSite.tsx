@@ -59,6 +59,7 @@ const nav = [
   ["members", "الفريق", "Team"],
   ["partners", "الشراكات", "Partners"],
   ["events", "الفعاليات", "Events"],
+  ["news", "الأخبار", "News"],
   ["contact", "تواصل معنا", "Contact"],
 ];
 
@@ -419,7 +420,7 @@ function Home() {
       </div>
       <section className="mt-14">
         <h2 className="mb-6 text-2xl font-black">{ar ? "من أخبار النادي" : "Club news"}</h2>
-        <Grid items={data.events.slice(0, 1)} kind="events" compact />
+        <Grid items={data.news.slice(0, 1)} kind="news" compact />
       </section>
     </>
   );
@@ -492,7 +493,7 @@ function Listing({ kind }: { kind: ContentCollection }) {
   const [status, setStatus] = useState("all");
   let items = data[kind].filter((x) => status === "all" || x.status === status);
 
-  if (kind === "events")
+  if (kind === "events" || kind === "news")
     items = [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   return (
@@ -573,7 +574,13 @@ function Listing({ kind }: { kind: ContentCollection }) {
 
 function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   const { data, lang } = useClub();
-  const item = data[kind].find((x) => x.id === id);
+  const item =
+    data[kind].find((x) => x.id === id) ??
+    (kind === "events"
+      ? data.news.find((x) => x.id === id)
+      : kind === "news"
+        ? data.events.find((x) => x.id === id)
+        : undefined);
   const ar = lang === "ar";
 
   if (!item)

@@ -27,6 +27,7 @@ before(async () => {
   );
   await db.exec(readFileSync("supabase/migrations/202609170001_member_gender.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609170002_board_order.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202609190001_news_content.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -319,4 +320,51 @@ test("board order accepts optional positive integers and rejects invalid values"
       ]),
     );
   }
+});
+
+test("news and events are separate and can be reclassified without changing identity", async () => {
+  await as(editor);
+  const data = {
+    title: "Club update",
+    title_en: "Club update",
+    description: "Test description",
+    description_en: "Test description",
+    images: [],
+    date: "2026-09-19",
+  };
+  const inserted = await db.query(
+    "insert into club_content(kind,data) values('news',$1) returning id",
+    [JSON.stringify(data)],
+  );
+  const id = inserted.rows[0].id;
+  assert.equal(
+    (await db.query("select id from club_content where kind='events' and id=$1", [id])).rows.length,
+    0,
+  );
+  await assert.rejects(() => db.query("update club_content set kind='events' where id=$1", [id]));
+  await db.query("update club_content set kind='events',data=$1 where id=$2", [
+    JSON.stringify({ ...data, status: "upcoming" }),
+    id,
+  ]);
+  assert.equal(
+    (await db.query("select kind from club_content where id=$1", [id])).rows[0].kind,
+    "events",
+  );
+  await db.query("update club_content set kind='news',data=$1 where id=$2", [
+    JSON.stringify(data),
+    id,
+  ]);
+  await assert.rejects(() =>
+    db.query("insert into club_content(kind,data) values('news',$1)", [
+      JSON.stringify({ ...data, date: "invalid" }),
+    ]),
+  );
+  await as(null);
+  assert.equal(
+    (await db.query("select id from club_content where kind='news' and id=$1", [id])).rows.length,
+    1,
+  );
+  await assert.rejects(() =>
+    db.query("insert into club_content(kind,data) values('news',$1)", [JSON.stringify(data)]),
+  );
 });
