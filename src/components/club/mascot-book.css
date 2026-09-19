@@ -1,8 +1,8 @@
 .mascot-book-track {
   height: 190svh;
   position: relative;
-  --book-width: 280px;
-  --book-height: 350px;
+  --book-width: min(760px, 96%);
+  --book-height: min(560px, 78svh);
   --book-angle: 0deg;
   --cover-opacity: 1;
   --mascot-opacity: 0;
@@ -48,7 +48,7 @@
   justify-content: center;
   text-align: center;
   color: white;
-  padding: 22px;
+  padding: clamp(18px, 4vw, 48px);
 }
 .mascot-book-cover:before {
   content: "";
@@ -70,15 +70,15 @@
   letter-spacing: 1px;
 }
 .mascot-book-cover h2 {
-  font-size: clamp(23px, 3vw, 38px);
+  font-size: clamp(26px, 4vw, 52px);
   line-height: 1.6;
   margin: 12px 0;
-  max-width: 380px;
+  max-width: 680px;
 }
 .mascot-book-cover p {
-  font-size: 12px;
+  font-size: clamp(14px, 1.6vw, 18px);
   line-height: 1.9;
-  max-width: 350px;
+  max-width: 620px;
 }
 .mascot-book-cover span {
   margin-top: 16px;

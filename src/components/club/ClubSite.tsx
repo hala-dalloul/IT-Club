@@ -441,13 +441,6 @@ function Home() {
     <>
       <MascotBook ar={ar} />
       <section id="club-home-content" className="mx-auto max-w-4xl text-center">
-        <img
-          src={logo}
-          alt="UCAS IT CLUB"
-          width={124}
-          height={160}
-          className="mx-auto h-40 w-32 object-contain animate-float-slow"
-        />
         <p className="mt-7 text-primary font-bold">
           {ar ? "النادي التكنولوجي" : "Technology Club"}
           <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
@@ -462,17 +455,6 @@ function Home() {
             ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
             : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
         </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ClubLink
-            path="join"
-            className={
-              linkClass +
-              " bg-brand-gradient text-primary-foreground border-transparent shadow-glow-blue"
-            }
-          >
-            {ar ? "انضم إلينا" : "Join the club"}
-          </ClubLink>
-        </div>
       </section>
       <div className="my-14 grid grid-cols-3 gap-3">
         {(

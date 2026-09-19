@@ -23,11 +23,11 @@ export function MascotBook({ ar }: { ar: boolean }) {
       const opening = Math.max(0, Math.min(1, (progress - 0.08) / 0.7));
       element.style.setProperty(
         "--book-width",
-        `${Math.min(280, element.clientWidth * 0.82) + (element.clientWidth * 0.96 - Math.min(280, element.clientWidth * 0.82)) * eased}px`,
+        `${Math.min(760, element.clientWidth * 0.96) + (element.clientWidth * 0.96 - Math.min(760, element.clientWidth * 0.96)) * eased}px`,
       );
       element.style.setProperty(
         "--book-height",
-        `${Math.min(350, stage.clientHeight * 0.65) + (stage.clientHeight * 0.8 - Math.min(350, stage.clientHeight * 0.65)) * eased}px`,
+        `${Math.min(560, stage.clientHeight * 0.888) + (stage.clientHeight * 0.88 - Math.min(560, stage.clientHeight * 0.888)) * eased}px`,
       );
       element.style.setProperty("--book-angle", `${opening * 105}deg`);
       element.style.setProperty(
@@ -77,11 +77,11 @@ export function MascotBook({ ar }: { ar: boolean }) {
           <div className="mascot-book-cover">
             <img src={logo} alt="" width={48} height={58} />
             <small>UCAS IT CLUB</small>
-            <h2>{ar ? "كل فكرة عظيمة تبدأ بفضول" : "Every great idea starts with curiosity"}</h2>
+            <h2>{ar ? "نتعلم , نبتكر , نتقدم" : "Learn, innovate, advance"}</h2>
             <p>
               {ar
-                ? "افتح صفحة جديدة من رحلتك مع النادي التكنولوجي"
-                : "Open a new chapter of your journey with the Technology Club"}
+                ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
+                : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
             </p>
             <span>{ar ? "مرّر وافتح الحكاية ↓" : "Scroll to open the story ↓"}</span>
           </div>
