@@ -77,7 +77,7 @@ export function MascotBook({ ar }: { ar: boolean }) {
           <div className="mascot-book-cover">
             <img src={logo} alt="" width={48} height={58} />
             <small>UCAS IT CLUB</small>
-            <h2>{ar ? "نتعلم , نبتكر , نتقدم" : "Learn, innovate, advance"}</h2>
+            <h1>{ar ? "نتعلم , نبتكر , نتقدم" : "Learn, innovate, advance"}</h1>
             <p>
               {ar
                 ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."

@@ -440,23 +440,7 @@ function Home() {
   return (
     <>
       <MascotBook ar={ar} />
-      <section id="club-home-content" className="mx-auto max-w-4xl text-center">
-        <p className="mt-7 text-primary font-bold">
-          {ar ? "النادي التكنولوجي" : "Technology Club"}
-          <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
-            {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
-          </span>
-        </p>
-        <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
-          {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-loose text-muted-foreground">
-          {ar
-            ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
-            : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
-        </p>
-      </section>
-      <div className="my-14 grid grid-cols-3 gap-3">
+      <div id="club-home-content" className="my-14 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
