@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Plus, ArrowUpRight, Linkedin, Github } from "lucide-react";
 import {
   Sheet,
@@ -85,13 +84,6 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                 {description}
               </p>
               <div className="flex flex-wrap items-center gap-5">
-                <Link
-                  to="/club/$"
-                  params={{ _splat: `members/${member.id}` }}
-                  className="rounded-full bg-brand-gradient px-5 py-3 font-bold text-white"
-                >
-                  {ar ? "صفحة العضو" : "Member profile"}
-                </Link>
                 {safeUrl(member.githubUrl) && (
                   <a
                     href={safeUrl(member.githubUrl)}
