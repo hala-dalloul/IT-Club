@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClubSite } from "@/components/club/ClubSite";
+import { loadClubData } from "@/lib/club/ssr-data";
 
 const titles = {
   about: "من نحن | About",
@@ -34,5 +35,6 @@ export const Route = createFileRoute("/club/$")({
         : []),
     ],
   }),
+  loader: ({ context }) => loadClubData(context.queryClient),
   component: ClubSite,
 });
