@@ -1,5 +1,5 @@
 import { ArrowRight, Compass, ListChecks, Rocket, Smile, Heart } from "lucide-react";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 import { BrandButton } from "./BrandButton";
 
 interface InfoScreenProps {

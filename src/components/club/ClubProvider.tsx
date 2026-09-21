@@ -7,7 +7,7 @@ import {
   type Lang,
   type Settings,
 } from "@/lib/club/model";
-import { configured, loadPublic, SetupRequiredError } from "@/lib/club/supabase";
+import { configured, loadPublic, SetupRequiredError } from "@/lib/club/public-api";
 import { recordVisit } from "@/lib/club/visits";
 import { LANG_COOKIE, readLang, writePrefCookie } from "@/lib/club/prefs";
 

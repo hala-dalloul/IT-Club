@@ -1,5 +1,5 @@
 import { Rocket, Gamepad2, Globe, Palette, Smartphone, BrainCircuit } from "lucide-react";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 import { BrandButton } from "./BrandButton";
 
 interface WelcomeScreenProps {

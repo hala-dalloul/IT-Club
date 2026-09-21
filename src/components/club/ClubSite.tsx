@@ -23,7 +23,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import "./club.css";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 import { BrandButton } from "@/components/game/BrandButton";
 import { FloatingBackground } from "@/components/game/FloatingBackground";
 import { Input } from "@/components/ui/input";

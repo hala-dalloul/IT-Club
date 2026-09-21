@@ -1,39 +1,21 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { QueryClient } from "@tanstack/react-query";
 import { clubPublicKey } from "@/components/club/ClubProvider";
-import { configured, loadPublic, url, key } from "@/lib/club/supabase";
+import { configured, loadPublic } from "@/lib/club/public-api";
 
 /** How long the edge may serve a cached copy of the public club data. */
 const TTL = 60;
 
-let cached: SupabaseClient | undefined;
-
 /**
- * A server-only client for the public read.
+ * A fetch that asks Cloudflare to cache the read.
  *
- * Deliberately separate from the shared one, and it must never carry a
- * signed-in request: everything fetched through here is cached in module scope
- * below and handed to the next visitor.
- *
- * `cf.cacheTtl` is set for the day this moves to a custom domain. It does
- * nothing on a workers.dev subdomain, where neither the Cache API nor the `cf`
- * cache options are active — which is why the memory cache below exists.
+ * Does nothing on a workers.dev subdomain, where neither the Cache API nor the
+ * `cf` options are active — which is why the memory cache below exists. It
+ * starts working the day this moves to a custom domain.
  */
-function edgeCached() {
-  cached ??= createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: {
-      fetch: (input, init) =>
-        fetch(input, {
-          ...init,
-          // Non-standard, and ignored everywhere except a Cloudflare worker.
-          cf: { cacheTtl: TTL, cacheEverything: true },
-        } as RequestInit),
-    },
-  });
-
-  return cached;
-}
+const cachingFetch: typeof fetch = (input, init) =>
+  // SAFETY: `cf` is a Cloudflare extension to RequestInit that the DOM lib does
+  // not declare; every other runtime ignores the unknown property.
+  fetch(input, { ...init, cf: { cacheTtl: TTL, cacheEverything: true } } as RequestInit);
 
 type Public = Awaited<ReturnType<typeof loadPublic>>;
 
@@ -66,7 +48,7 @@ function publicData() {
 
   if (inflight && now - inflight.at < TTL * 1000) return inflight.value;
 
-  const value = loadPublic(edgeCached());
+  const value = loadPublic(cachingFetch);
   inflight = { at: now, value };
   value.catch(() => {
     if (inflight?.value === value) inflight = undefined;

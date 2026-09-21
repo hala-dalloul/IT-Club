@@ -1,19 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { useRegistration } from "@/lib/club/registration";
-import mascot from "@/assets/club-mascot.png";
+import { useClub } from "./ClubProvider";
+import mascot from "@/assets/club-mascot.webp";
 
 /**
- * Shown only while the club is actually taking applications.
+ * Shown only while the club is advertising membership.
  *
- * The status comes from the shared registration query, so this costs no request
- * of its own. It used to ask Google Apps Script — a ~3s call — on mount, every
- * fifteen seconds, on every focus and on every visibility change, from every
- * page, to decide whether to render a button that is hidden most of the year.
+ * Reads the flag the admin screen mirrors into club_settings, which arrives
+ * with the club payload the page has already fetched, so this button costs no
+ * request at all. It used to ask Google Apps Script — a ~3s call — on mount,
+ * every fifteen seconds, on every focus and on every visibility change, from
+ * every page, to decide whether to render something hidden most of the year.
+ *
+ * The flag can lag reality if the sheet fills up without an admin touching the
+ * settings. That is why it only governs this button: the join page asks Apps
+ * Script directly and is the one that tells a visitor the truth.
  */
 export function FloatingJoin({ ar }: { ar: boolean }) {
-  const { open } = useRegistration();
+  const { settings } = useClub();
 
-  if (!open) return null;
+  if (!settings.registrationOpen) return null;
 
   return (
     <Link

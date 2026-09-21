@@ -38,6 +38,16 @@ export type Content = {
 };
 
 export type Settings = {
+  /**
+   * Whether the club is advertising membership right now.
+   *
+   * Mirrored here by the admin screen when it saves the Apps Script settings,
+   * so public pages can show or hide the join prompt from the club payload
+   * they already fetch. Apps Script stays authoritative — the join page asks
+   * it directly — but nobody pays a ~3s third-party request to find out
+   * whether to render a button.
+   */
+  registrationOpen?: boolean;
   vision: string;
   vision_en: string;
   mission: string;

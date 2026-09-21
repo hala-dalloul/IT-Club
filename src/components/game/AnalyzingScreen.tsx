@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 
 const PHRASES = ["نحلل اختياراتك...", "نقارن شخصيتك بالمسارات الخمسة...", "نجهز نتيجتك..."];
 

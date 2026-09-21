@@ -3,7 +3,7 @@ import { Mail, ArrowUpRight, Facebook, Instagram, Linkedin, Github } from "lucid
 import { useClub } from "./ClubProvider";
 import { Reveal } from "./Reveal";
 import { safeUrl } from "@/lib/club/model";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 
 const sections: [string, string, string][] = [
   ["about", "من نحن", "About"],

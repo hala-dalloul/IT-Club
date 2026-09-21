@@ -25,6 +25,10 @@ export type Registration = z.infer<typeof registrationSchema>;
 
 export class SheetsError extends Error {}
 
+/** Applications are being accepted and there is room for one more. */
+export const isOpen = (r: Registration) =>
+  r.enabled && r.open && r.count < r.limit && r.remaining > 0;
+
 type RequestBody = Record<string, string | number | boolean | Record<string, string>>;
 
 function isStringCode(value: unknown): value is { code: string } {

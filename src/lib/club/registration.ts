@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { loadRegistration, type Registration } from "./sheets";
+import { isOpen, loadRegistration, type Registration } from "./sheets";
 
 const key = ["club-registration"];
 
@@ -33,7 +33,7 @@ export function useRegistration() {
   return {
     loading: query.isLoading,
     /** Undefined until the answer arrives, so callers can stay quiet meanwhile. */
-    open: r ? r.enabled && r.open && r.count < r.limit && r.remaining > 0 : undefined,
+    open: r ? isOpen(r) : undefined,
     remaining: r?.remaining,
     failed: query.isError,
     /** The submit endpoint just told us the club closed; believe it over the cache. */
