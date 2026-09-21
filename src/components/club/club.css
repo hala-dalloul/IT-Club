@@ -79,14 +79,13 @@
   border: 1px solid transparent;
 }
 
-.club-site .club-nav-link:hover {
+.club-site .club-nav-link:not([aria-current="page"]):hover {
   color: var(--primary);
   background: var(--secondary);
 }
 
 .club-site .club-nav-link[aria-current="page"] {
   color: white;
-  background: linear-gradient(135deg, var(--brand-blue), var(--brand-green));
   border-color: transparent;
   box-shadow: 0 3px 10px color-mix(in oklab, var(--brand-blue) 15%, transparent);
 }

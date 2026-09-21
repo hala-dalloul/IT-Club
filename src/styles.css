@@ -112,6 +112,13 @@
     scroll-behavior: smooth;
   }
 
+  /* Cairo's Latin ink height is ~0.72em vs ~1.17em for its Arabic, so English
+     reads a size smaller than Arabic at identical px. Nudge the rem root in LTR
+     instead of patching each component. */
+  html[dir="ltr"] {
+    font-size: 106.25%;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -141,7 +148,17 @@
 }
 
 @utility bg-brand-gradient {
-  background-image: linear-gradient(135deg, var(--brand-blue), var(--brand-green));
+  /* Mid stop holds chroma ~0.15; a plain blue->green oklab lerp sags to 0.082 (muddy teal).
+     100deg keeps the ramp on the long axis so pills show both brand ends, not the middle. */
+  background-image: linear-gradient(
+    100deg,
+    var(--brand-blue) 0%,
+    oklch(0.62 0.15 190) 50%,
+    var(--brand-green) 100%
+  );
+  /* Without this the ramp is sized to the padding box but painted over the
+     border box, so a transparent border shows the next repeat tile as a slit. */
+  background-origin: border-box;
 }
 
 @utility bg-brand-gradient-soft {
@@ -150,6 +167,7 @@
     color-mix(in oklab, var(--brand-blue) 9%, transparent),
     color-mix(in oklab, var(--brand-green) 9%, transparent)
   );
+  background-origin: border-box;
 }
 
 @utility shadow-glow-blue {

@@ -186,7 +186,7 @@ function Shell({ children }: { children: ReactNode }) {
                   key={path}
                   path={path!}
                   navigation
-                  className="club-nav-link rounded-full px-3 py-2 text-sm font-bold"
+                  className="club-nav-link rounded-full px-3 py-2 text-sm font-bold aria-[current=page]:bg-brand-gradient"
                 >
                   {ar ? a : e}
                 </ClubLink>
@@ -247,7 +247,7 @@ function Shell({ children }: { children: ReactNode }) {
                   <ClubLink
                     path={path!}
                     navigation
-                    className="club-nav-link block rounded-xl p-3 text-sm font-bold"
+                    className="club-nav-link block rounded-xl p-3 text-sm font-bold aria-[current=page]:bg-brand-gradient"
                   >
                     {ar ? a : e}
                   </ClubLink>
