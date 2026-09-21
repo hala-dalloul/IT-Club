@@ -19,8 +19,8 @@ import {
   removeContent,
   uploadImage,
   saveSettings,
-  loadPublic,
 } from "@/lib/club/supabase";
+import { loadPublic } from "@/lib/club/public-api";
 import {
   collections,
   labels,
@@ -67,6 +67,9 @@ import {
 type AdminRow = { id: string; name: string; email: string; role: string };
 
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
+
+/** The Settings keys this form edits: everything except the boolean gate. */
+type TextSetting = Exclude<keyof Settings, "registrationOpen">;
 
 export function AdminPanel() {
   const { lang, setupRequired } = useClub();
@@ -1182,7 +1185,7 @@ function SettingsEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const fields: Record<keyof Settings, [string, string]> = {
+  const fields: Record<TextSetting, [string, string]> = {
     vision: ["الرؤية بالعربية", "Vision in Arabic"],
     vision_en: ["الرؤية بالإنجليزية", "Vision in English"],
     mission: ["الرسالة بالعربية", "Mission in Arabic"],
@@ -1206,11 +1209,17 @@ function SettingsEditor({
         e.preventDefault();
         setBusy(true);
         // SAFETY: every field below is named after a Settings key, so the form's
-        // FormData entries exactly match Settings' shape.
-        const values = Object.fromEntries(new FormData(e.currentTarget)) as Settings;
+        // FormData entries exactly match the text half of Settings' shape.
+        const values = Object.fromEntries(new FormData(e.currentTarget)) as Record<
+          TextSetting,
+          string
+        >;
 
         try {
-          await onSave(values);
+          // This form renders only the text fields. Spreading the current
+          // settings underneath keeps registrationOpen, which the registration
+          // panel owns, from being wiped every time someone edits the vision.
+          await onSave({ ...initial, ...values });
           setDirty(false);
         } finally {
           setBusy(false);
@@ -1223,7 +1232,7 @@ function SettingsEditor({
           {["vision", "mission", "goals"].some((prefix) => key.startsWith(prefix)) ? (
             <Textarea
               name={key}
-              defaultValue={initial[key as keyof Settings]}
+              defaultValue={initial[key as TextSetting]}
               maxLength={10000}
               rows={5}
               dir={key.endsWith("_en") ? "ltr" : "rtl"}
@@ -1233,7 +1242,7 @@ function SettingsEditor({
               name={key}
               type={key === "email" ? "email" : "url"}
               pattern={key === "email" ? undefined : "https://.*"}
-              defaultValue={initial[key as keyof Settings]}
+              defaultValue={initial[key as TextSetting]}
             />
           )}
         </label>

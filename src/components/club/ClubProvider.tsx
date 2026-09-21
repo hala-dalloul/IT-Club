@@ -7,8 +7,9 @@ import {
   type Lang,
   type Settings,
 } from "@/lib/club/model";
-import { configured, loadPublic, SetupRequiredError } from "@/lib/club/supabase";
+import { configured, loadPublic, SetupRequiredError } from "@/lib/club/public-api";
 import { recordVisit } from "@/lib/club/visits";
+import { LANG_COOKIE, readLang, writePrefCookie } from "@/lib/club/prefs";
 
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
@@ -46,8 +47,11 @@ export function ClubProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
-  const [lang, setLang] = useState<Lang>("ar");
+  // Seeded from the cookie, so the server already rendered this language.
+  const [lang, setLang] = useState<Lang>(readLang);
   useEffect(() => {
+    // Visitors who chose English before the cookie existed still have the
+    // preference in storage; adopt it once, then the cookie carries it.
     try {
       if (localStorage.getItem("ucas-language") === "en") setLang("en");
     } catch {
@@ -57,6 +61,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    writePrefCookie(LANG_COOKIE, lang);
 
     try {
       localStorage.setItem("ucas-language", lang);
@@ -74,7 +79,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
 
   const query = useQuery({
     queryKey: clubPublicKey,
-    queryFn: loadPublic,
+    queryFn: () => loadPublic(),
     enabled: configured,
     staleTime: 60000,
     refetchInterval: 60000,

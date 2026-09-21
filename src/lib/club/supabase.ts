@@ -1,14 +1,9 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { url, key, configured, SetupRequiredError } from "./public-api";
 import { prepareImage } from "./images";
 import { contentSchema, type Content, type ContentCollection, type Settings } from "./model";
 
-// Public browser configuration; RLS still controls all data access.
-const url = import.meta.env.VITE_SUPABASE_URL || "https://jxweaxenswbjpxxjmihb.supabase.co";
-
-const key =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_kHJik-SCyMiMQ7nn2SRHbQ_0FR6CpOZ";
-
-export const configured = Boolean(url && key);
+export { url, key, configured, SetupRequiredError } from "./public-api";
 
 let client: SupabaseClient | undefined;
 
@@ -23,12 +18,6 @@ export function supabase() {
   });
 
   return client;
-}
-
-export class SetupRequiredError extends Error {
-  constructor() {
-    super("Supabase database setup is required. Run the supplied migration.");
-  }
 }
 
 function check(error: { message: string; code?: string | undefined } | null) {
@@ -118,42 +107,6 @@ export function watchQuery<T>(
     window.removeEventListener("club-data-changed", changedHandler);
     document.removeEventListener("visibilitychange", visible);
   };
-}
-
-export async function loadPublic() {
-  const [content, settings] = await Promise.all([
-    rows("club_content", "updated_at"),
-    supabase().from("club_settings").select("data").eq("id", "public").maybeSingle(),
-  ]);
-
-  check(settings.error);
-
-  const data: Record<ContentCollection, Content[]> = {
-    members: [],
-    events: [],
-    news: [],
-    partners: [],
-  };
-
-  for (const row of content) {
-    // SAFETY: kind is unverified until the hasOwn check below drops rows that
-    // aren't one of the supported ContentCollection keys.
-    const kind = row["kind"] as ContentCollection;
-
-    if (!Object.hasOwn(data, kind)) continue;
-    data[kind].push({
-      // SAFETY: club_content.data is only ever written by saveContent, which
-      // validates the value against contentSchema before insert.
-      ...(row["data"] as Omit<Content, "id">),
-      id: String(row["id"]),
-      createdAt: typeof row["created_at"] === "string" ? row["created_at"] : "",
-      updatedAt: row["updated_at"],
-      updatedBy: String(row["updated_by"] || ""),
-    });
-  }
-
-  // SAFETY: club_settings.data is only ever written by saveSettings, which takes a Settings value.
-  return { data, settings: settings.data?.data as Settings | undefined };
 }
 
 export async function saveContent(

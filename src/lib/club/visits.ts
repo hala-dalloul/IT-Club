@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { recordClubVisit } from "./public-api";
 
 let request: Promise<number> | undefined;
 
@@ -21,16 +21,7 @@ export function recordVisit(): Promise<number> {
     /* Use in-memory ID. */
   }
 
-  request = (async () => {
-    const { data, error } = await supabase().rpc("record_club_visit", { visit_id: sessionId });
-
-    if (error) throw error;
-    const count = Number(data);
-
-    if (!Number.isSafeInteger(count) || count < 0) throw new Error("Invalid visit count");
-
-    return count;
-  })().catch((error) => {
+  request = recordClubVisit(sessionId).catch((error) => {
     request = undefined;
     throw error;
   });

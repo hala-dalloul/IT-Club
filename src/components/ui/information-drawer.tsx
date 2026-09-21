@@ -7,7 +7,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { safeUrl, type Content, type Lang } from "@/lib/club/model";
-import logo from "@/assets/ucas-logo.png";
+import logo from "@/assets/ucas-logo.webp";
 
 /** Team cards and an accessible detail drawer, adapted to the club's content model. */
 export default function InformationDrawer({ teams, lang }: { teams: Content[]; lang: Lang }) {
