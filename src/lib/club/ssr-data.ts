@@ -9,22 +9,15 @@ const TTL = 60;
 let cached: SupabaseClient | undefined;
 
 /**
- * A server-only client whose reads are cached at the Cloudflare edge.
+ * A server-only client for the public read.
  *
- * Measured on the deployed worker, `/` answered in 360ms at best and 2.9s at
- * worst, while `/pathfinder` — the one route with no loader — answered in 80ms.
- * The whole difference was this request: every single visitor was paying for a
- * fresh round trip to Supabase before the first byte of HTML left the worker.
+ * Deliberately separate from the shared one, and it must never carry a
+ * signed-in request: everything fetched through here is cached in module scope
+ * below and handed to the next visitor.
  *
- * `cacheTtl` puts the PostgREST GET in Cloudflare's cache for a minute, so one
- * visitor per minute per edge pays that cost and everybody else is served from
- * memory. A minute of staleness is invisible here: the browser refetches the
- * same query on mount, and the admin panel's saves invalidate it immediately.
- *
- * This client is deliberately separate from the shared one. It must never be
- * used for a signed-in request: caching a response carrying a user's JWT would
- * hand one visitor's data to the next. Only the public, anonymous read below
- * ever goes through it.
+ * `cf.cacheTtl` is set for the day this moves to a custom domain. It does
+ * nothing on a workers.dev subdomain, where neither the Cache API nor the `cf`
+ * cache options are active — which is why the memory cache below exists.
  */
 function edgeCached() {
   cached ??= createClient(url, key, {
@@ -40,6 +33,46 @@ function edgeCached() {
   });
 
   return cached;
+}
+
+type Public = Awaited<ReturnType<typeof loadPublic>>;
+
+let inflight: { at: number; value: Promise<Public> } | undefined;
+
+/**
+ * The public payload, at most one fetch per isolate per TTL.
+ *
+ * Measured on the deployed worker, `/` answered between 360ms and 2.9s while
+ * `/pathfinder` — the one route with no loader — answered in 80ms. The whole
+ * gap was this request, run fresh for every visitor before the first byte of
+ * HTML left the worker, and its tail is what made a first open feel slow.
+ *
+ * A worker isolate survives between requests, so holding the promise here
+ * means one visitor per minute per isolate pays for the round trip and the
+ * rest are served from memory. Caching the promise rather than the result also
+ * collapses a burst of concurrent requests into a single fetch.
+ *
+ * A minute of staleness is invisible: the browser refetches the same query on
+ * mount and an admin save invalidates it. A failed fetch is not cached, so the
+ * next request retries rather than inheriting the error for a minute.
+ */
+function publicData() {
+  // Route loaders also run in the browser on client-side navigation, where
+  // react-query is already the cache and a second Supabase client would only
+  // duplicate the auth instance.
+  if (!import.meta.env.SSR) return loadPublic();
+
+  const now = Date.now();
+
+  if (inflight && now - inflight.at < TTL * 1000) return inflight.value;
+
+  const value = loadPublic(edgeCached());
+  inflight = { at: now, value };
+  value.catch(() => {
+    if (inflight?.value === value) inflight = undefined;
+  });
+
+  return value;
 }
 
 /**
@@ -60,7 +93,7 @@ export function loadClubData(queryClient: QueryClient) {
   return queryClient
     .ensureQueryData({
       queryKey: clubPublicKey,
-      queryFn: () => loadPublic(edgeCached()),
+      queryFn: publicData,
       staleTime: TTL * 1000,
     })
     .catch(() => undefined);
