@@ -19,7 +19,11 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
         const name = ar ? member.title : member.title_en || member.title;
         const description = ar ? member.description : member.description_en || member.description;
         const role = ar ? member.role : member.role_en || member.role;
-        const image = member.images?.map(safeUrl).find(Boolean) || logo;
+        const photo = member.images?.map(safeUrl).find(Boolean);
+        const image = photo || logo;
+        // The club logo stands in for a missing photo; inset it so it reads as a
+        // placeholder mark rather than a cropped portrait.
+        const fit = photo ? "object-cover object-top" : "object-contain p-4";
         return (
           <Sheet key={member.id}>
             <SheetTrigger asChild>
@@ -34,7 +38,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                   width={450}
                   height={600}
                   loading="lazy"
-                  className="h-full w-full object-cover object-top transition duration-300 group-hover:grayscale motion-reduce:transition-none"
+                  className={`h-full w-full ${fit} transition duration-300 group-hover:grayscale motion-reduce:transition-none`}
                 />
                 <span className="absolute end-3 top-3 rounded-full bg-black/40 p-2 text-white">
                   <Plus size={18} />
