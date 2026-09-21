@@ -1,6 +1,6 @@
 import { FloatingJoin } from "./FloatingJoin";
 import { HeroSection } from "@/components/ui/hero-section-4";
-import { AnimatedTeamSection } from "@/components/ui/team-section";
+import InformationDrawer from "@/components/ui/information-drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -404,27 +404,7 @@ function Grid({
   compact?: boolean;
 }) {
   const { lang } = useClub();
-  if (kind === "members" && items.length) {
-    return (
-      <AnimatedTeamSection
-        direction={lang === "ar" ? "rtl" : "ltr"}
-        members={items.map((item) => ({
-          id: item.id,
-          name: local(item, "title", lang),
-          image: item.images?.map(safeUrl).find(Boolean) || logo,
-        }))}
-        renderLink={(member, children) => (
-          <ClubLink
-            path={`members/${member.id}`}
-            className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
-            title={member.name}
-          >
-            {children}
-          </ClubLink>
-        )}
-      />
-    );
-  }
+  if (kind === "members" && items.length) return <InformationDrawer teams={items} lang={lang} />;
   return items.length ? (
     <div
       className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
