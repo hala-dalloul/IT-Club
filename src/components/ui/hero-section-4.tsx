@@ -15,7 +15,6 @@ export const HeroSection = forwardRef<HTMLElement, HeroSectionProps>(
         style={{ backgroundImage: `url(${imageUrl})` }}
         aria-hidden="true"
       />
-      <div className="club-image-hero-shade" aria-hidden="true" />
       <div className="club-image-hero-content">{children}</div>
     </section>
   ),

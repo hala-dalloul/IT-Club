@@ -12,19 +12,6 @@
   opacity: 0.36;
   pointer-events: none;
 }
-.club-image-hero-shade {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    90deg,
-    var(--background) 0%,
-    color-mix(in srgb, var(--background) 90%, transparent) 38%,
-    color-mix(in srgb, var(--background) 60%, transparent) 70%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
 .club-image-hero-content > :not(img) {
   animation: club-hero-enter 0.65s ease both;
 }
