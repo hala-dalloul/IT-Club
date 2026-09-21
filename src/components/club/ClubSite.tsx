@@ -260,7 +260,7 @@ function Shell({ children }: { children: ReactNode }) {
       <main
         id="club-main"
         tabIndex={-1}
-        className="mx-auto max-w-6xl px-4 py-12 sm:py-16 animate-stage-in"
+        className={`mx-auto max-w-6xl px-4 animate-stage-in ${["/", "/club", "/club/"].includes(location.pathname) ? "pt-4 pb-12 sm:pt-5 sm:pb-16" : "py-12 sm:py-16"}`}
       >
         {children}
       </main>
@@ -452,7 +452,7 @@ function Home() {
           height={160}
           className="mx-auto h-40 w-32 object-contain"
         />
-        <p className="mt-7 text-primary font-bold">
+        <p className="mt-3 text-primary font-bold">
           {ar ? "النادي التكنولوجي" : "Technology Club"}
           <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
             {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
@@ -461,13 +461,13 @@ function Home() {
         <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
           {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-loose text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-2xl text-lg leading-loose text-muted-foreground">
           {ar
             ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
             : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
         </p>
       </HeroSection>
-      <div className="my-14 grid grid-cols-3 gap-3">
+      <div className="mt-6 mb-10 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
