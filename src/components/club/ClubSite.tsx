@@ -1,5 +1,5 @@
-import { HeroSection } from "@/components/ui/hero-section-4";
 import clubMascot from "@/assets/club-mascot.png";
+import CommunityOrbit from "@/components/ui/builders-community-hero";
 import { AnimatedTeamSection } from "@/components/ui/team-section";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
@@ -440,13 +440,15 @@ function Home() {
 
   return (
     <>
-      <HeroSection imageUrl={clubMascot} className="mx-auto max-w-4xl text-center">
-        <img
-          src={logo}
-          alt="UCAS IT CLUB"
-          width={124}
-          height={160}
-          className="mx-auto h-40 w-32 object-contain animate-float-slow"
+      <section className="mx-auto max-w-4xl text-center">
+        <CommunityOrbit
+          ar={ar}
+          logo={logo}
+          members={Array.from({ length: 4 }, (_, i) => ({
+            id: `mascot-${i}`,
+            name: ar ? "تميمة النادي" : "Club mascot",
+            image: clubMascot,
+          }))}
         />
         <p className="mt-7 text-primary font-bold">
           {ar ? "النادي التكنولوجي" : "Technology Club"}
@@ -473,7 +475,7 @@ function Home() {
             {ar ? "انضم إلينا" : "Join the club"}
           </ClubLink>
         </div>
-      </HeroSection>
+      </section>
       <div className="my-14 grid grid-cols-3 gap-3">
         {(
           [

@@ -1,0 +1,121 @@
+.community-orbit {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000/360;
+  isolation: isolate;
+  direction: ltr;
+}
+.community-orbit-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mask-image: linear-gradient(#000 65%, transparent);
+}
+.community-orbit-lines path {
+  stroke: var(--border);
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  animation: orbit-draw 1.4s ease both;
+}
+.community-orbit-lines path + path {
+  stroke: color-mix(in srgb, var(--primary) 25%, var(--border));
+  animation-delay: 0.12s;
+}
+.community-orbit-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  animation: orbit-reveal 0.6s ease both;
+  animation-delay: var(--orbit-delay);
+}
+.community-orbit-pill,
+.community-orbit-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px #1532540b;
+  color: var(--primary);
+  animation: orbit-float 5s ease-in-out infinite;
+  animation-delay: var(--orbit-delay);
+}
+.community-orbit-pill {
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.community-orbit-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 3px;
+  overflow: hidden;
+}
+.community-orbit-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+.community-orbit-logo {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(45px, 9vw, 100px);
+  height: 36%;
+  object-fit: contain;
+}
+@keyframes orbit-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes orbit-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes orbit-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4px;
+  }
+}
+@media (max-width: 640px) {
+  .community-orbit-avatar {
+    width: 35px;
+    height: 35px;
+  }
+  .community-orbit-pill {
+    font-size: 9px;
+    gap: 3px;
+    padding: 5px 7px;
+  }
+  .community-orbit-pill svg {
+    width: 12px;
+    height: 12px;
+  }
+  .community-orbit-avatar svg {
+    width: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-orbit * {
+    animation: none !important;
+  }
+}
