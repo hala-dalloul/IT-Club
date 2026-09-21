@@ -16,6 +16,7 @@ import {
   Palette,
   Users,
   Eye,
+  Target,
   CalendarDays,
   Menu,
   X,
@@ -35,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClubProvider, useClub } from "./ClubProvider";
+import { Reveal } from "./Reveal";
+import { CountUp } from "./CountUp";
+import { SiteFooter } from "./SiteFooter";
+import { PrivacyNotice } from "./PrivacyNotice";
+import { PrivacyPage } from "./PrivacyPage";
+import { useRegistration } from "@/lib/club/registration";
 import { THEME_COOKIE, readTheme, writePrefCookie } from "@/lib/club/prefs";
 import {
   collections,
@@ -50,12 +57,7 @@ import {
   type Content,
   type ContentCollection,
 } from "@/lib/club/model";
-import {
-  loadRegistration,
-  submitToSheet,
-  submissionError,
-  type Registration,
-} from "@/lib/club/sheets";
+import { submitToSheet, submissionError } from "@/lib/club/sheets";
 import { ContactPage } from "./ContactPage";
 
 // The admin console pulls in the media library, registration tables and their
@@ -135,7 +137,7 @@ function Empty() {
 
 function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { lang, setLang, settings, loading } = useClub();
+  const { lang, setLang, loading } = useClub();
   const [open, setOpen] = useState(false);
   // Seeded from the cookie the document was rendered with, so the icon does not
   // swap once hydration catches up.
@@ -274,39 +276,10 @@ function Shell({ children }: { children: ReactNode }) {
       {!isAdmin && !location.pathname.startsWith("/club/join") && (
         <FloatingJoin ar={lang === "ar"} />
       )}
+      <PrivacyNotice ar={ar} />
       {/* The footer reads as the end of the page, so keep it out of the way
           until the content it sits under has actually arrived. */}
-      {!loading && (
-        <footer className="border-t border-border py-8">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-4">
-            <p className="font-bold">
-              {ar
-                ? "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية"
-                : "University College of Applied Sciences"}
-              <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
-            </p>
-            <div className="flex flex-wrap gap-4 text-sm font-bold">
-              <ClubLink path="contact" className="text-primary">
-                {ar ? "تواصل معنا" : "Contact us"}
-              </ClubLink>
-              {(["facebook", "instagram", "linkedin", "github"] as const).map(
-                (key) =>
-                  safeUrl(settings[key]) && (
-                    <a
-                      key={key}
-                      href={safeUrl(settings[key])}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary capitalize"
-                    >
-                      {key}
-                    </a>
-                  ),
-              )}
-            </div>
-          </div>
-        </footer>
-      )}
+      {!isAdmin && !loading && <SiteFooter />}
     </div>
   );
 }
@@ -323,63 +296,83 @@ function Card({
   const { lang } = useClub();
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
-
-  const aspect = "aspect-video";
+  const partner = kind === "partners";
+  const status = item.status === "upcoming" || item.status === "past" ? item.status : undefined;
 
   return (
-    <article className="h-full overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
-      {image ? (
-        <img
-          src={image}
-          alt={title}
-          loading="lazy"
-          width={640}
-          height={360}
-          className={`w-full ${aspect} ${kind === "partners" ? "object-contain p-6" : "object-cover"}`}
-        />
-      ) : (
-        <div className={`flex w-full ${aspect} items-center justify-center bg-brand-gradient`}>
+    <article className="club-card flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card">
+      <div className="relative aspect-video w-full overflow-hidden">
+        {image ? (
           <img
-            src={logo}
-            alt=""
-            aria-hidden="true"
-            className="h-16 w-14 object-contain brightness-0 invert opacity-90"
+            src={image}
+            alt={title}
+            loading="lazy"
+            width={640}
+            height={360}
+            className={`club-card-media h-full w-full ${partner ? "club-partner-media object-contain p-6" : "object-cover"}`}
           />
-        </div>
-      )}
-      <div className="p-6">
+        ) : (
+          <div className="club-card-media flex h-full w-full items-center justify-center bg-brand-gradient">
+            <img
+              src={logo}
+              alt=""
+              aria-hidden="true"
+              className="h-16 w-14 object-contain opacity-90 brightness-0 invert"
+            />
+          </div>
+        )}
+        {/* Upcoming or past reads at a glance instead of only from the filter. */}
+        {status && (
+          <span className="absolute end-3 top-3 rounded-full bg-background/85 px-3 py-1 text-xs font-bold text-primary shadow-card backdrop-blur-sm">
+            {status === "upcoming"
+              ? lang === "ar"
+                ? "قادمة"
+                : "Upcoming"
+              : lang === "ar"
+                ? "سابقة"
+                : "Past"}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-6">
         {item.date && (
-          <time dateTime={item.date} className="text-sm text-muted-foreground">
+          <time
+            dateTime={item.date}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
+          >
+            <CalendarDays size={14} aria-hidden="true" />
             {item.date}
           </time>
         )}
         <h2 className="mt-2 text-xl font-extrabold">{title}</h2>
         <p
-          className={`text-base leading-relaxed text-muted-foreground mt-3 ${compact ? "truncate" : "line-clamp-3"}`}
+          className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}
         >
           {local(item, "description", lang)}
         </p>
-        {kind === "partners" ? (
-          <>
+        {partner ? (
+          <div className="mt-auto pt-5">
             {item.partnershipType && (
-              <p className="mt-3 font-bold text-primary">{local(item, "partnershipType", lang)}</p>
+              <p className="mb-3 inline-flex rounded-full bg-brand-gradient-soft px-3 py-1 text-sm font-bold text-primary">
+                {local(item, "partnershipType", lang)}
+              </p>
             )}
             {safeUrl(item.websiteUrl) && (
               <a
                 href={safeUrl(item.websiteUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 text-primary font-bold"
+                className="flex items-center gap-2 font-bold text-primary"
               >
                 {lang === "ar" ? "موقع الشريك" : "Visit partner"}
                 <ExternalLink size={16} />
               </a>
             )}
-          </>
+          </div>
         ) : (
           <ClubLink
             path={`${kind}/${item.id}`}
-            className="mt-5 inline-flex items-center gap-2 text-primary font-bold"
+            className="club-card-cta mt-auto inline-flex items-center gap-2 pt-5 font-bold text-primary"
           >
             {lang === "ar" ? "التفاصيل" : "View details"}
             {lang === "ar" ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
@@ -400,12 +393,17 @@ function Grid({
   compact?: boolean;
 }) {
   const { lang } = useClub();
+
   if (kind === "members")
     return items.length ? <InformationDrawer teams={items} lang={lang} /> : <Empty />;
+
   return items.length ? (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((item) => (
-        <Card key={item.id} item={item} kind={kind} compact={compact} />
+      {items.map((item, i) => (
+        // Stagger across the row only, so a long list never waits on its own index.
+        <Reveal key={item.id} delay={(i % 3) * 110}>
+          <Card item={item} kind={kind} compact={compact} />
+        </Reveal>
       ))}
     </div>
   ) : (
@@ -416,18 +414,23 @@ function Grid({
 function Home() {
   const { lang, data, visitorCount } = useClub();
   const ar = lang === "ar";
+  const past = data.events.filter((x) => x.status === "past");
+  const upcoming = data.events.filter((x) => x.status !== "past");
+  const preview = (upcoming.length ? upcoming : past).slice(0, 3);
 
   return (
     <>
       <HeroSection className="mx-auto max-w-4xl text-center">
-        <img
-          src={logo}
-          alt="UCAS IT CLUB"
-          width={124}
-          height={160}
-          className="mx-auto h-40 w-32 object-contain"
-        />
-        <p className="mt-3 text-primary font-bold">
+        <div className="club-hero-mark mx-auto w-fit">
+          <img
+            src={logo}
+            alt="UCAS IT CLUB"
+            width={124}
+            height={160}
+            className="club-hero-logo h-24 w-auto object-contain sm:h-28"
+          />
+        </div>
+        <p className="mt-4 font-bold text-primary">
           {ar ? "النادي التكنولوجي" : "Technology Club"}
           <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
             {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
@@ -442,90 +445,181 @@ function Home() {
             : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
         </p>
       </HeroSection>
-      <div className="mt-6 mb-10 grid grid-cols-3 gap-3">
+
+      {/* The club's totals live here and nowhere else. */}
+      <div className="mt-8 mb-14 grid grid-cols-3 gap-3">
         {(
           [
             [Users, data.members.length, ar ? "الأعضاء" : "Members"],
-            [Eye, visitorCount ?? "—", ar ? "الزيارات" : "Visits"],
-            [
-              CalendarDays,
-              data.events.filter((x) => x.status === "past").length,
-              ar ? "فعاليات منفذة" : "Past events",
-            ],
+            [Eye, visitorCount, ar ? "الزيارات" : "Visits"],
+            [CalendarDays, past.length, ar ? "فعاليات منفذة" : "Past events"],
           ] as const
-        ).map(([Icon, n, label]) => (
-          <div
-            key={label}
-            className="rounded-3xl border border-border bg-card p-5 text-center shadow-card"
-          >
-            <Icon className="mx-auto text-primary" />
-            <strong className="my-2 block text-3xl font-black">{n}</strong>
-            <span className="text-sm font-bold text-muted-foreground">{label}</span>
-          </div>
+        ).map(([Icon, n, label], i) => (
+          <Reveal key={label} delay={i * 90}>
+            <div className="club-card h-full rounded-3xl border border-border bg-card p-5 text-center shadow-card">
+              <Icon className="mx-auto text-primary" />
+              <strong className="my-2 block text-3xl font-black sm:text-4xl">
+                <CountUp value={n} />
+              </strong>
+              <span className="text-sm font-bold text-muted-foreground">{label}</span>
+            </div>
+          </Reveal>
         ))}
       </div>
-      <section className="mt-14">
-        <h2 className="mb-6 text-2xl font-black">{ar ? "من أخبار النادي" : "Club news"}</h2>
-        <Grid items={data.news.slice(0, 1)} kind="news" compact />
+
+      <section className="mt-16">
+        <Reveal>
+          <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+            <h2 className="club-rule text-2xl font-black">
+              {ar
+                ? upcoming.length
+                  ? "الفعاليات القادمة"
+                  : "فعاليات نفّذها النادي"
+                : upcoming.length
+                  ? "Upcoming events"
+                  : "Events the club has run"}
+            </h2>
+            <ClubLink path="events" className="text-sm font-bold text-primary">
+              {ar ? "كل الفعاليات" : "All events"}
+            </ClubLink>
+          </div>
+        </Reveal>
+        <Grid items={preview} kind="events" compact />
+      </section>
+
+      <section className="mt-16">
+        <Reveal>
+          <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+            <h2 className="club-rule text-2xl font-black">
+              {ar ? "من أخبار النادي" : "Club news"}
+            </h2>
+            <ClubLink path="news" className="text-sm font-bold text-primary">
+              {ar ? "كل الأخبار" : "All news"}
+            </ClubLink>
+          </div>
+        </Reveal>
+        <Grid items={data.news.slice(0, 3)} kind="news" compact />
       </section>
     </>
   );
 }
 
 function About() {
-  const { lang, settings } = useClub();
+  const { lang, settings, data } = useClub();
   const ar = lang === "ar";
+  const goals = (settings[ar ? "goals" : "goals_en"] || "").split("\n").filter(Boolean);
 
   return (
     <>
-      <Heading ar="من نحن" en="About the club" />
+      <Heading ar="من نحن" en="About the club">
+        {ar
+          ? "نادٍ طلابي في الكلية الجامعية للعلوم التطبيقية، يديره طلبته ويجمع المهتمين بالبرمجة والتصميم والألعاب والوسائط."
+          : "A student-run club at the University College of Applied Sciences for everyone working in code, design, games and media."}
+      </Heading>
+
       <div className="grid gap-6 sm:grid-cols-2">
-        {(["vision", "mission"] as const).map((key) => {
+        {(["vision", "mission"] as const).map((key, i) => {
           // SAFETY: key is "vision" | "mission" from the as-const array above, so
           // `${key}_en` is exactly "vision_en" | "mission_en".
           const enKey = `${key}_en` as "vision_en" | "mission_en";
+          const Icon = key === "vision" ? Eye : Target;
 
           return (
-            <article key={key} className="rounded-3xl border border-border bg-card p-8 shadow-card">
-              <h2 className="text-2xl font-black text-primary">
-                {key === "vision" ? (ar ? "رؤيتنا" : "Our vision") : ar ? "رسالتنا" : "Our mission"}
-              </h2>
-              <p className="mt-4 whitespace-pre-line text-base leading-loose text-muted-foreground">
-                {settings[ar ? key : enKey] ||
-                  (ar
-                    ? "سيُنشر النص الرسمي المعتمد قريبًا."
-                    : "The approved official statement will be published here.")}
-              </p>
-            </article>
+            <Reveal key={key} delay={i * 110}>
+              <article className="club-card h-full rounded-3xl border border-border bg-card p-8 shadow-card">
+                <span className="inline-flex rounded-2xl bg-brand-gradient-soft p-3 text-primary">
+                  <Icon className="h-6 w-6" />
+                </span>
+                <h2 className="club-rule mt-5 text-2xl font-black text-primary">
+                  {key === "vision"
+                    ? ar
+                      ? "رؤيتنا"
+                      : "Our vision"
+                    : ar
+                      ? "رسالتنا"
+                      : "Our mission"}
+                </h2>
+                <p className="mt-5 whitespace-pre-line text-base leading-loose text-muted-foreground">
+                  {settings[ar ? key : enKey] ||
+                    (ar
+                      ? "سيُنشر النص الرسمي المعتمد قريبًا."
+                      : "The approved official statement will be published here.")}
+                </p>
+              </article>
+            </Reveal>
           );
         })}
       </div>
-      <h2 className="mt-12 mb-6 text-2xl font-black">{ar ? "أهدافنا" : "Our goals"}</h2>
-      {settings[ar ? "goals" : "goals_en"] ? (
+
+      <Reveal as="h2" className="club-rule mt-14 mb-3 text-2xl font-black">
+        {ar ? "كيف يعمل النادي" : "How the club works"}
+      </Reveal>
+      <p className="mb-6 max-w-2xl leading-loose text-muted-foreground">
+        {ar
+          ? "العمل موزّع على ثلاث لجان، وكل عضو ينتمي إلى واحدة منها."
+          : "The work is split across three committees, and every member belongs to one."}
+      </p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {committees.map(([key, a, e], i) => {
+          const count = data.members.filter((m) => m.committee === key).length;
+
+          return (
+            <Reveal key={key} delay={i * 90}>
+              <ClubLink
+                path="members"
+                className="club-card flex h-full flex-col rounded-3xl border border-border bg-card p-6 shadow-card"
+              >
+                <span aria-hidden="true" className="h-1.5 w-12 rounded-full bg-brand-gradient" />
+                <h3 className="mt-5 text-xl font-extrabold">{ar ? a : e}</h3>
+                <p className="mt-2 text-sm font-bold text-muted-foreground">
+                  <CountUp value={count} />{" "}
+                  {ar ? (count === 1 ? "عضو" : "أعضاء") : count === 1 ? "member" : "members"}
+                </p>
+              </ClubLink>
+            </Reveal>
+          );
+        })}
+      </div>
+
+      <Reveal as="h2" className="club-rule mt-14 mb-6 text-2xl font-black">
+        {ar ? "أهدافنا" : "Our goals"}
+      </Reveal>
+      {goals.length ? (
         <ol className="grid gap-4 sm:grid-cols-2">
-          {settings[ar ? "goals" : "goals_en"]
-            .split("\n")
-            .filter(Boolean)
-            .map((goal, i) => (
-              <li key={i} className="rounded-3xl bg-brand-gradient-soft p-6">
-                <strong className="text-primary">{i + 1}. </strong>
-                {goal}
-              </li>
-            ))}
+          {goals.map((goal, i) => (
+            <Reveal key={i} as="li" delay={(i % 2) * 110}>
+              <div className="club-card flex h-full gap-4 rounded-3xl bg-brand-gradient-soft p-6">
+                <strong
+                  aria-hidden="true"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-sm font-black text-white"
+                >
+                  {i + 1}
+                </strong>
+                <span className="leading-loose">{goal}</span>
+              </div>
+            </Reveal>
+          ))}
         </ol>
       ) : (
         <Empty />
       )}
-      <h2 className="mt-12 mb-6 text-2xl font-black">{ar ? "مجالات عملنا" : "Our fields"}</h2>
+
+      <Reveal as="h2" className="club-rule mt-14 mb-6 text-2xl font-black">
+        {ar ? "مجالات عملنا" : "Our fields"}
+      </Reveal>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map(([key, a, e], i) => {
           const Icon = [Smartphone, Globe, Gamepad2, Palette][i]!;
 
           return (
-            <div key={key} className="rounded-3xl border border-border bg-card p-6">
-              <Icon className="h-9 w-9 text-primary" />
-              <h3 className="mt-4 font-extrabold">{ar ? a : e}</h3>
-            </div>
+            <Reveal key={key} delay={i * 80}>
+              <div className="club-card group h-full rounded-3xl border border-border bg-card p-6 shadow-card">
+                <span className="inline-flex rounded-2xl bg-brand-gradient-soft p-3 text-primary transition-colors group-hover:bg-brand-gradient group-hover:text-white">
+                  <Icon className="h-7 w-7" />
+                </span>
+                <h3 className="mt-4 font-extrabold">{ar ? a : e}</h3>
+              </div>
+            </Reveal>
           );
         })}
       </div>
@@ -708,36 +802,10 @@ function PublicForm({ join }: { join: boolean }) {
     if (message) feedback.current?.focus();
   }, [message]);
   const requestId = useRef<string | undefined>(undefined);
-  const [registration, setRegistration] = useState<Registration>();
-  const [registrationUnavailable, setRegistrationUnavailable] = useState(false);
-  useEffect(() => {
-    if (!join) return;
-    let active = true;
+  // Shared query, fetched once per session. This form used to ask Google Apps
+  // Script — a ~3s call — on mount and then every fifteen seconds while open.
+  const registration = useRegistration();
 
-    const refresh = async () => {
-      try {
-        const value = await loadRegistration();
-
-        if (active) {
-          setRegistration(value);
-          setRegistrationUnavailable(false);
-        }
-      } catch {
-        if (active) setRegistrationUnavailable(true);
-      }
-    };
-
-    void refresh();
-
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refresh();
-    }, 15000);
-
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [join]);
   const [major, setMajor] = useState("");
   const [committee, setCommittee] = useState<string>(committees[0][0]);
 
@@ -817,7 +885,7 @@ function PublicForm({ join }: { join: boolean }) {
       setMessage(submissionError(error, ar));
 
       if (error instanceof Error && error.message === "JOIN_CLOSED") {
-        setRegistration((prev) => (prev ? { ...prev, open: false } : prev));
+        registration.markClosed();
       }
     } finally {
       setBusy(false);
@@ -851,16 +919,16 @@ function PublicForm({ join }: { join: boolean }) {
               ? "تهانينا على وصول طلب الإنضمام قريبا سيتم مراجعة طلبك و إرسالة رسالة القبول"
               : "Your submission has been saved successfully. Thank you."}
           </div>
-        ) : join && (registrationUnavailable || !registration || !registration.open) ? (
+        ) : join && !registration.open ? (
           <p
             role="status"
             className="rounded-2xl bg-brand-gradient-soft p-6 font-bold text-primary"
           >
-            {registrationUnavailable
+            {registration.failed
               ? ar
                 ? "استقبال الطلبات غير متاح حاليًا. يرجى المحاولة لاحقًا."
                 : "Applications are currently unavailable. Please try later."
-              : !registration
+              : registration.loading
                 ? ar
                   ? "جارٍ التحقق من استقبال الطلبات…"
                   : "Checking registration availability…"
@@ -991,7 +1059,7 @@ function PublicForm({ join }: { join: boolean }) {
             )}
             <BrandButton
               type="submit"
-              disabled={busy || (join && (!registration?.open || registrationUnavailable))}
+              disabled={busy || (join && !registration.open)}
             >
               {busy ? (ar ? "جارٍ الإرسال…" : "Sending…") : ar ? "إرسال" : "Submit"}
             </BrandButton>
@@ -1032,6 +1100,8 @@ function ContentPage() {
   if (page === "join") return <PublicForm join />;
 
   if (page === "contact") return <ContactPage />;
+
+  if (page === "privacy") return <PrivacyPage />;
 
   if (loading)
     return (
