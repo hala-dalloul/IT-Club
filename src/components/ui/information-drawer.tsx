@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Plus, ArrowUpRight, Linkedin } from "lucide-react";
+import { Plus, ArrowUpRight, Linkedin, Github } from "lucide-react";
 import {
   Sheet,
   SheetTrigger,
@@ -14,7 +14,7 @@ import logo from "@/assets/ucas-logo.png";
 export default function InformationDrawer({ teams, lang }: { teams: Content[]; lang: Lang }) {
   const ar = lang === "ar";
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
       {teams.map((member, index) => {
         const name = ar ? member.title : member.title_en || member.title;
         const description = ar ? member.description : member.description_en || member.description;
@@ -30,7 +30,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
               <button
                 type="button"
                 aria-label={ar ? `عرض معلومات ${name}` : `View ${name}`}
-                className="group relative aspect-[3/4] w-full overflow-hidden rounded-3xl border border-border bg-card text-start shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group relative aspect-[3/4] w-full min-w-0 justify-self-center lg:w-[95%] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card text-start shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <img
                   src={image}
@@ -40,15 +40,19 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                   loading="lazy"
                   className={`h-full w-full ${fit} transition duration-300 group-hover:grayscale motion-reduce:transition-none`}
                 />
-                <span className="absolute end-3 top-3 rounded-full bg-black/40 p-2 text-white">
+                <span className="absolute end-2 top-2 rounded-full bg-black/40 p-1.5 sm:end-3 sm:top-3 sm:p-2 text-white">
                   <Plus size={18} />
                 </span>
-                <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/60 p-5 text-white backdrop-blur-md transition-transform duration-300 lg:translate-y-full lg:group-hover:translate-y-0 lg:group-focus-visible:translate-y-0 motion-reduce:transition-none">
+                <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 sm:gap-2 bg-black/60 p-2 sm:p-3 lg:p-5 text-white backdrop-blur-md transition-transform duration-300 lg:translate-y-full lg:group-hover:translate-y-0 lg:group-focus-visible:translate-y-0 motion-reduce:transition-none">
                   <span className="min-w-0">
-                    <span className="block truncate text-xl font-bold">{name}</span>
-                    <span className="mt-1 block truncate text-sm">{role || description}</span>
+                    <span className="block truncate text-sm sm:text-base lg:text-xl font-bold">
+                      {name}
+                    </span>
+                    <span className="mt-1 block truncate text-xs sm:text-sm">
+                      {role || description}
+                    </span>
                   </span>
-                  <ArrowUpRight className="shrink-0" size={22} />
+                  <ArrowUpRight className="hidden shrink-0 sm:block" size={22} />
                 </span>
               </button>
             </SheetTrigger>
@@ -88,6 +92,18 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                 >
                   {ar ? "صفحة العضو" : "Member profile"}
                 </Link>
+                {safeUrl(member.githubUrl) && (
+                  <a
+                    href={safeUrl(member.githubUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={ar ? `ملف ${name} على GitHub` : `${name} on GitHub`}
+                    className="inline-flex items-center gap-2 font-bold text-primary"
+                  >
+                    <Github size={20} />
+                    GitHub
+                  </a>
+                )}
                 {safeUrl(member.linkedinUrl) && (
                   <a
                     href={safeUrl(member.linkedinUrl)}
