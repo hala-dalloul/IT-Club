@@ -1,3 +1,5 @@
+import { HeroSection } from "@/components/ui/hero-section-4";
+import clubMascot from "@/assets/club-mascot.png";
 import { AnimatedTeamSection } from "@/components/ui/team-section";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
@@ -438,7 +440,7 @@ function Home() {
 
   return (
     <>
-      <section className="mx-auto max-w-4xl text-center">
+      <HeroSection imageUrl={clubMascot} className="mx-auto max-w-4xl text-center">
         <img
           src={logo}
           alt="UCAS IT CLUB"
@@ -471,7 +473,7 @@ function Home() {
             {ar ? "انضم إلينا" : "Join the club"}
           </ClubLink>
         </div>
-      </section>
+      </HeroSection>
       <div className="my-14 grid grid-cols-3 gap-3">
         {(
           [
