@@ -134,8 +134,8 @@ export function RegistrationAdmin({ canEdit }: { canEdit: boolean }) {
               </label>
               <p className="text-sm text-muted-foreground">
                 {ar
-                  ? "العدد هو الطلبات المحفوظة في الشيت. إعادة الفتح لا تصفّر العداد؛ زيدي الحد لاستقبال المزيد."
-                  : "The count comes from saved sheet rows. Reopening does not reset it; increase the limit to accept more."}
+                  ? "يظهر زر الديناصور «انضم إلينا» عند فتح التسجيل ما دام العدد أقل من الحد، ويختفي عند بلوغه أو إغلاق التسجيل. العدد من الشيت؛ إعادة الفتح لا تصفّر العداد."
+                  : "The floating mascot Join us button appears while registration is enabled and below the limit. It hides when full or closed. Counts come from the sheet; reopening does not reset them."}
               </p>
               <BrandButton type="submit" disabled={busy || unavailable}>
                 {busy

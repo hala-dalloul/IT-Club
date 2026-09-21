@@ -1,3 +1,4 @@
+import { FloatingJoin } from "./FloatingJoin";
 import clubMascot from "@/assets/club-mascot.png";
 import CommunityOrbit from "@/components/ui/builders-community-hero";
 import { AnimatedTeamSection } from "@/components/ui/team-section";
@@ -130,6 +131,7 @@ function Empty() {
 }
 
 function Shell({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(false);
@@ -263,6 +265,9 @@ function Shell({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
+      {!isAdmin && !location.pathname.startsWith("/club/join") && (
+        <FloatingJoin ar={lang === "ar"} />
+      )}
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-4">
           <p className="font-bold">
@@ -464,17 +469,6 @@ function Home() {
             ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
             : "A student community for technology enthusiasts. Meet the team and take part in club activities."}
         </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ClubLink
-            path="join"
-            className={
-              linkClass +
-              " bg-brand-gradient text-primary-foreground border-transparent shadow-glow-blue"
-            }
-          >
-            {ar ? "انضم إلينا" : "Join the club"}
-          </ClubLink>
-        </div>
       </section>
       <div className="my-14 grid grid-cols-3 gap-3">
         {(
