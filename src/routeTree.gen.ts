@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as PathfinderRouteImport } from './routes/pathfinder'
 import { Route as ClubIndexRouteImport } from './routes/club.index'
 import { Route as ClubSplatRouteImport } from './routes/club.$'
 
@@ -23,11 +22,6 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PathfinderRoute = PathfinderRouteImport.update({
-  id: '/pathfinder',
-  path: '/pathfinder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClubIndexRoute = ClubIndexRouteImport.update({
@@ -44,14 +38,12 @@ const ClubSplatRoute = ClubSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/pathfinder': typeof PathfinderRoute
   '/club/$': typeof ClubSplatRoute
   '/club/': typeof ClubIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/pathfinder': typeof PathfinderRoute
   '/club/$': typeof ClubSplatRoute
   '/club': typeof ClubIndexRoute
 }
@@ -59,22 +51,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/pathfinder': typeof PathfinderRoute
   '/club/$': typeof ClubSplatRoute
   '/club/': typeof ClubIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/pathfinder' | '/club/$' | '/club/'
+  fullPaths: '/' | '/admin' | '/club/$' | '/club/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/pathfinder' | '/club/$' | '/club'
-  id: '__root__' | '/' | '/admin' | '/pathfinder' | '/club/$' | '/club/'
+  to: '/' | '/admin' | '/club/$' | '/club'
+  id: '__root__' | '/' | '/admin' | '/club/$' | '/club/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  PathfinderRoute: typeof PathfinderRoute
   ClubSplatRoute: typeof ClubSplatRoute
   ClubIndexRoute: typeof ClubIndexRoute
 }
@@ -93,13 +83,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pathfinder': {
-      id: '/pathfinder'
-      path: '/pathfinder'
-      fullPath: '/pathfinder'
-      preLoaderRoute: typeof PathfinderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/club/': {
@@ -122,7 +105,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  PathfinderRoute: PathfinderRoute,
   ClubSplatRoute: ClubSplatRoute,
   ClubIndexRoute: ClubIndexRoute,
 }

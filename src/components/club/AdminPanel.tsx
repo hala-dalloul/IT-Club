@@ -31,7 +31,7 @@ import {
   type ContentCollection,
   type Settings,
 } from "@/lib/club/model";
-import { BrandButton } from "@/components/game/BrandButton";
+import { BrandButton } from "@/components/club/BrandButton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {

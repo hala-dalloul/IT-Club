@@ -78,4 +78,4 @@ bun run build:static
 
 تُستخدم خطة Supabase Free ضمن حصصها؛ لا يعني ذلك تخزينًا أو نقل بيانات غير محدودين. راجعوا الاستخدام من لوحة Supabase دون تفعيل ترقية مدفوعة تلقائية.
 
-[حالة متطلبات SRS](docs/srs-implementation.md) · [الوصف الأصلي للعبة](docs/pathfinder-original-brief.md)
+[حالة متطلبات SRS](docs/srs-implementation.md)

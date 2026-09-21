@@ -9,7 +9,7 @@ import {
   deleteMedia,
   type MediaAsset,
 } from "@/lib/club/supabase";
-import { BrandButton } from "@/components/game/BrandButton";
+import { BrandButton } from "@/components/club/BrandButton";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,

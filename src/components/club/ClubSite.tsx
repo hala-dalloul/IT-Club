@@ -23,8 +23,8 @@ import {
 } from "lucide-react";
 import "./club.css";
 import logo from "@/assets/ucas-logo.png";
-import { BrandButton } from "@/components/game/BrandButton";
-import { FloatingBackground } from "@/components/game/FloatingBackground";
+import { BrandButton } from "@/components/club/BrandButton";
+import { FloatingBackground } from "@/components/club/FloatingBackground";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {

@@ -77,17 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "اكتشف مسارك | UCAS IT CLUB" },
+      { title: "النادي التكنولوجي | UCAS IT CLUB" },
       {
         name: "description",
         content:
-          "لعبة تفاعلية من نادي تكنولوجيا المعلومات في UCAS تساعدك تكتشف التخصص التقني الأقرب لشخصيتك واهتماماتك.",
+          "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي التكنولوجي وأخباره وفعالياته في الكلية الجامعية للعلوم التطبيقية.",
       },
       { name: "author", content: "UCAS IT CLUB" },
-      { property: "og:title", content: "اكتشف مسارك — رحلتك التقنية تبدأ من هنا" },
+      { property: "og:title", content: "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية" },
       {
         property: "og:description",
-        content: "جاوب على أسئلة ممتعة واكتشف المجال التقني الأقرب لشخصيتك مع UCAS IT CLUB.",
+        content: "نتعلم، نبتكر، نتقدم. تعرّف على فريق النادي التكنولوجي وأخباره وفعالياته.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
