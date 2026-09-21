@@ -317,16 +317,16 @@ function Card({
   compact = false,
 }: {
   item: Content;
-  kind: ContentCollection;
+  kind: Exclude<ContentCollection, "members">;
   compact?: boolean;
 }) {
   const { lang } = useClub();
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
 
-  const aspect = kind === "members" ? "h-[13.5rem]" : "aspect-video";
+  const aspect = "aspect-video";
 
-  const card = (
+  return (
     <article className="h-full overflow-hidden rounded-3xl border border-border bg-card shadow-card transition-transform hover:-translate-y-1">
       {image ? (
         <img
@@ -347,19 +347,15 @@ function Card({
           />
         </div>
       )}
-      <div className={kind === "members" ? "px-5 py-3" : "p-6"}>
-        {item.date && kind !== "members" && (
+      <div className="p-6">
+        {item.date && (
           <time dateTime={item.date} className="text-sm text-muted-foreground">
             {item.date}
           </time>
         )}
-        <h2
-          className={`text-xl font-extrabold ${kind === "members" ? "h-7 truncate leading-7" : "mt-2"}`}
-        >
-          {title}
-        </h2>
+        <h2 className="mt-2 text-xl font-extrabold">{title}</h2>
         <p
-          className={`text-base leading-relaxed text-muted-foreground ${kind === "members" ? "mt-1" : "mt-3"} ${compact ? "truncate" : kind === "members" ? "h-[1.625rem] truncate" : "line-clamp-3"}`}
+          className={`text-base leading-relaxed text-muted-foreground mt-3 ${compact ? "truncate" : "line-clamp-3"}`}
         >
           {local(item, "description", lang)}
         </p>
@@ -380,7 +376,7 @@ function Card({
               </a>
             )}
           </>
-        ) : kind !== "members" ? (
+        ) : (
           <ClubLink
             path={`${kind}/${item.id}`}
             className="mt-5 inline-flex items-center gap-2 text-primary font-bold"
@@ -388,20 +384,9 @@ function Card({
             {lang === "ar" ? "التفاصيل" : "View details"}
             {lang === "ar" ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
           </ClubLink>
-        ) : null}
+        )}
       </div>
     </article>
-  );
-
-  return kind === "members" ? (
-    <ClubLink
-      path={`members/${item.id}`}
-      className="block h-full min-w-0 rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4"
-    >
-      {card}
-    </ClubLink>
-  ) : (
-    card
   );
 }
 
@@ -415,11 +400,10 @@ function Grid({
   compact?: boolean;
 }) {
   const { lang } = useClub();
-  if (kind === "members" && items.length) return <InformationDrawer teams={items} lang={lang} />;
+  if (kind === "members")
+    return items.length ? <InformationDrawer teams={items} lang={lang} /> : <Empty />;
   return items.length ? (
-    <div
-      className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${kind === "members" ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
-    >
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
         <Card key={item.id} item={item} kind={kind} compact={compact} />
       ))}
