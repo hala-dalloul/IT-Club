@@ -3,7 +3,7 @@ import { HeroSection } from "@/components/ui/hero-section-4";
 import InformationDrawer from "@/components/ui/information-drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { memberGender } from "@/lib/club/model";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClubProvider, useClub } from "./ClubProvider";
+import { THEME_COOKIE, readTheme, writePrefCookie } from "@/lib/club/prefs";
 import {
   collections,
   categories,
@@ -55,8 +56,11 @@ import {
   submissionError,
   type Registration,
 } from "@/lib/club/sheets";
-import { AdminPanel } from "./AdminPanel";
 import { ContactPage } from "./ContactPage";
+
+// The admin console pulls in the media library, registration tables and their
+// deps. Only signed-in staff open it, so keep it out of the visitor bundle.
+const AdminPanel = lazy(() => import("./AdminPanel").then((m) => ({ default: m.AdminPanel })));
 
 const nav = [
   ["", "الرئيسية", "Home"],
@@ -133,7 +137,9 @@ function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { lang, setLang, settings, loading } = useClub();
   const [open, setOpen] = useState(false);
-  const [dark, setDark] = useState(false);
+  // Seeded from the cookie the document was rendered with, so the icon does not
+  // swap once hydration catches up.
+  const [dark, setDark] = useState(() => readTheme() === "dark");
   useEffect(() => {
     const sync = () => setDark(document.documentElement.classList.contains("dark"));
     sync();
@@ -146,6 +152,7 @@ function Shell({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", next);
     document.documentElement.style.colorScheme = next ? "dark" : "light";
     setDark(next);
+    writePrefCookie(THEME_COOKIE, next ? "dark" : "light");
     try {
       localStorage.setItem("ucas-theme", next ? "dark" : "light");
     } catch {
@@ -267,35 +274,39 @@ function Shell({ children }: { children: ReactNode }) {
       {!isAdmin && !location.pathname.startsWith("/club/join") && (
         <FloatingJoin ar={lang === "ar"} />
       )}
-      <footer className="border-t border-border py-8">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-4">
-          <p className="font-bold">
-            {ar
-              ? "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية"
-              : "University College of Applied Sciences"}
-            <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
-          </p>
-          <div className="flex flex-wrap gap-4 text-sm font-bold">
-            <ClubLink path="contact" className="text-primary">
-              {ar ? "تواصل معنا" : "Contact us"}
-            </ClubLink>
-            {(["facebook", "instagram", "linkedin", "github"] as const).map(
-              (key) =>
-                safeUrl(settings[key]) && (
-                  <a
-                    key={key}
-                    href={safeUrl(settings[key])}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary capitalize"
-                  >
-                    {key}
-                  </a>
-                ),
-            )}
+      {/* The footer reads as the end of the page, so keep it out of the way
+          until the content it sits under has actually arrived. */}
+      {!loading && (
+        <footer className="border-t border-border py-8">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-4">
+            <p className="font-bold">
+              {ar
+                ? "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية"
+                : "University College of Applied Sciences"}
+              <span className="block mt-1 text-sm text-muted-foreground">UCAS IT CLUB</span>
+            </p>
+            <div className="flex flex-wrap gap-4 text-sm font-bold">
+              <ClubLink path="contact" className="text-primary">
+                {ar ? "تواصل معنا" : "Contact us"}
+              </ClubLink>
+              {(["facebook", "instagram", "linkedin", "github"] as const).map(
+                (key) =>
+                  safeUrl(settings[key]) && (
+                    <a
+                      key={key}
+                      href={safeUrl(settings[key])}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary capitalize"
+                    >
+                      {key}
+                    </a>
+                  ),
+              )}
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }
@@ -1021,7 +1032,18 @@ function ContentPage() {
 
   const [page, id] = path.split("/");
 
-  if (page === "admin") return <AdminPanel />;
+  if (page === "admin")
+    return (
+      <Suspense
+        fallback={
+          <div role="status" className="flex min-h-[45vh] items-center justify-center">
+            <span className="sr-only">{lang === "ar" ? "تحميل الإدارة" : "Loading admin"}</span>
+          </div>
+        }
+      >
+        <AdminPanel />
+      </Suspense>
+    );
 
   if (page === "join") return <PublicForm join />;
 

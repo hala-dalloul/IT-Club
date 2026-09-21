@@ -49,8 +49,8 @@ export function FloatingJoin({ ar }: { ar: boolean }) {
       <img
         src={mascot}
         alt=""
-        width={775}
-        height={1216}
+        width={301}
+        height={472}
         className="h-24 w-auto object-contain sm:h-28"
       />
     </Link>
