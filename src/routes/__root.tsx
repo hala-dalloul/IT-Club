@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { readLang, readTheme } from "../lib/club/prefs";
 
 function NotFoundComponent() {
   return (
@@ -113,12 +114,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // Matches what ClubProvider seeds its state with, so the document ships in
+  // the visitor's language instead of flipping after hydration.
+  const lang = readLang();
+  const theme = readTheme();
+
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html
+      lang={lang}
+      dir={lang === "ar" ? "rtl" : "ltr"}
+      className={theme === "dark" ? "dark" : undefined}
+      style={{ colorScheme: theme }}
+      suppressHydrationWarning
+    >
       <head>
+        {/* Covers visitors whose preference predates the cookie: apply their
+            stored theme before first paint and seed the cookie so the next
+            document is server-rendered with it. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var theme=localStorage.getItem('ucas-theme');var dark=theme==='dark';document.documentElement.classList.toggle('dark',dark);document.documentElement.style.colorScheme=dark?'dark':'light';}catch(e){}})();`,
+            __html: `(function(){try{var theme=localStorage.getItem('ucas-theme');if(!theme)return;var dark=theme==='dark';document.documentElement.classList.toggle('dark',dark);document.documentElement.style.colorScheme=dark?'dark':'light';document.cookie='ucas-theme='+(dark?'dark':'light')+'; path=/; max-age=31536000; samesite=lax';}catch(e){}})();`,
           }}
         />
         <HeadContent />

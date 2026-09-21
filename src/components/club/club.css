@@ -126,9 +126,13 @@
   z-index: 1;
   left: 50%;
   top: 50%;
-  width: 0;
-  height: 0;
-  transform: translate(-50%, -50%);
+  /* Fixed box, centred by margin, grown with transform. The old keyframes
+     animated width/height, so every frame relaid out the page and repainted a
+     ring carrying four blurred shadows — the entrance ran at ~5fps. Scale and
+     opacity stay on the compositor. */
+  width: 100vmax;
+  height: 100vmax;
+  margin: -50vmax 0 0 -50vmax;
   border: 2px solid #ebf5fb;
   border-radius: 50%;
   box-shadow:
@@ -136,6 +140,7 @@
     inset 0 0 3px 1px rgb(235 245 251 / 95%),
     0 0 16px 6px rgb(235 245 251 / 55%),
     0 0 40px 12px rgb(235 245 251 / 20%);
+  will-change: transform, opacity;
   animation: club-grid-reveal 2.8s ease-out both;
 }
 .club-grid-pulse-second {
@@ -143,8 +148,7 @@
 }
 @keyframes club-grid-reveal {
   0% {
-    width: 0;
-    height: 0;
+    transform: scale(0);
     opacity: 0;
   }
   8% {
@@ -154,8 +158,7 @@
     opacity: 0.5;
   }
   100% {
-    width: 150vmax;
-    height: 150vmax;
+    transform: scale(1.5);
     opacity: 0;
   }
 }

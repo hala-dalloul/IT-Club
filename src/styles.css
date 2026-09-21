@@ -112,11 +112,13 @@
     scroll-behavior: smooth;
   }
 
-  /* Cairo's Latin ink height is ~0.72em vs ~1.17em for its Arabic, so English
-     reads a size smaller than Arabic at identical px. Nudge the rem root in LTR
-     instead of patching each component. */
+  /* Cairo's Latin sits lower than its Arabic (x-height 0.51em vs an Arabic body
+     around 0.50em but far more ink above it), so English reads a size smaller.
+     font-size-adjust scales the glyphs only — the rem root is untouched, so
+     padding, gaps and card sizes stay identical in both languages. Browsers
+     without support just render today's metrics. */
   html[dir="ltr"] {
-    font-size: 106.25%;
+    font-size-adjust: ex-height 0.54;
   }
 
   body {
