@@ -14,7 +14,7 @@ import logo from "@/assets/ucas-logo.png";
 export default function InformationDrawer({ teams, lang }: { teams: Content[]; lang: Lang }) {
   const ar = lang === "ar";
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {teams.map((member, index) => {
         const name = ar ? member.title : member.title_en || member.title;
         const description = ar ? member.description : member.description_en || member.description;
