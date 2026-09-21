@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import cairoArabic from "../assets/fonts/cairo-arabic.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { readLang, readTheme } from "../lib/club/prefs";
 
@@ -105,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/cairo-arabic.woff2",
+        href: cairoArabic,
         crossOrigin: "anonymous",
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },

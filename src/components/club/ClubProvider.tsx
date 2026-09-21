@@ -79,7 +79,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
 
   const query = useQuery({
     queryKey: clubPublicKey,
-    queryFn: loadPublic,
+    queryFn: () => loadPublic(),
     enabled: configured,
     staleTime: 60000,
     refetchInterval: 60000,

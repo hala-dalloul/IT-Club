@@ -20,12 +20,12 @@ export function CountUp({ value, duration = 1100 }: { value: number | null; dura
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (reduced || value <= 0) {
-      setShown(value);
+    if (reduced || value <= 0) return;
 
-      return;
-    }
-
+    // Drop to zero only now, on the client. The server and any visitor without
+    // JavaScript keep the real figure — rendering 0 there put "0 members" in
+    // the document and in front of crawlers.
+    setShown(0);
     let frame = 0;
 
     const observer = new IntersectionObserver(([entry]) => {
@@ -54,7 +54,7 @@ export function CountUp({ value, duration = 1100 }: { value: number | null; dura
 
   return (
     <span ref={ref} style={{ fontVariantNumeric: "tabular-nums" }}>
-      {value === null ? "—" : (shown ?? 0)}
+      {value === null ? "—" : (shown ?? value)}
     </span>
   );
 }

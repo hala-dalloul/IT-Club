@@ -3,9 +3,9 @@ import { prepareImage } from "./images";
 import { contentSchema, type Content, type ContentCollection, type Settings } from "./model";
 
 // Public browser configuration; RLS still controls all data access.
-const url = import.meta.env.VITE_SUPABASE_URL || "https://jxweaxenswbjpxxjmihb.supabase.co";
+export const url = import.meta.env.VITE_SUPABASE_URL || "https://jxweaxenswbjpxxjmihb.supabase.co";
 
-const key =
+export const key =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_kHJik-SCyMiMQ7nn2SRHbQ_0FR6CpOZ";
 
 export const configured = Boolean(url && key);
@@ -44,11 +44,11 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 
 type Row = Record<string, JsonValue>;
 
-async function rows(table: string, order = "id", tie = "id") {
+async function rows(table: string, order = "id", tie = "id", client = supabase()) {
   const result: Row[] = [];
 
   for (let offset = 0; ; offset += 500) {
-    const { data, error } = await supabase()
+    const { data, error } = await client
       .from(table)
       .select("*")
       .order(order, { ascending: false })
@@ -120,10 +120,16 @@ export function watchQuery<T>(
   };
 }
 
-export async function loadPublic() {
+/**
+ * Every public row the site renders.
+ *
+ * Takes a client so the server can hand in one whose fetch caches at the edge;
+ * the browser always uses the shared client, which does not.
+ */
+export async function loadPublic(client = supabase()) {
   const [content, settings] = await Promise.all([
-    rows("club_content", "updated_at"),
-    supabase().from("club_settings").select("data").eq("id", "public").maybeSingle(),
+    rows("club_content", "updated_at", "id", client),
+    client.from("club_settings").select("data").eq("id", "public").maybeSingle(),
   ]);
 
   check(settings.error);
