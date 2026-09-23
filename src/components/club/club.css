@@ -367,3 +367,33 @@ html.js .club-reveal.is-shown {
     transition: none;
   }
 }
+
+/* Membership invitation above the mascot's head. */
+.club-join-bubble {
+  position: relative;
+  isolation: isolate;
+  white-space: nowrap;
+  border-radius: 1rem;
+  padding: 0.55rem 0.85rem;
+  color: #fff;
+  background: linear-gradient(110deg, var(--brand-blue), color-mix(in oklab, var(--brand-blue) 60%, var(--brand-green)));
+  border: 1px solid color-mix(in oklab, var(--brand-green) 70%, var(--brand-blue));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--brand-blue) 20%, transparent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.club-join-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -0.4rem;
+  inset-inline-end: 35%;
+  width: 0.7rem;
+  height: 0.7rem;
+  background: var(--brand-blue);
+  transform: rotate(45deg);
+  border-bottom: 1px solid var(--brand-green);
+  border-right: 1px solid var(--brand-green);
+  z-index: -1;
+}

@@ -25,10 +25,10 @@ export function FloatingJoin({ ar }: { ar: boolean }) {
       to="/club/$"
       params={{ _splat: "join" }}
       aria-label={ar ? "انضم إلينا" : "Join us"}
-      className="stitch fixed bottom-4 start-3 z-30 flex w-20 flex-col items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:start-5 sm:w-24"
+      className="fixed bottom-4 start-3 z-30 flex w-20 flex-col items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:start-5 sm:w-24"
       style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
-      <span className="whitespace-nowrap border border-foreground bg-background px-3 py-2 text-xs font-bold">
+      <span className="club-join-bubble" dir={ar ? "rtl" : "ltr"}>
         {ar ? "انضم إلينا" : "Join us"}
       </span>
       <img
@@ -37,6 +37,7 @@ export function FloatingJoin({ ar }: { ar: boolean }) {
         width={301}
         height={472}
         className="h-24 w-auto object-contain sm:h-28"
+        style={{ transform: ar ? "none" : "scaleX(-1)" }}
       />
     </Link>
   );
