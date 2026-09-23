@@ -21,10 +21,18 @@ export function recordVisit(): Promise<number> {
     /* Use in-memory ID. */
   }
 
-  request = recordClubVisit(sessionId).catch((error) => {
-    request = undefined;
-    throw error;
-  });
+  // Editors, automated browsers and dev/preview hosts read the count without adding to it.
+  const counts =
+    !location.pathname.startsWith("/club/admin") &&
+    !navigator.webdriver &&
+    !/^(localhost|127\.|\[::1\]|id-preview--)|\.lovableproject\.com$/.test(location.hostname);
+
+  request = recordClubVisit(counts ? sessionId : "00000000-0000-0000-0000-000000000000").catch(
+    (error) => {
+      request = undefined;
+      throw error;
+    },
+  );
 
   return request;
 }

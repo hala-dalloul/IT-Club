@@ -87,6 +87,11 @@ export function PrivacyPage() {
           ? "محتوى الموقع وصوره مستضاف على Supabase. صور الأعضاء والفعاليات عامة لأنها معروضة على الموقع."
           : "Site content and images are hosted on Supabase. Member and event images are public because they are displayed on the site."}
       </p>
+      <p className="mt-4 leading-relaxed text-muted-foreground">
+        {ar
+          ? "لمنع التلاعب بعدّاد الزيارات، يحفظ الخادم بصمة مشفّرة لعنوان IP مع كل زيارة، ولا يحفظ العنوان نفسه. تُحذف البصمة بعد يوم."
+          : "To stop the visit counter being gamed, the server keeps a salted hash of your IP address with each visit, never the address itself. The hash is deleted after a day."}
+      </p>
 
       <h2 className="mt-12 text-2xl font-black">{ar ? "التحكم والحذف" : "Control and removal"}</h2>
       <p className="mt-4 leading-relaxed text-muted-foreground">
