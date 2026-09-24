@@ -1,5 +1,6 @@
-import { local, safeUrl, type Content, type Lang } from "./model";
-import { hrefOf } from "./paths";
+import logo from "@/assets/ucas-logo.webp";
+import { collegeUrl, local, safeUrl, type Content, type Lang } from "./model";
+import { hrefOf, pageOf } from "./paths";
 
 /**
  * Absolute origin for share tags; og:url and og:image must be absolute.
@@ -243,3 +244,131 @@ export function itemSeo(item: Content, lang: Lang, path: string, noindex: boolea
     noindex,
   });
 }
+
+/**
+ * A JSON-LD block for a route's head meta.
+ *
+ * The router renders a `script:ld+json` entry as a JSON-LD script tag and
+ * escapes it for HTML (router-core headContentUtils), so titles typed by
+ * editors cannot close the tag. Its React typings only list <meta> attributes.
+ */
+export function ldJson(data: object): Meta {
+  // SAFETY: a shape the router renders at runtime, per the comment above.
+  return { "script:ld+json": data } as unknown as Meta;
+}
+
+/** What the organisation markup may state, straight from the admin settings. */
+export type Contact = { email?: string | undefined; profiles: string[] };
+
+const orgId = () => `${siteUrl}/#org`;
+
+/**
+ * The club as schema.org data, on every page: who it is, its parent college,
+ * how to reach it and where else it lives. Search engines and AI assistants
+ * read this instead of guessing from prose. Only facts the site itself shows.
+ */
+export function organizationLd(lang: Lang, contact: Contact) {
+  const other: Lang = lang === "ar" ? "en" : "ar";
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": orgId(),
+        name: siteName[lang],
+        alternateName: [siteName[other], "Technology Club", "نادي تكنولوجيا المعلومات"],
+        url: `${siteUrl}${hrefOf(lang, "")}`,
+        logo: `${siteUrl}${logo}`,
+        ...(contact.email ? { email: contact.email } : {}),
+        ...(contact.profiles.length ? { sameAs: contact.profiles } : {}),
+        parentOrganization: {
+          "@type": "CollegeOrUniversity",
+          name:
+            lang === "ar"
+              ? "الكلية الجامعية للعلوم التطبيقية"
+              : "University College of Applied Sciences",
+          alternateName: "UCAS",
+          url: collegeUrl[lang],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        url: `${siteUrl}${hrefOf(lang, "")}`,
+        name: siteName[lang],
+        alternateName: siteName[other],
+        inLanguage: lang,
+        publisher: { "@id": orgId() },
+      },
+    ],
+  };
+}
+
+/**
+ * A news, event or partner page as schema.org data: always its breadcrumb
+ * trail, and for news the article itself. Events wait for a location field,
+ * which Google requires of every Event.
+ */
+export function itemLd(item: Content, lang: Lang, path: string) {
+  const page = pageOf(path);
+  const [section = ""] = page.split("/");
+  const url = `${siteUrl}${path}`;
+  const title = local(item, "title", lang);
+  // SAFETY: section comes from a validated page path, one of pages' keys.
+  const sectionName = pages[section as PageKey]?.[lang].title ?? section;
+
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: siteName[lang],
+          item: `${siteUrl}${hrefOf(lang, "")}`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: sectionName,
+          item: `${siteUrl}${hrefOf(lang, section)}`,
+        },
+        { "@type": "ListItem", position: 3, name: title, item: url },
+      ],
+    },
+  ];
+
+  if (section === "news")
+    graph.push({
+      "@type": "NewsArticle",
+      headline: title.slice(0, 110),
+      ...(item.date ? { datePublished: item.date } : {}),
+      ...(item.updatedAt ? { dateModified: item.updatedAt } : {}),
+      image: [item.images?.map(safeUrl).find(Boolean) ?? `${siteUrl}/og/default-${lang}.jpg`],
+      inLanguage: lang,
+      mainEntityOfPage: url,
+      author: { "@id": orgId() },
+      publisher: { "@id": orgId() },
+    });
+
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+/**
+ * robots.txt, generated so its Sitemap line follows VITE_SITE_URL.
+ *
+ * One group on purpose: a crawler obeys only the most specific group naming
+ * it, so a Googlebot-only group would silently skip every rule written under *.
+ */
+export const robotsTxt = () =>
+  [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /admin",
+    "Disallow: /en/admin",
+    "Disallow: /club/admin",
+    "",
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+    "",
+  ].join("\n");

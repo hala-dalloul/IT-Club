@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { url as supabaseUrl } from "./lib/club/public-api";
+import { robotsTxt, siteUrl } from "./lib/club/seo";
 
 type ServerEntry = {
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- opaque platform env/context, forwarded untouched
@@ -71,12 +73,38 @@ function withoutTrailingSlash(request: Request): Response | undefined {
   return Response.redirect(url.toString(), 301);
 }
 
+const text = (body: BodyInit | null, type: string) =>
+  new Response(body, {
+    headers: { "content-type": `${type}; charset=utf-8`, "cache-control": "public, max-age=3600" },
+  });
+
+/**
+ * The sitemap is built by the `sitemap` Supabase Edge Function from live
+ * content; this only forwards it. The site's own address goes along so the
+ * domain is set in one place, and the XML type is restored here because
+ * Supabase's gateway serves function responses as text/plain.
+ */
+async function sitemap() {
+  const response = await fetch(
+    `${supabaseUrl}/functions/v1/sitemap?site=${encodeURIComponent(siteUrl)}`,
+  );
+
+  return response.ok
+    ? text(response.body, "application/xml")
+    : new Response("Sitemap unavailable", { status: 502 });
+}
+
 export default {
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- opaque platform env/context, forwarded untouched
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const moved = withoutTrailingSlash(request);
 
     if (moved) return moved;
+
+    const { pathname } = new URL(request.url);
+
+    if (pathname === "/robots.txt") return text(robotsTxt(), "text/plain");
+    if (pathname === "/sitemap.xml") return sitemap();
 
     try {
       const handler = await getServerEntry();

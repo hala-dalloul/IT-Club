@@ -14,7 +14,16 @@ import cairoArabic from "../assets/fonts/cairo-arabic.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { readTheme } from "../lib/club/prefs";
 import { langOf } from "../lib/club/paths";
-import { pages, seo, siteName, titleFor } from "../lib/club/seo";
+import {
+  ldJson,
+  organizationLd,
+  pages,
+  seo,
+  siteName,
+  titleFor,
+  type Contact,
+} from "../lib/club/seo";
+import { safeUrl } from "../lib/club/model";
 import { loadClubData } from "../lib/club/ssr-data";
 import { ClubSite, Missing } from "@/components/club/ClubSite";
 
@@ -57,7 +66,19 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: ({ match, matches }) => {
+  // Every page, 404s included, renders inside ClubSite, whose footer waits for
+  // this data. Only the few contact facts the head needs are returned; the
+  // payload itself already ships once, in the query cache.
+  loader: async ({ context }): Promise<{ contact: Contact }> => {
+    const settings = (await loadClubData(context.queryClient))?.settings;
+    const profiles = [settings?.linkedin, settings?.instagram, settings?.facebook, settings?.github]
+      .map(safeUrl)
+      .filter((url): url is string => Boolean(url));
+
+    return { contact: { email: settings?.email?.trim() || undefined, profiles } };
+  },
+  // After the loader: the router infers head's loaderData from it, in object order.
+  head: ({ match, matches, loaderData }) => {
     const lang = langOf(matches.at(-1)?.pathname ?? "/");
     // Only unmatched URLs end here; every page route sets its own tags on top.
     const page = match.globalNotFound ? "missing" : "home";
@@ -74,6 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           path: "/",
           noindex: Boolean(match.globalNotFound),
         }),
+        ldJson(organizationLd(lang, loaderData?.contact ?? { profiles: [] })),
       ],
       links: [
         {
@@ -93,12 +115,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: "icon", href: "/favicon.png", type: "image/png" },
       ],
     };
-  },
-  // Every page, 404s included, renders inside ClubSite, whose footer waits for
-  // this data. Awaited, not returned: returned data would ship in the page a
-  // second time next to the query cache that already carries it.
-  loader: async ({ context }) => {
-    await loadClubData(context.queryClient);
   },
   shellComponent: RootShell,
   component: RootComponent,

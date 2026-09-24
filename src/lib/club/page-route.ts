@@ -11,7 +11,16 @@ import {
 } from "./model";
 import { hrefOf, itemPage, pageOf } from "./paths";
 import { contentExists } from "./public-api";
-import { alternates, itemSeo, pages as copy, seo, titleFor, type PageKey } from "./seo";
+import {
+  alternates,
+  itemLd,
+  itemSeo,
+  ldJson,
+  pages as copy,
+  seo,
+  titleFor,
+  type PageKey,
+} from "./seo";
 import { loadClubData, refreshClubData } from "./ssr-data";
 
 /**
@@ -125,12 +134,18 @@ export function pageHead(
   const first = page.split("/")[0] ?? "";
   const path = hrefOf(lang, page);
 
-  if (!missing && loaderData?.item)
+  if (!missing && loaderData?.item) {
+    // Individual member pages stay out of search: they carry students' names and photos.
+    const member = first === "members";
+
     return {
-      // Individual member pages stay out of search: they carry students' names and photos.
-      meta: itemSeo(loaderData.item, lang, path, first === "members"),
-      links: first === "members" ? [] : alternates(lang, page),
+      meta: [
+        ...itemSeo(loaderData.item, lang, path, member),
+        ...(member ? [] : [ldJson(itemLd(loaderData.item, lang, path))]),
+      ],
+      links: member ? [] : alternates(lang, page),
     };
+  }
 
   // SAFETY: hasOwn confirms first is one of copy's keys before the cast.
   const key: PageKey = missing || !Object.hasOwn(copy, first) ? "missing" : (first as PageKey);
