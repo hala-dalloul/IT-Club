@@ -3,20 +3,12 @@ import { useClub } from "./ClubProvider";
 /**
  * What the site stores, in plain language.
  *
- * Every row here is checked against the code: two preference cookies written by
- * prefs.ts, the visit id in visits.ts, the dismissal flag in PrivacyNotice.tsx,
- * and the language flag ClubProvider still reads for visitors who chose English
- * before the cookie existed. Nothing else is set, so nothing else is listed.
+ * Every row here is checked against the code: the theme cookie written by
+ * prefs.ts, the visit id in visits.ts and the dismissal flag in PrivacyNotice.tsx.
+ * Language needs no storage: it is part of the address (/en for English).
+ * Nothing else is set, so nothing else is listed.
  */
 const rows: [string, string, string, string, string, string][] = [
-  [
-    "ucas-language",
-    "كوكي",
-    "cookie",
-    "لغة الواجهة، حتى تُعرض الصفحة بلغتك من أول تحميل.",
-    "Your interface language, so the page is served in it from the first load.",
-    "سنة",
-  ],
   [
     "ucas-theme",
     "كوكي",
@@ -50,7 +42,9 @@ export function PrivacyPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-4xl font-black sm:text-5xl text-gradient-brand">{ar ? "الخصوصية والكوكيز" : "Privacy & cookies"}</h1>
+      <h1 className="text-4xl font-black sm:text-5xl text-gradient-brand">
+        {ar ? "الخصوصية والكوكيز" : "Privacy & cookies"}
+      </h1>
 
       <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
         {ar
@@ -63,10 +57,19 @@ export function PrivacyPage() {
         {rows.map(([name, kindAr, kindEn, whyAr, whyEn, keep]) => (
           <div key={name} className="rounded-3xl border border-border bg-card p-5 shadow-card">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <code className="rounded-full bg-brand-gradient-soft px-3 py-1 text-xs font-bold text-primary">{name}</code>
+              <code className="rounded-full bg-brand-gradient-soft px-3 py-1 text-xs font-bold text-primary">
+                {name}
+              </code>
               <span className="text-xs text-muted-foreground">{ar ? kindAr : kindEn}</span>
               <span className="text-xs text-muted-foreground">
-                · {ar ? `يُحفظ ${keep}` : keep === "الجلسة" ? "kept for the session" : keep === "سنة" ? "kept a year" : "kept until cleared"}
+                ·{" "}
+                {ar
+                  ? `يُحفظ ${keep}`
+                  : keep === "الجلسة"
+                    ? "kept for the session"
+                    : keep === "سنة"
+                      ? "kept a year"
+                      : "kept until cleared"}
               </span>
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

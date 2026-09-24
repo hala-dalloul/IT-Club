@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useClub } from "./ClubProvider";
+import { hrefOf } from "@/lib/club/paths";
 import mascot from "@/assets/club-mascot.webp";
 
 /**
@@ -22,8 +23,7 @@ export function FloatingJoin({ ar }: { ar: boolean }) {
 
   return (
     <Link
-      to="/club/$"
-      params={{ _splat: "join" }}
+      to={hrefOf(ar ? "ar" : "en", "join")}
       aria-label={ar ? "انضم إلينا" : "Join us"}
       className="fixed bottom-4 start-3 z-30 flex w-20 flex-col items-center gap-3 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:start-5 sm:w-24"
       style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}

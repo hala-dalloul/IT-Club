@@ -109,11 +109,16 @@ export function watchQuery<T>(
   };
 }
 
+/**
+ * `slug` is the item's URL name: a string sets it, null asks the database to
+ * generate one from title_en, and undefined (members) leaves the column alone.
+ */
 export async function saveContent(
   kind: ContentCollection,
   value: Omit<Content, "id">,
   id?: string,
   originalKind: ContentCollection = kind,
+  slug?: string | null,
 ) {
   if (kind !== originalKind && ![kind, originalKind].every((x) => x === "events" || x === "news")) {
     throw new Error("Invalid content type change");
@@ -123,12 +128,16 @@ export async function saveContent(
   const result = id
     ? await supabase()
         .from("club_content")
-        .update({ kind, data: value })
+        .update({ kind, data: value, ...(slug === undefined ? {} : { slug }) })
         .eq("id", id)
         .eq("kind", originalKind)
         .select("id")
         .single()
-    : await supabase().from("club_content").insert({ kind, data: value }).select("id").single();
+    : await supabase()
+        .from("club_content")
+        .insert({ kind, data: value, ...(slug === undefined ? {} : { slug }) })
+        .select("id")
+        .single();
 
   check(result.error);
   changed();

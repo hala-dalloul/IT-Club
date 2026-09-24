@@ -13,6 +13,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // /About is not /about: one address per page, anything else is a 404.
+    caseSensitive: true,
     defaultPreloadStaleTime: 0,
     // Ship the server's query cache with the document so the client renders
     // the loader's data instead of refetching it after hydration.

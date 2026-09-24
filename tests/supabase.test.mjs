@@ -29,6 +29,7 @@ before(async () => {
   await db.exec(readFileSync("supabase/migrations/202609170002_board_order.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609190001_news_content.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609240001_content_summary.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202609240002_content_slug.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -390,4 +391,61 @@ test("news and events accept an optional summary; other kinds and bad lengths ar
   await assert.rejects(() => insert("news", { ...data, summary_en: "x".repeat(301) }));
   await assert.rejects(() => insert("news", { ...data, summary: 42 }));
   await assert.rejects(() => insert("partners", { ...data, summary: "Not for partners" }));
+});
+
+test("slugs are generated once, unique, editable and never set on members", async () => {
+  await as(editor);
+  const data = (title_en) => ({
+    title: "خبر",
+    title_en,
+    description: "Test description",
+    description_en: "Test description",
+    images: [],
+    date: "2026-09-24",
+  });
+  const add = async (kind, value, slug) =>
+    (
+      await db.query(
+        "insert into club_content(kind,data,slug) values($1,$2,$3) returning id,slug",
+        [kind, JSON.stringify(value), slug ?? null],
+      )
+    ).rows[0];
+
+  const first = await add("news", data("The Club announces its Board of Directors for 2026"));
+  assert.equal(first.slug, "club-announces-board-directors-2026");
+  const second = await add("events", {
+    ...data("The Club announces its Board of Directors for 2026"),
+    status: "past",
+  });
+  assert.equal(second.slug, "club-announces-board-directors-2026-2");
+  assert.equal((await add("news", data("Custom"), "my-link")).slug, "my-link");
+  assert.equal((await add("news", data("Prisoner's Day"))).slug, "prisoners-day");
+  assert.equal((await add("news", data("مرحبا بالعالم"))).slug, null);
+
+  const long = await add("news", data("word ".repeat(40)));
+  assert.ok(long.slug.length <= 60);
+
+  await db.query("update club_content set data=$1 where id=$2", [
+    JSON.stringify(data("A completely different title")),
+    first.id,
+  ]);
+  assert.equal(
+    (await db.query("select slug from club_content where id=$1", [first.id])).rows[0].slug,
+    "club-announces-board-directors-2026",
+  );
+  await db.query("update club_content set slug=null where id=$1", [first.id]);
+  assert.equal(
+    (await db.query("select slug from club_content where id=$1", [first.id])).rows[0].slug,
+    "completely-different-title",
+  );
+
+  await assert.rejects(() => add("news", data("Bad"), "Not A Slug"));
+  await assert.rejects(() => add("news", data("Taken"), "my-link"));
+
+  const member = await add(
+    "members",
+    { ...data("Member Name"), committee: "media", isFounder: false, gender: "male" },
+    "member-link",
+  );
+  assert.equal(member.slug, null);
 });

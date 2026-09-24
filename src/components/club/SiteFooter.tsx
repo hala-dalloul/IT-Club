@@ -3,6 +3,7 @@ import { Mail, ArrowUpRight, Facebook, Instagram, Linkedin, Github } from "lucid
 import { useClub } from "./ClubProvider";
 import { Reveal } from "./Reveal";
 import { collegeUrl, isEmptySection, safeUrl } from "@/lib/club/model";
+import { hrefOf } from "@/lib/club/paths";
 import logo from "@/assets/ucas-logo.webp";
 
 const sections: [string, string, string][] = [
@@ -76,7 +77,7 @@ export function SiteFooter() {
             {sections
               .filter(([path]) => error || !isEmptySection(path, data))
               .map(([path, a, e]) => (
-                <Link key={path} to="/club/$" params={{ _splat: path }} className={itemClass}>
+                <Link key={path} to={hrefOf(lang, path)} className={itemClass}>
                   {ar ? a : e}
                 </Link>
               ))}
@@ -89,12 +90,11 @@ export function SiteFooter() {
                 {email}
               </a>
             )}
-            <Link to="/club/$" params={{ _splat: "contact" }} className={itemClass}>
+            <Link to={hrefOf(lang, "contact")} className={itemClass}>
               {ar ? "صفحة التواصل" : "Contact page"}
             </Link>
             <Link
-              to="/club/$"
-              params={{ _splat: "join" }}
+              to={hrefOf(lang, "join")}
               className="club-action mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5"
             >
               {ar ? "طلب الانضمام" : "Apply to join"}
@@ -116,7 +116,7 @@ export function SiteFooter() {
             </a>
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link to="/club/$" params={{ _splat: "privacy" }} className={itemClass}>
+            <Link to={hrefOf(lang, "privacy")} className={itemClass}>
               {ar ? "الخصوصية والكوكيز" : "Privacy & cookies"}
             </Link>
           </div>

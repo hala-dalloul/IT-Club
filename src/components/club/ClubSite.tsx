@@ -2,7 +2,8 @@ import { FloatingJoin } from "./FloatingJoin";
 import { HeroSection } from "@/components/ui/hero-section-4";
 import InformationDrawer from "@/components/ui/information-drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { collegeUrl, isEmptySection, memberGender } from "@/lib/club/model";
+import { collegeUrl, findItem, isEmptySection, memberGender } from "@/lib/club/model";
+import { hrefOf, itemPage, otherLangHref, pageOf } from "@/lib/club/paths";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -24,7 +25,7 @@ import {
 } from "lucide-react";
 import "./club.css";
 import logo from "@/assets/ucas-logo.webp";
-import { BrandButton } from "@/components/club/BrandButton";
+import { BrandButton, brandButtonClass } from "@/components/club/BrandButton";
 import { FloatingBackground } from "@/components/club/FloatingBackground";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,7 +78,8 @@ const nav = [
 const linkClass =
   "club-action inline-flex items-center justify-center gap-2 rounded-full border-2 border-primary/30 bg-card px-6 py-3 text-base font-bold text-primary transition-colors hover:bg-primary/5";
 
-function ClubLink({
+/** A link to a page path ("", "about", "news/<slug>") in the current language. */
+export function ClubLink({
   path = "",
   children,
   className = linkClass,
@@ -90,7 +92,8 @@ function ClubLink({
   navigation?: boolean;
   title?: string;
 }) {
-  const target = path ? `/club/${path}` : "/";
+  const { lang } = useClub();
+  const target = hrefOf(lang, path);
 
   return (
     <Link
@@ -137,7 +140,8 @@ function Empty() {
 
 function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { lang, setLang, loading, error, data } = useClub();
+  const { lang, loading, error, data } = useClub();
+  const page = pageOf(location.pathname);
   const [open, setOpen] = useState(false);
   // Until data arrives every list looks empty, so only hide once it has.
   const links = loading || error ? nav : nav.filter(([path]) => !isEmptySection(path!, data));
@@ -164,10 +168,7 @@ function Shell({ children }: { children: ReactNode }) {
     }
   };
   const ar = lang === "ar";
-  const isAdmin =
-    useLocation()
-      .pathname.replace(/^\/club\/?/, "")
-      .split("/")[0] === "admin";
+  const isAdmin = page.split("/")[0] === "admin";
 
   return (
     <div dir={ar ? "rtl" : "ltr"} className="club-site relative isolate min-h-screen">
@@ -204,16 +205,17 @@ function Shell({ children }: { children: ReactNode }) {
               ))}
             </nav>
             <div className="club-header-actions flex shrink-0 items-center gap-1">
-              <BrandButton
-                variant="ghost"
-                size="sm"
-                className="club-language-button"
-                onClick={() => setLang(ar ? "en" : "ar")}
+              {/* A real link to the same page in the other language, so search
+                  engines find both versions and the tab title follows. */}
+              <Link
+                to={otherLangHref(location.pathname)}
+                hrefLang={ar ? "en" : "ar"}
+                className={brandButtonClass("ghost", "sm", "club-language-button")}
                 aria-label={ar ? "Switch to English" : "التبديل للعربية"}
               >
-                <Globe size={16} />
-                {ar ? "EN" : "عربي"}
-              </BrandButton>
+                <Globe size={16} aria-hidden="true" />
+                <span lang={ar ? "en" : "ar"}>{ar ? "EN" : "عربي"}</span>
+              </Link>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -271,13 +273,11 @@ function Shell({ children }: { children: ReactNode }) {
       <main
         id="club-main"
         tabIndex={-1}
-        className={`mx-auto max-w-6xl px-4 animate-stage-in ${["/", "/club", "/club/"].includes(location.pathname) ? "pt-4 pb-12 sm:pt-5 sm:pb-16" : "py-12 sm:py-16"}`}
+        className={`mx-auto max-w-6xl px-4 animate-stage-in ${page === "" ? "pt-4 pb-12 sm:pt-5 sm:pb-16" : "py-12 sm:py-16"}`}
       >
         {children}
       </main>
-      {!isAdmin && !location.pathname.startsWith("/club/join") && (
-        <FloatingJoin ar={lang === "ar"} />
-      )}
+      {!isAdmin && !page.startsWith("join") && <FloatingJoin ar={lang === "ar"} />}
       <PrivacyNotice ar={ar} />
       {/* The footer reads as the end of the page, so keep it out of the way
           until the content it sits under has actually arrived. */}
@@ -373,7 +373,7 @@ function Card({
           </div>
         ) : (
           <ClubLink
-            path={`${kind}/${item.id}`}
+            path={itemPage(kind, item)}
             className="club-card-cta mt-auto inline-flex items-center gap-2 pt-5 font-bold text-primary"
           >
             {lang === "ar" ? "التفاصيل" : "View details"}
@@ -726,13 +726,7 @@ function Listing({ kind }: { kind: ContentCollection }) {
 
 function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
   const { data, lang } = useClub();
-  const item =
-    data[kind].find((x) => x.id === id) ??
-    (kind === "events"
-      ? data.news.find((x) => x.id === id)
-      : kind === "news"
-        ? data.events.find((x) => x.id === id)
-        : undefined);
+  const item = findItem(data, kind, id)?.item;
   const ar = lang === "ar";
 
   if (!item)
@@ -1102,11 +1096,7 @@ export function Missing() {
 export function ContentPage() {
   const { loading, error, lang } = useClub();
 
-  const path = useLocation()
-    .pathname.replace(/^\/club\/?/, "")
-    .replace(/\/$/, "");
-
-  const [page, id] = path.split("/");
+  const [page, id] = pageOf(useLocation().pathname).split("/");
 
   if (page === "admin")
     return (

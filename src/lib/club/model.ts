@@ -14,6 +14,8 @@ export const collegeUrl: Record<Lang, string> = {
 
 export type Content = {
   id: string;
+  /** Readable URL name for news, events and partners; members keep their id. */
+  slug?: string;
   title: string;
   title_en: string;
   description: string;
@@ -175,6 +177,25 @@ export function isEmptySection(path: string, data: Record<ContentCollection, Con
   return (
     (collections as readonly string[]).includes(path) && !data[path as ContentCollection].length
   );
+}
+
+/** Detail pages still open news and events links across the two kinds. */
+export const kindsFor = (kind: ContentCollection): ContentCollection[] =>
+  kind === "news" ? ["news", "events"] : kind === "events" ? ["events", "news"] : [kind];
+
+/** The item a URL names, by readable slug or by id, and the list it lives in. */
+export function findItem(
+  data: Record<ContentCollection, Content[]>,
+  kind: ContentCollection,
+  ref: string,
+) {
+  for (const k of kindsFor(kind)) {
+    const item = data[k].find((x) => x.slug === ref || x.id === ref);
+
+    if (item) return { kind: k, item };
+  }
+
+  return undefined;
 }
 
 export function memberGender(item: Content): "male" | "female" {

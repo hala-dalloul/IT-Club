@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
+import { hrefOf } from "@/lib/club/paths";
 
 const KEY = "ucas-privacy-seen";
 
@@ -48,11 +49,10 @@ export function PrivacyNotice({ ar }: { ar: boolean }) {
       <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-3.5 text-sm sm:flex-row sm:items-center sm:gap-5">
         <p className="flex-1 leading-relaxed text-muted-foreground">
           {ar
-            ? "نحفظ تفضيلَي اللغة والمظهر فقط، ورقم زيارة عشوائي لعدّ الزيارات. لا نستخدم أي تتبّع إعلاني أو تحليلات خارجية."
-            : "We store only your language and theme preferences, plus a random visit id used to count visits. No advertising trackers and no third-party analytics."}{" "}
+            ? "نحفظ تفضيل المظهر فقط، ورقم زيارة عشوائي لعدّ الزيارات. لا نستخدم أي تتبّع إعلاني أو تحليلات خارجية."
+            : "We store only your theme preference, plus a random visit id used to count visits. No advertising trackers and no third-party analytics."}{" "}
           <Link
-            to="/club/$"
-            params={{ _splat: "privacy" }}
+            to={hrefOf(ar ? "ar" : "en", "privacy")}
             className="font-bold text-primary underline underline-offset-4"
           >
             {ar ? "التفاصيل" : "Read more"}

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
   HeadContent,
   Scripts,
@@ -11,7 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import cairoArabic from "../assets/fonts/cairo-arabic.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { readLang, readTheme } from "../lib/club/prefs";
+import { readTheme } from "../lib/club/prefs";
+import { langOf } from "../lib/club/paths";
 import { pages, seo, siteName, titleFor } from "../lib/club/seo";
 import { loadClubData } from "../lib/club/ssr-data";
 import { ClubSite, Missing } from "@/components/club/ClubSite";
@@ -55,8 +57,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: ({ match }) => {
-    const lang = readLang();
+  head: ({ match, matches }) => {
+    const lang = langOf(matches.at(-1)?.pathname ?? "/");
     // Only unmatched URLs end here; every page route sets its own tags on top.
     const page = match.globalNotFound ? "missing" : "home";
 
@@ -105,9 +107,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  // Matches what ClubProvider seeds its state with, so the document ships in
-  // the visitor's language instead of flipping after hydration.
-  const lang = readLang();
+  // The address is the language, on the server and in the browser alike.
+  const lang = langOf(useLocation().pathname);
   const theme = readTheme();
 
   return (

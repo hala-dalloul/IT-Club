@@ -91,15 +91,17 @@ async function rows(table: string, order: string, f: Fetcher) {
 }
 
 /**
- * Whether one item exists right now, asked of the database directly.
+ * Whether one item exists right now, by id or slug, asked of the database directly.
  *
  * Costs a two-byte response instead of the whole payload, so a link to a
  * deleted or made-up item can be answered 404 without re-downloading every
- * row. Callers pass a validated UUID; it goes into the query string as-is.
+ * row. Callers pass a validated UUID or slug; it goes into the query string as-is.
  */
-export async function contentExists(id: string, kinds: ContentCollection[]) {
+export async function contentExists(ref: string, kinds: ContentCollection[]) {
+  // An id that isn't a UUID would make Postgres reject the whole query.
+  const column = /^[0-9a-f-]{36}$/i.test(ref) ? "id" : "slug";
   const found = await request<{ id: string }[]>(
-    `club_content?select=id&id=eq.${id}&kind=in.(${kinds.join(",")})&limit=1`,
+    `club_content?select=id&${column}=eq.${ref}&kind=in.(${kinds.join(",")})&limit=1`,
     { method: "GET" },
     fetch,
   );
@@ -136,6 +138,7 @@ export async function loadPublic(f: Fetcher = fetch) {
       // validates the value against contentSchema before insert.
       ...(row["data"] as Omit<Content, "id">),
       id: String(row["id"]),
+      ...(typeof row["slug"] === "string" ? { slug: row["slug"] } : {}),
       createdAt: String(row["created_at"] ?? ""),
       updatedAt: String(row["updated_at"] ?? ""),
       updatedBy: String(row["updated_by"] || ""),

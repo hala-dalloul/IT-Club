@@ -9,7 +9,8 @@ import {
 } from "@/lib/club/model";
 import { configured, loadPublic, SetupRequiredError } from "@/lib/club/public-api";
 import { recordVisit } from "@/lib/club/visits";
-import { LANG_COOKIE, readLang, writePrefCookie } from "@/lib/club/prefs";
+import { useLocation } from "@tanstack/react-router";
+import { langOf } from "@/lib/club/paths";
 
 const emptyData: Record<ContentCollection, Content[]> = {
   members: [],
@@ -21,9 +22,8 @@ const emptyData: Record<ContentCollection, Content[]> = {
 export const clubPublicKey = ["club-public"];
 
 const Context = createContext({
-  // SAFETY: "ar" is a valid member of Lang; widened so setLang's default matches the type below.
+  // SAFETY: "ar" is a valid member of Lang; widened so the provider's URL-derived value fits.
   lang: "ar" as Lang,
-  setLang: (_lang: Lang) => {},
   data: emptyData,
   settings: emptySettings,
   // SAFETY: no visit count is known yet; widened so ClubProvider's setVisitorCount(number) fits.
@@ -47,27 +47,13 @@ export function ClubProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
-  // Seeded from the cookie, so the server already rendered this language.
-  const [lang, setLang] = useState<Lang>(readLang);
-  useEffect(() => {
-    // Visitors who chose English before the cookie existed still have the
-    // preference in storage; adopt it once, then the cookie carries it.
-    try {
-      if (localStorage.getItem("ucas-language") === "en") setLang("en");
-    } catch {
-      /* Keep the in-memory language if browser storage is disabled. */
-    }
-  }, []);
+  // The URL is the language: /en/... is English, everything else Arabic. No
+  // cookie or stored preference, so every address shows one language to
+  // everyone, search engines included.
+  const lang = langOf(useLocation().pathname);
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    writePrefCookie(LANG_COOKIE, lang);
-
-    try {
-      localStorage.setItem("ucas-language", lang);
-    } catch {
-      /* Storage is optional. */
-    }
   }, [lang]);
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -105,8 +91,8 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ lang, setLang, data, settings, loading, error, setupRequired, visitorCount }),
-    [lang, setLang, data, settings, loading, error, setupRequired, visitorCount],
+    () => ({ lang, data, settings, loading, error, setupRequired, visitorCount }),
+    [lang, data, settings, loading, error, setupRequired, visitorCount],
   );
 
   return <Context.Provider value={value}>{children}</Context.Provider>;

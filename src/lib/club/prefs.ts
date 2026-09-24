@@ -1,13 +1,9 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
-import type { Lang } from "./model";
 
-export const LANG_COOKIE = "ucas-language";
 export const THEME_COOKIE = "ucas-theme";
 
 export type Theme = "dark" | "light";
-
-const normalise = (value: string | undefined | ""): Lang => (value === "en" ? "en" : "ar");
 
 function readCookie(name: string): string | undefined {
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
@@ -15,20 +11,7 @@ function readCookie(name: string): string | undefined {
 }
 
 /**
- * The visitor's language, readable during SSR as well as in the browser.
- *
- * Language used to live only in localStorage, which the server cannot see, so
- * every render started in Arabic and the client flipped it after hydration —
- * an English visitor watched the whole chrome switch under them on each load.
- * A cookie is sent with the document request, so both sides agree on the first
- * paint.
- */
-export const readLang = createIsomorphicFn()
-  .server((): Lang => normalise(getCookie(LANG_COOKIE)))
-  .client((): Lang => normalise(readCookie(LANG_COOKIE)));
-
-/**
- * The visitor's theme, on the same footing as the language.
+ * The visitor's theme, readable during SSR as well as in the browser.
  *
  * An inline script in the document head already applies the `dark` class
  * before first paint, but React's own state started at light and corrected

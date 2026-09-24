@@ -813,11 +813,30 @@ function ContentEditor({
       }
     }
 
+    // Members keep their ids in URLs; everything else has a readable name.
+    const typedSlug = values["slug"]?.trim().toLowerCase() ?? "";
+
+    if (kind !== "members" && typedSlug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(typedSlug)) {
+      setError(
+        ar
+          ? "اسم الرابط: حروف إنجليزية صغيرة وأرقام وشرطات فقط، مثل club-launch-2026."
+          : "Link name: lowercase English letters, numbers and hyphens only, like club-launch-2026.",
+      );
+
+      return;
+    }
+
     setBusy(true);
     setError("");
 
     try {
-      await saveContent(targetKind, value, item?.id, kind);
+      await saveContent(
+        targetKind,
+        value,
+        item?.id,
+        kind,
+        kind === "members" ? undefined : typedSlug || null,
+      );
 
       if (item?.id) {
         queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(clubPublicKey, (old) => {
@@ -835,6 +854,14 @@ function ContentEditor({
 
       onSaved();
     } catch (error) {
+      if (error instanceof Error && error.message.includes("club_content_slug_unique")) {
+        setError(
+          ar
+            ? "اسم الرابط مستخدم لمحتوى آخر. اختر اسمًا مختلفًا أو اتركه فارغًا ليُنشأ تلقائيًا."
+            : "That link name is already used. Pick another, or leave it empty to generate one.",
+        );
+        return;
+      }
       if (
         targetKind === "news" &&
         error instanceof Error &&
@@ -993,6 +1020,26 @@ function ContentEditor({
           </label>
         ))}
       </div>
+      {kind !== "members" && (
+        <label className="block text-sm font-bold">
+          <span className="mb-2 block">{ar ? "اسم الرابط" : "Link name"}</span>
+          <div className="flex items-center gap-2" dir="ltr">
+            <span className="shrink-0 text-muted-foreground">/{targetKind}/</span>
+            <Input
+              name="slug"
+              maxLength={80}
+              defaultValue={item?.slug || ""}
+              placeholder={ar ? "يُنشأ من العنوان الإنجليزي" : "generated from the English title"}
+              dir="ltr"
+            />
+          </div>
+          <span className="mt-2 block font-normal text-muted-foreground">
+            {ar
+              ? "اتركه فارغًا ليُنشأ تلقائيًا. تغييره لاحقًا يُعطّل الروابط التي نُشرت سابقًا."
+              : "Leave empty to generate one. Changing it later breaks links already shared."}
+          </span>
+        </label>
+      )}
       {isArticle && (
         <div className="grid gap-5 sm:grid-cols-2">
           {(

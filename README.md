@@ -9,9 +9,11 @@ The platform combines a public club website, an administration dashboard, and a 
 The current application exposes:
 
 ```text
-/        -> Game
-/club    -> Public IT Club website
-/admin   -> Administration dashboard
+/                -> Public IT Club website (Arabic)
+/en              -> Public IT Club website (English)
+/news/<slug>     -> A news item by its readable name (same under /en)
+/admin           -> Administration dashboard
+/club/...        -> Old addresses, permanently redirected to the ones above
 ```
 
 Supabase provides authentication, PostgreSQL data management, Row Level Security, and media storage.

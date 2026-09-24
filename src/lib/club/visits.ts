@@ -1,4 +1,5 @@
 import { recordClubVisit } from "./public-api";
+import { pageOf } from "./paths";
 
 let request: Promise<number> | undefined;
 
@@ -23,7 +24,7 @@ export function recordVisit(): Promise<number> {
 
   // Editors, automated browsers and dev/preview hosts read the count without adding to it.
   const counts =
-    !location.pathname.startsWith("/club/admin") &&
+    pageOf(location.pathname).split("/")[0] !== "admin" &&
     !navigator.webdriver &&
     !/^(localhost|127\.|\[::1\]|id-preview--)|\.lovableproject\.com$/.test(location.hostname);
 

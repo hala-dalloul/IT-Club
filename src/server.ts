@@ -54,9 +54,30 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+/**
+ * /about/ → /about as a permanent (301) move.
+ *
+ * The router makes the same correction itself, but always as a temporary 307,
+ * which tells search engines to keep the slashed URL around.
+ */
+function withoutTrailingSlash(request: Request): Response | undefined {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/" || !url.pathname.endsWith("/")) return undefined;
+  if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+
+  url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+
+  return Response.redirect(url.toString(), 301);
+}
+
 export default {
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- opaque platform env/context, forwarded untouched
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const moved = withoutTrailingSlash(request);
+
+    if (moved) return moved;
+
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

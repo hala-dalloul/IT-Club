@@ -1,4 +1,5 @@
 import { local, safeUrl, type Content, type Lang } from "./model";
+import { hrefOf } from "./paths";
 
 /**
  * Absolute origin for share tags; og:url and og:image must be absolute.
@@ -207,6 +208,24 @@ export function seo({
     { property: "og:locale:alternate", content: locale(other) },
     { name: "twitter:card", content: "summary_large_image" },
     ...(published ? [{ property: "article:published_time", content: published }] : []),
+  ];
+}
+
+/**
+ * The page's own address plus its Arabic, English and default versions.
+ *
+ * Tells search engines the two languages are one page in two translations,
+ * not duplicates, and which URL to index for each. x-default is Arabic, the
+ * site's main language.
+ */
+export function alternates(lang: Lang, page: string) {
+  const url = (l: Lang) => `${siteUrl}${hrefOf(l, page)}`;
+
+  return [
+    { rel: "canonical", href: url(lang) },
+    { rel: "alternate", hrefLang: "ar", href: url("ar") },
+    { rel: "alternate", hrefLang: "en", href: url("en") },
+    { rel: "alternate", hrefLang: "x-default", href: url("ar") },
   ];
 }
 
