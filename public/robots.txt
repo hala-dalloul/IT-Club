@@ -1,14 +1,6 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# One group on purpose: a crawler obeys only the most specific group naming it,
+# so a Googlebot-only group would silently skip every rule written under *.
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /club/admin

@@ -6,6 +6,12 @@ export type ContentCollection = (typeof collections)[number];
 
 export type Lang = "ar" | "en";
 
+/** The parent college's site, in each language. */
+export const collegeUrl: Record<Lang, string> = {
+  ar: "https://www.ucas.edu.ps/",
+  en: "https://en.ucas.edu.ps/",
+};
+
 export type Content = {
   id: string;
   title: string;

@@ -2,7 +2,7 @@ import { FloatingJoin } from "./FloatingJoin";
 import { HeroSection } from "@/components/ui/hero-section-4";
 import InformationDrawer from "@/components/ui/information-drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { memberGender } from "@/lib/club/model";
+import { collegeUrl, memberGender } from "@/lib/club/model";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -512,9 +512,18 @@ function About() {
   return (
     <>
       <Heading ar="من نحن" en="About the club">
+        {ar ? "نادٍ طلابي في " : "A student-run club at the "}
+        <a
+          href={collegeUrl[lang]}
+          target="_blank"
+          rel="noopener"
+          className="font-bold text-primary underline-offset-4 hover:underline"
+        >
+          {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
+        </a>
         {ar
-          ? "نادٍ طلابي في الكلية الجامعية للعلوم التطبيقية، يديره طلبته ويجمع المهتمين بالبرمجة والتصميم والألعاب والوسائط."
-          : "A student-run club at the University College of Applied Sciences for everyone working in code, design, games and media."}
+          ? "، يديره طلبته ويجمع المهتمين بالبرمجة والتصميم والألعاب والوسائط."
+          : " for everyone working in code, design, games and media."}
       </Heading>
 
       <div className="grid gap-6 sm:grid-cols-2">
@@ -1075,7 +1084,20 @@ function PublicForm({ join }: { join: boolean }) {
   );
 }
 
-function ContentPage() {
+function Missing() {
+  const { lang } = useClub();
+
+  return (
+    <>
+      <Heading ar="الصفحة غير موجودة" en="Page not found" />
+      <div className="text-center">
+        <ClubLink>{lang === "ar" ? "العودة للرئيسية" : "Back to home"}</ClubLink>
+      </div>
+    </>
+  );
+}
+
+function ContentPage({ notFound }: { notFound: boolean }) {
   const { loading, error, lang } = useClub();
 
   const path = useLocation()
@@ -1083,6 +1105,9 @@ function ContentPage() {
     .replace(/\/$/, "");
 
   const [page, id] = path.split("/");
+
+  // The router already answered 404; don't let the path render a real page.
+  if (notFound) return <Missing />;
 
   if (page === "admin")
     return (
@@ -1134,14 +1159,15 @@ function ContentPage() {
       <Listing key={page} kind={page as ContentCollection} />
     );
 
-  return <Heading ar="الصفحة غير موجودة" en="Page not found" />;
+  return <Missing />;
 }
 
-export function ClubSite() {
+/** `notFound` renders the site's chrome around a not-found message, for 404 responses. */
+export function ClubSite({ notFound = false }: { notFound?: boolean }) {
   return (
     <ClubProvider>
       <Shell>
-        <ContentPage />
+        <ContentPage notFound={notFound} />
       </Shell>
     </ClubProvider>
   );

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail, ArrowUpRight, Facebook, Instagram, Linkedin, Github } from "lucide-react";
 import { useClub } from "./ClubProvider";
 import { Reveal } from "./Reveal";
-import { safeUrl } from "@/lib/club/model";
+import { collegeUrl, safeUrl } from "@/lib/club/model";
 import logo from "@/assets/ucas-logo.webp";
 
 const sections: [string, string, string][] = [
@@ -103,7 +103,14 @@ export function SiteFooter() {
         <div className="mt-12 flex flex-col gap-4 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {new Date().getFullYear()} UCAS IT CLUB —{" "}
-            {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
+            <a
+              href={collegeUrl[lang]}
+              target="_blank"
+              rel="noopener"
+              className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >
+              {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
+            </a>
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link to="/club/$" params={{ _splat: "privacy" }} className={itemClass}>

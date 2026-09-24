@@ -35,7 +35,7 @@ let inflight: { at: number; value: Promise<Public> } | undefined;
  * mount and an admin save invalidates it. A failed fetch is not cached, so the
  * next request retries rather than inheriting the error for a minute.
  */
-function publicData() {
+function publicData(fresh = false) {
   // Route loaders also run in the browser on client-side navigation, where
   // react-query is already the cache and a second Supabase client would only
   // duplicate the auth instance.
@@ -43,9 +43,10 @@ function publicData() {
 
   const now = Date.now();
 
-  if (inflight && now - inflight.at < TTL * 1000) return inflight.value;
+  if (!fresh && inflight && now - inflight.at < TTL * 1000) return inflight.value;
 
-  const value = loadPublic(cachingFetch);
+  // A fresh read skips the edge cache too, or it would get the same stale copy.
+  const value = loadPublic(fresh ? fetch : cachingFetch);
   inflight = { at: now, value };
   value.catch(() => {
     if (inflight?.value === value) inflight = undefined;
@@ -72,8 +73,22 @@ export function loadClubData(queryClient: QueryClient) {
   return queryClient
     .ensureQueryData({
       queryKey: clubPublicKey,
-      queryFn: publicData,
+      queryFn: () => publicData(),
       staleTime: TTL * 1000,
     })
+    .catch(() => undefined);
+}
+
+/**
+ * Refetch past both caches, for a URL the cached copy does not know.
+ *
+ * The cached payload can be up to a minute old, so an item published in that
+ * minute would otherwise answer 404 to whoever opens its link first.
+ */
+export function refreshClubData(queryClient: QueryClient) {
+  if (!configured) return;
+
+  return queryClient
+    .fetchQuery({ queryKey: clubPublicKey, queryFn: () => publicData(true), staleTime: 0 })
     .catch(() => undefined);
 }
