@@ -1084,7 +1084,8 @@ function PublicForm({ join }: { join: boolean }) {
   );
 }
 
-function Missing() {
+/** The not-found view, rendered inside the persistent site chrome for 404 responses. */
+export function Missing() {
   const { lang } = useClub();
 
   return (
@@ -1097,7 +1098,8 @@ function Missing() {
   );
 }
 
-function ContentPage({ notFound }: { notFound: boolean }) {
+/** The page for the current path; routes render this inside ClubSite. */
+export function ContentPage() {
   const { loading, error, lang } = useClub();
 
   const path = useLocation()
@@ -1105,9 +1107,6 @@ function ContentPage({ notFound }: { notFound: boolean }) {
     .replace(/\/$/, "");
 
   const [page, id] = path.split("/");
-
-  // The router already answered 404; don't let the path render a real page.
-  if (notFound) return <Missing />;
 
   if (page === "admin")
     return (
@@ -1162,13 +1161,18 @@ function ContentPage({ notFound }: { notFound: boolean }) {
   return <Missing />;
 }
 
-/** `notFound` renders the site's chrome around a not-found message, for 404 responses. */
-export function ClubSite({ notFound = false }: { notFound?: boolean }) {
+/**
+ * The site's chrome: header, background, footer and the shared data provider.
+ *
+ * The root route renders this once around every page, so moving between pages,
+ * including onto a 404, swaps only the content. When each route rendered its
+ * own copy, crossing from one route to another (home to a section, or any page
+ * to a 404) rebuilt the whole site and replayed its entrance animation.
+ */
+export function ClubSite({ children }: { children: ReactNode }) {
   return (
     <ClubProvider>
-      <Shell>
-        <ContentPage notFound={notFound} />
-      </Shell>
+      <Shell>{children}</Shell>
     </ClubProvider>
   );
 }

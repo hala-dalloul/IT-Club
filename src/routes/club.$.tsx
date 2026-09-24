@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { ClubSite } from "@/components/club/ClubSite";
+import { ContentPage, Missing } from "@/components/club/ClubSite";
 import {
   collections,
   isEmptySection,
@@ -22,7 +22,7 @@ const isCollection = (page: string): page is ContentCollection =>
 /**
  * What a splat points at, or undefined when nothing lives there.
  *
- * ClubSite renders any unknown path as a "not found" heading, which used to go
+ * ContentPage renders any unknown path as a "not found" heading, which used to go
  * out as 200 — search engines index those as real pages. Anything this rejects
  * now answers 404.
  */
@@ -55,7 +55,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const Route = createFileRoute("/club/$")({
   // Before head: the router infers head's loaderData from it, in object order.
   loader: async ({ context, params }): Promise<{ item?: Content }> => {
-    // Loaded even for a path that will 404: Shell hides the footer until data arrives.
+    // The root loader already warmed this; the call just hands back the data.
     const loaded = await loadClubData(context.queryClient);
     const found = target(params._splat ?? "");
 
@@ -127,6 +127,6 @@ export const Route = createFileRoute("/club/$")({
       }),
     };
   },
-  component: ClubSite,
-  notFoundComponent: () => <ClubSite notFound />,
+  component: ContentPage,
+  notFoundComponent: Missing,
 });

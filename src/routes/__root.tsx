@@ -6,26 +6,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import cairoArabic from "../assets/fonts/cairo-arabic.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { readLang, readTheme } from "../lib/club/prefs";
 import { pages, seo, siteName, titleFor } from "../lib/club/seo";
-
-// Lazy so the site's chunk stays out of the entry bundle; the club routes
-// already load it on their own.
-const ClubSite = lazy(() =>
-  import("@/components/club/ClubSite").then((m) => ({ default: m.ClubSite })),
-);
-
-// The club's own chrome and language, not a bare English page.
-const NotFoundComponent = () => (
-  <Suspense>
-    <ClubSite notFound />
-  </Suspense>
-);
+import { loadClubData } from "../lib/club/ssr-data";
+import { ClubSite, Missing } from "@/components/club/ClubSite";
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
@@ -103,9 +92,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ],
     };
   },
+  // Every page, 404s included, renders inside ClubSite, whose footer waits for
+  // this data. Awaited, not returned: returned data would ship in the page a
+  // second time next to the query cache that already carries it.
+  loader: async ({ context }) => {
+    await loadClubData(context.queryClient);
+  },
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
+  notFoundComponent: Missing,
   errorComponent: ErrorComponent,
 });
 
@@ -147,8 +142,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* One site chrome for every route; only the page inside it changes. */}
+      <ClubSite>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </ClubSite>
     </QueryClientProvider>
   );
 }

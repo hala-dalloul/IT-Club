@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ClubSite } from "@/components/club/ClubSite";
+import { ContentPage } from "@/components/club/ClubSite";
 import { readLang } from "@/lib/club/prefs";
 import { pages, seo, titleFor } from "@/lib/club/seo";
-import { loadClubData } from "@/lib/club/ssr-data";
 
 export const Route = createFileRoute("/club/")({
   head: () => {
@@ -18,6 +17,5 @@ export const Route = createFileRoute("/club/")({
       }),
     };
   },
-  loader: ({ context }) => loadClubData(context.queryClient),
-  component: ClubSite,
+  component: ContentPage,
 });
