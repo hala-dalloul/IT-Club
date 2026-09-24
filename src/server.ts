@@ -56,21 +56,36 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-/**
- * /about/ → /about as a permanent (301) move.
- *
- * The router makes the same correction itself, but always as a temporary 307,
- * which tells search engines to keep the slashed URL around.
- */
-function withoutTrailingSlash(request: Request): Response | undefined {
-  const url = new URL(request.url);
+/** The site's first address, kept alive only to forward old links. */
+const retiredHost = "ucas.itclub-143.workers.dev";
 
-  if (url.pathname === "/" || !url.pathname.endsWith("/")) return undefined;
+/**
+ * Permanent (301) moves the router can't make itself:
+ *
+ * - /about/ → /about. The router corrects this too, but always as a temporary
+ *   307, which tells search engines to keep the slashed URL around.
+ * - The old workers.dev address → the same path on the site's own domain,
+ *   once VITE_SITE_URL names one. Until then siteUrl is that address and
+ *   nothing moves. Only this exact host: Cloudflare's per-version preview URLs
+ *   also end in .workers.dev and must keep working for testing.
+ *
+ * Both happen in one hop.
+ */
+function permanentMove(request: Request): Response | undefined {
   if (request.method !== "GET" && request.method !== "HEAD") return undefined;
 
-  url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+  const from = new URL(request.url);
+  const to = new URL(from);
+  const site = new URL(siteUrl);
 
-  return Response.redirect(url.toString(), 301);
+  if (from.hostname === retiredHost && site.hostname !== retiredHost) {
+    to.protocol = site.protocol;
+    to.host = site.host;
+  }
+
+  to.pathname = to.pathname.replace(/\/+$/, "") || "/";
+
+  return to.href === from.href ? undefined : Response.redirect(to.href, 301);
 }
 
 const text = (body: BodyInit | null, type: string) =>
@@ -97,7 +112,7 @@ async function sitemap() {
 export default {
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- opaque platform env/context, forwarded untouched
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    const moved = withoutTrailingSlash(request);
+    const moved = permanentMove(request);
 
     if (moved) return moved;
 
