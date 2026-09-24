@@ -90,6 +90,23 @@ async function rows(table: string, order: string, f: Fetcher) {
   return result;
 }
 
+/**
+ * Whether one item exists right now, asked of the database directly.
+ *
+ * Costs a two-byte response instead of the whole payload, so a link to a
+ * deleted or made-up item can be answered 404 without re-downloading every
+ * row. Callers pass a validated UUID; it goes into the query string as-is.
+ */
+export async function contentExists(id: string, kinds: ContentCollection[]) {
+  const found = await request<{ id: string }[]>(
+    `club_content?select=id&id=eq.${id}&kind=in.(${kinds.join(",")})&limit=1`,
+    { method: "GET" },
+    fetch,
+  );
+
+  return found.length > 0;
+}
+
 /** Every public row the site renders, in one shape the provider can hold. */
 export async function loadPublic(f: Fetcher = fetch) {
   const [content, settings] = await Promise.all([
@@ -120,7 +137,7 @@ export async function loadPublic(f: Fetcher = fetch) {
       ...(row["data"] as Omit<Content, "id">),
       id: String(row["id"]),
       createdAt: String(row["created_at"] ?? ""),
-      updatedAt: row["updated_at"],
+      updatedAt: String(row["updated_at"] ?? ""),
       updatedBy: String(row["updated_by"] || ""),
     });
   }

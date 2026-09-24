@@ -2,7 +2,7 @@ import { FloatingJoin } from "./FloatingJoin";
 import { HeroSection } from "@/components/ui/hero-section-4";
 import InformationDrawer from "@/components/ui/information-drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { collegeUrl, memberGender } from "@/lib/club/model";
+import { collegeUrl, isEmptySection, memberGender } from "@/lib/club/model";
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -137,8 +137,10 @@ function Empty() {
 
 function Shell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { lang, setLang, loading } = useClub();
+  const { lang, setLang, loading, error, data } = useClub();
   const [open, setOpen] = useState(false);
+  // Until data arrives every list looks empty, so only hide once it has.
+  const links = loading || error ? nav : nav.filter(([path]) => !isEmptySection(path!, data));
   // Seeded from the cookie the document was rendered with, so the icon does not
   // swap once hydration catches up.
   const [dark, setDark] = useState(() => readTheme() === "dark");
@@ -190,7 +192,7 @@ function Shell({ children }: { children: ReactNode }) {
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
               className="club-nav-bar hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex"
             >
-              {nav.map(([path, a, e]) => (
+              {links.map(([path, a, e]) => (
                 <ClubLink
                   key={path}
                   path={path!}
@@ -251,7 +253,7 @@ function Shell({ children }: { children: ReactNode }) {
           </div>
           {open && (
             <nav className="grid grid-cols-2 gap-2 border-t border-border p-4 xl:hidden">
-              {nav.map(([path, a, e]) => (
+              {links.map(([path, a, e]) => (
                 <span key={path} onClick={() => setOpen(false)}>
                   <ClubLink
                     path={path!}
@@ -430,15 +432,16 @@ function Home() {
             className="club-hero-logo h-24 w-auto object-contain sm:h-28"
           />
         </div>
-        <p className="mt-4 font-bold text-primary">
-          {ar ? "النادي التكنولوجي" : "Technology Club"}
+        {/* The club's name is the page's heading; the slogan below only looks like one. */}
+        <h1 className="club-hero-name mt-4 font-bold text-primary">
+          {ar ? "النادي التكنولوجي" : "UCAS IT Club"}{" "}
           <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
             {ar ? "الكلية الجامعية للعلوم التطبيقية" : "University College of Applied Sciences"}
           </span>
-        </p>
-        <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
-          {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
         </h1>
+        <p className="club-hero-slogan mt-4 text-4xl font-black leading-tight sm:text-6xl text-gradient-brand">
+          {ar ? "نتعلم نبتكر نتقدم" : "Learn, innovate, advance"}
+        </p>
         <p className="mx-auto mt-3 max-w-2xl text-lg leading-loose text-muted-foreground">
           {ar
             ? "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي وفعالياته، وكن جزءًا من التجربة."
@@ -1066,10 +1069,7 @@ function PublicForm({ join }: { join: boolean }) {
                   : "Sending to Google Sheets. Please wait for confirmation…"}
               </p>
             )}
-            <BrandButton
-              type="submit"
-              disabled={busy || (join && !registration.open)}
-            >
+            <BrandButton type="submit" disabled={busy || (join && !registration.open)}>
               {busy ? (ar ? "جارٍ الإرسال…" : "Sending…") : ar ? "إرسال" : "Submit"}
             </BrandButton>
           </form>

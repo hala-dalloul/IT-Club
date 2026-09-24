@@ -781,7 +781,16 @@ function ContentEditor({
       }
     }
 
-    if (isArticle) value.date = values["date"] || "";
+    if (isArticle) {
+      value.date = values["date"] || "";
+
+      // Optional; left out entirely when blank so clearing it removes it.
+      for (const key of ["summary", "summary_en"] as const) {
+        const summary = values[key]?.trim();
+
+        if (summary) value[key] = summary;
+      }
+    }
 
     if (targetKind === "events") value.status = status;
 
@@ -984,6 +993,36 @@ function ContentEditor({
           </label>
         ))}
       </div>
+      {isArticle && (
+        <div className="grid gap-5 sm:grid-cols-2">
+          {(
+            [
+              ["summary", "ملخص قصير بالعربية (اختياري)", "Short summary in Arabic (optional)"],
+              [
+                "summary_en",
+                "ملخص قصير بالإنجليزية (اختياري)",
+                "Short summary in English (optional)",
+              ],
+            ] as const
+          ).map(([key, a, en]) => (
+            <label key={key} className="block text-sm font-bold">
+              <span className="mb-2 block">{ar ? a : en}</span>
+              <Textarea
+                name={key}
+                maxLength={300}
+                rows={2}
+                defaultValue={item?.[key] || ""}
+                dir={key.endsWith("_en") ? "ltr" : "rtl"}
+              />
+            </label>
+          ))}
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            {ar
+              ? "يظهر في نتائج البحث وعند مشاركة الرابط، ويُفضّل ألا يتجاوز 155 حرفًا. إن تُرك فارغًا يُستخدم أول الوصف."
+              : "Shown in search results and link previews; about 155 characters reads best. If empty, the start of the description is used."}
+          </p>
+        </div>
+      )}
       {kind === "members" && (
         <>
           {committee === "administrative" && (

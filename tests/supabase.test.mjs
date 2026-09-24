@@ -28,6 +28,7 @@ before(async () => {
   await db.exec(readFileSync("supabase/migrations/202609170001_member_gender.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609170002_board_order.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609190001_news_content.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202609240001_content_summary.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -367,4 +368,26 @@ test("news and events are separate and can be reclassified without changing iden
   await assert.rejects(() =>
     db.query("insert into club_content(kind,data) values('news',$1)", [JSON.stringify(data)]),
   );
+});
+
+test("news and events accept an optional summary; other kinds and bad lengths are rejected", async () => {
+  await as(editor);
+  const data = {
+    title: "Club update",
+    title_en: "Club update",
+    description: "Test description",
+    description_en: "Test description",
+    images: [],
+    date: "2026-09-24",
+  };
+  const insert = (kind, value) =>
+    db.query("insert into club_content(kind,data) values($1,$2)", [kind, JSON.stringify(value)]);
+
+  await insert("news", { ...data, summary: "ملخص قصير", summary_en: "A short summary" });
+  await insert("events", { ...data, status: "past", summary_en: "English only" });
+  await insert("news", data);
+  await assert.rejects(() => insert("news", { ...data, summary: "" }));
+  await assert.rejects(() => insert("news", { ...data, summary_en: "x".repeat(301) }));
+  await assert.rejects(() => insert("news", { ...data, summary: 42 }));
+  await assert.rejects(() => insert("partners", { ...data, summary: "Not for partners" }));
 });

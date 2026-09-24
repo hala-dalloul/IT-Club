@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import cairoArabic from "../assets/fonts/cairo-arabic.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { readLang, readTheme } from "../lib/club/prefs";
+import { pages, seo, siteName, titleFor } from "../lib/club/seo";
 
 // Lazy so the site's chunk stays out of the entry bundle; the club routes
 // already load it on their own.
@@ -65,47 +66,43 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: ({ match }) => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      {
-        title: match.globalNotFound
-          ? "الصفحة غير موجودة | Page not found — UCAS IT CLUB"
-          : "النادي التكنولوجي | UCAS IT CLUB",
-      },
-      {
-        name: "description",
-        content:
-          "مجتمع طلابي يجمع المهتمين بالتقنية. تعرّف على فريق النادي التكنولوجي وأخباره وفعالياته في الكلية الجامعية للعلوم التطبيقية.",
-      },
-      { name: "author", content: "UCAS IT CLUB" },
-      { property: "og:title", content: "النادي التكنولوجي — الكلية الجامعية للعلوم التطبيقية" },
-      {
-        property: "og:description",
-        content: "نتعلم، نبتكر، نتقدم. تعرّف على فريق النادي التكنولوجي وأخباره وفعالياته.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      // Cairo, self-hosted: the same face the club already uses, without a
-      // render-blocking stylesheet on a third-party origin. Both cuts are
-      // variable, so one file per script covers every weight.
-      {
-        rel: "preload",
-        as: "font",
-        type: "font/woff2",
-        href: cairoArabic,
-        crossOrigin: "anonymous",
-      },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-    ],
-  }),
+  head: ({ match }) => {
+    const lang = readLang();
+    // Only unmatched URLs end here; every page route sets its own tags on top.
+    const page = match.globalNotFound ? "missing" : "home";
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { name: "author", content: siteName[lang] },
+        ...seo({
+          lang,
+          title: titleFor(page, lang),
+          description: pages[page][lang].description,
+          path: "/",
+          noindex: Boolean(match.globalNotFound),
+        }),
+      ],
+      links: [
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+        // Cairo, self-hosted: the same face the club already uses, without a
+        // render-blocking stylesheet on a third-party origin. Both cuts are
+        // variable, so one file per script covers every weight.
+        {
+          rel: "preload",
+          as: "font",
+          type: "font/woff2",
+          href: cairoArabic,
+          crossOrigin: "anonymous",
+        },
+        { rel: "icon", href: "/favicon.png", type: "image/png" },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,

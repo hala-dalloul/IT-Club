@@ -1,28 +1,15 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { ClubSite } from "@/components/club/ClubSite";
-import { collections, type Content, type ContentCollection } from "@/lib/club/model";
+import {
+  collections,
+  isEmptySection,
+  type Content,
+  type ContentCollection,
+} from "@/lib/club/model";
+import { readLang } from "@/lib/club/prefs";
+import { itemSeo, pages as copy, seo, titleFor, type PageKey } from "@/lib/club/seo";
+import { contentExists } from "@/lib/club/public-api";
 import { loadClubData, refreshClubData } from "@/lib/club/ssr-data";
-
-const titles = {
-  about: "من نحن | About",
-  members: "الفريق | Team",
-  events: "الفعاليات | Events",
-  news: "الأخبار | News",
-  partners: "الشراكات | Partners",
-  join: "انضم إلينا | Join",
-  contact: "تواصل معنا | Contact",
-  privacy: "الخصوصية | Privacy",
-  admin: "الإدارة | Admin",
-} satisfies Record<string, string>;
-
-function titleFor(section: string | undefined): string {
-  if (section && Object.hasOwn(titles, section)) {
-    // SAFETY: hasOwn above confirms section is one of titles' known keys.
-    return titles[section as keyof typeof titles];
-  }
-
-  return "UCAS";
-}
 
 /** Pages that take no id after them. */
 const pages = ["about", "join", "contact", "privacy", "admin"];
@@ -50,35 +37,24 @@ function target(splat: string): { kind?: ContentCollection; id?: string | undefi
 }
 
 /** Mirrors Detail, which still opens news and events links across the two kinds. */
-function has(data: Record<ContentCollection, Content[]>, kind: ContentCollection, id: string) {
-  const kinds: ContentCollection[] =
-    kind === "news" ? ["news", "events"] : kind === "events" ? ["events", "news"] : [kind];
+const kindsFor = (kind: ContentCollection): ContentCollection[] =>
+  kind === "news" ? ["news", "events"] : kind === "events" ? ["events", "news"] : [kind];
 
-  return kinds.some((k) => data[k].some((item) => item.id === id));
+function find(data: Record<ContentCollection, Content[]>, kind: ContentCollection, id: string) {
+  for (const k of kindsFor(kind)) {
+    const item = data[k].find((x) => x.id === id);
+
+    if (item) return item;
+  }
+
+  return undefined;
 }
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/club/$")({
-  head: ({ params, match }) => {
-    const missing = match.status === "notFound";
-
-    return {
-      meta: [
-        {
-          title: `${missing ? "الصفحة غير موجودة | Page not found" : titleFor(params._splat?.split("/")[0])} — UCAS IT CLUB`,
-        },
-        {
-          name: "description",
-          content: "تعرّف على مجتمع نادي تكنولوجيا المعلومات وأنشطته في UCAS.",
-        },
-        ...(missing || params._splat?.startsWith("admin")
-          ? [{ name: "robots", content: "noindex,nofollow" }]
-          : []),
-      ],
-    };
-  },
-  loader: async ({ context, params }) => {
+  // Before head: the router infers head's loaderData from it, in object order.
+  loader: async ({ context, params }): Promise<{ item?: Content }> => {
     // Loaded even for a path that will 404: Shell hides the footer until data arrives.
     const loaded = await loadClubData(context.queryClient);
     const found = target(params._splat ?? "");
@@ -89,17 +65,67 @@ export const Route = createFileRoute("/club/$")({
 
     // Without data (not configured, or Supabase down) nothing is known to be
     // missing; the page renders its own error state instead.
-    if (!kind || !id || !loaded || has(loaded.data, kind, id)) return;
+    if (!kind || !loaded) return {};
+
+    if (!id) {
+      // ponytail: a first item added to an empty section can still 404 for up
+      // to the one-minute cache. Refreshing here instead would re-fetch on
+      // every visit while the section stays empty.
+      if (isEmptySection(kind, loaded.data)) throw notFound();
+
+      return {};
+    }
+
+    const item = find(loaded.data, kind, id);
+
+    if (item) return { item };
 
     // Every item id is a UUID, so anything else is missing without asking.
     if (!uuid.test(id)) throw notFound();
 
-    // ponytail: each unknown UUID costs one full payload fetch. Fine at this
-    // traffic; if bots start guessing ids, check the one id with a
-    // `club_content?select=id&id=eq.<id>` read instead.
+    // The cached payload is up to a minute old, so ask about this one id
+    // before calling it missing. A made-up or deleted id costs one tiny read;
+    // only an item published in the last minute re-fetches the full payload.
+    const exists = await contentExists(id, kindsFor(kind)).catch(() => undefined);
+
+    if (exists === false) throw notFound();
+
+    // Unknown (the check failed): render and let the page show its own state.
+    if (exists === undefined) return {};
+
     const fresh = await refreshClubData(context.queryClient);
 
-    if (fresh && !has(fresh.data, kind, id)) throw notFound();
+    if (!fresh) return {};
+
+    const late = find(fresh.data, kind, id);
+
+    if (!late) throw notFound();
+
+    return { item: late };
+  },
+  head: ({ params, match, loaderData }) => {
+    const lang = readLang();
+    const splat = params._splat ?? "";
+    const path = `/club/${splat}`;
+    const page = splat.split("/")[0] ?? "";
+
+    if (match.status !== "notFound" && loaderData?.item)
+      // Individual member pages stay out of search: they carry students' names and photos.
+      return { meta: itemSeo(loaderData.item, lang, path, page === "members") };
+
+    // SAFETY: hasOwn confirms page is one of copy's keys before the cast.
+    const key: PageKey =
+      match.status === "notFound" || !Object.hasOwn(copy, page) ? "missing" : (page as PageKey);
+
+    return {
+      meta: seo({
+        lang,
+        title: titleFor(key, lang),
+        description: copy[key][lang].description,
+        path,
+        noindex: key === "missing" || key === "admin",
+      }),
+    };
   },
   component: ClubSite,
   notFoundComponent: () => <ClubSite notFound />,

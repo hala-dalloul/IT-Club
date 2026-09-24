@@ -76,7 +76,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                     {name}
                   </SheetTitle>
                   <SheetDescription className="mt-3 text-base">
-                    {role || (ar ? "عضو النادي التكنولوجي" : "Technology Club member")}
+                    {role || (ar ? "عضو النادي التكنولوجي" : "UCAS IT Club member")}
                   </SheetDescription>
                 </div>
               </div>

@@ -21,6 +21,9 @@ export type Content = {
   category?: string;
   year?: number;
   date?: string;
+  /** News and events: optional meta description; the body's opening is used otherwise. */
+  summary?: string;
+  summary_en?: string;
   images?: string[];
   technologies?: string[];
   memberIds?: string[];
@@ -39,7 +42,7 @@ export type Content = {
   partnershipType_en?: string;
   status?: string;
   createdAt?: string;
-  updatedAt?: unknown;
+  updatedAt?: string;
   updatedBy?: string;
 };
 
@@ -160,6 +163,19 @@ export const joinSchema = z.object({
   preferredCommittee: z.enum(["media", "relations", "activities"]),
   message: z.string().trim().min(10).max(4000),
 });
+
+/**
+ * A collection with nothing in it stays out of navigation and answers 404,
+ * rather than being indexed as an empty page. Callers pass only loaded data;
+ * an unloaded site has every list empty.
+ */
+export function isEmptySection(path: string, data: Record<ContentCollection, Content[]>) {
+  // SAFETY: includes only needs the wider string type; the index below runs
+  // only once includes has confirmed path is a collection.
+  return (
+    (collections as readonly string[]).includes(path) && !data[path as ContentCollection].length
+  );
+}
 
 export function memberGender(item: Content): "male" | "female" {
   return item.gender === "female" ? "female" : "male";

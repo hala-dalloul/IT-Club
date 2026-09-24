@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail, ArrowUpRight, Facebook, Instagram, Linkedin, Github } from "lucide-react";
 import { useClub } from "./ClubProvider";
 import { Reveal } from "./Reveal";
-import { collegeUrl, safeUrl } from "@/lib/club/model";
+import { collegeUrl, isEmptySection, safeUrl } from "@/lib/club/model";
 import logo from "@/assets/ucas-logo.webp";
 
 const sections: [string, string, string][] = [
@@ -34,7 +34,7 @@ function Column({ title, children }: { title: string; children: React.ReactNode 
 }
 
 export function SiteFooter() {
-  const { lang, settings } = useClub();
+  const { lang, settings, data, error } = useClub();
   const ar = lang === "ar";
   const email = settings.email?.trim();
   const links = socials.filter(([key]) => safeUrl(settings[key]));
@@ -72,11 +72,14 @@ export function SiteFooter() {
           </div>
 
           <Column title={ar ? "الأقسام" : "Sections"}>
-            {sections.map(([path, a, e]) => (
-              <Link key={path} to="/club/$" params={{ _splat: path }} className={itemClass}>
-                {ar ? a : e}
-              </Link>
-            ))}
+            {/* Rendered only after loading; on a failed load every list is empty, so keep them. */}
+            {sections
+              .filter(([path]) => error || !isEmptySection(path, data))
+              .map(([path, a, e]) => (
+                <Link key={path} to="/club/$" params={{ _splat: path }} className={itemClass}>
+                  {ar ? a : e}
+                </Link>
+              ))}
           </Column>
 
           <Column title={ar ? "تواصل معنا" : "Get in touch"}>

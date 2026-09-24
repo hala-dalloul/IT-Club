@@ -108,8 +108,10 @@
   }
 }
 
-/* Give Arabic letter descenders room, including gradient-clipped headings. */
-.club-site :is(h1, h2, h3) {
+/* Give Arabic letter descenders room, including gradient-clipped headings.
+   The home hero swaps tags for SEO (name is the h1, slogan a p) but keeps the
+   look it had: the slogan keeps heading spacing and the name stays plain. */
+.club-site :is(h1, h2, h3, .club-hero-slogan):not(.club-hero-name) {
   line-height: 1.65;
   padding-block-end: 0.2em;
   margin-block-end: 0.5em;
@@ -376,7 +378,11 @@ html.js .club-reveal.is-shown {
   border-radius: 1rem;
   padding: 0.55rem 0.85rem;
   color: #fff;
-  background: linear-gradient(110deg, var(--brand-blue), color-mix(in oklab, var(--brand-blue) 60%, var(--brand-green)));
+  background: linear-gradient(
+    110deg,
+    var(--brand-blue),
+    color-mix(in oklab, var(--brand-blue) 60%, var(--brand-green))
+  );
   border: 1px solid color-mix(in oklab, var(--brand-green) 70%, var(--brand-blue));
   box-shadow: 0 4px 14px color-mix(in oklab, var(--brand-blue) 20%, transparent);
   font-size: 0.75rem;
