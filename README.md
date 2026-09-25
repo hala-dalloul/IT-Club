@@ -167,9 +167,7 @@ Do not commit `.env.local` or production secrets.
 
 ## License
 
-No open-source license is currently defined for this repository.
-
-If external reuse or contributions are intended, an explicit license should be added.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Author
 
