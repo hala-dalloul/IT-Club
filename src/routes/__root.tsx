@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -27,12 +28,15 @@ import { safeUrl } from "../lib/club/model";
 import { loadClubData } from "../lib/club/ssr-data";
 import { ClubSite, Missing } from "@/components/club/ClubSite";
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
+  // The router reports whatever was thrown, which is not guaranteed to be an Error.
+  const cause = error instanceof Error ? error : new Error(String(error));
+
+  console.error(cause);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    reportLovableError(cause, { boundary: "tanstack_root_error_component" });
+  }, [cause]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
