@@ -47,6 +47,7 @@ export type Fetcher = typeof fetch;
 async function request<T>(path: string, init: RequestInit, f: Fetcher): Promise<T> {
   const response = await f(`${url}/rest/v1/${path}`, {
     ...init,
+    signal: init.signal ?? AbortSignal.timeout(8000),
     headers: { apikey: key, Authorization: `Bearer ${key}`, ...init.headers },
   });
 
@@ -72,13 +73,13 @@ async function request<T>(path: string, init: RequestInit, f: Fetcher): Promise<
   throw new Error(message);
 }
 
-async function rows(table: string, order: string, f: Fetcher) {
+async function rows(table: string, order: string, f: Fetcher, signal: AbortSignal) {
   const result: Row[] = [];
 
   for (let offset = 0; ; offset += 500) {
     const page = await request<Row[]>(
-      `${table}?select=*&order=${order}.desc&order=id.asc&offset=${offset}&limit=500`,
-      { method: "GET" },
+      `${table}?select=id,kind,slug,data,created_at,updated_at,updated_by&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
+      { method: "GET", signal },
       f,
     );
 
@@ -110,12 +111,14 @@ export async function contentExists(ref: string, kinds: ContentCollection[]) {
 }
 
 /** Every public row the site renders, in one shape the provider can hold. */
-export async function loadPublic(f: Fetcher = fetch) {
+export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal) {
+  const deadline = AbortSignal.timeout(8000);
+  const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
   const [content, settings] = await Promise.all([
-    rows("club_content", "updated_at", f),
+    rows("club_content", "updated_at", f, signal),
     request<{ data?: Settings }[]>(
       "club_settings?select=data&id=eq.public&limit=1",
-      { method: "GET" },
+      { method: "GET", signal },
       f,
     ),
   ]);

@@ -57,17 +57,27 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ponytail: one request, so the project's max-rows setting (1000 by default)
-  // caps it; page with offset like loadPublic does before content gets there.
-  const key = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}")["default"];
-  const response = await fetch(
-    `${Deno.env.get("SUPABASE_URL")}/rest/v1/club_content?select=id,kind,slug,updated_at&order=updated_at.desc`,
-    { headers: { apikey: key } },
-  );
-
-  if (!response.ok) return new Response("Content could not be read", { status: 502 });
-
-  const rows: Row[] = await response.json();
+  const rows: Row[] = [];
+  // One deadline covers every page and body read, including origin outages.
+  const signal = AbortSignal.timeout(8000);
+  try {
+    const key = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}")["default"];
+    if (!key) throw new Error("Missing publishable key");
+    for (let offset = 0; ;) {
+      const response = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/rest/v1/club_content?select=id,kind,slug,updated_at&order=updated_at.desc,id.asc&offset=${offset}&limit=500`,
+        { headers: { apikey: key }, signal },
+      );
+      if (!response.ok) throw new Error("Content could not be read");
+      const page: Row[] = await response.json();
+      if (page.length === 0) break;
+      rows.push(...page);
+      // Advance by actual rows so a lower project API cap does not truncate it.
+      offset += page.length;
+    }
+  } catch {
+    return new Response("Content could not be read", { status: 502 });
+  }
   const latest = (kind?: string) =>
     rows.find((row) => (kind ? row.kind === kind : itemKinds.includes(row.kind)))?.updated_at;
 

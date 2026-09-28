@@ -100,13 +100,17 @@ const text = (body: BodyInit | null, type: string) =>
  * Supabase's gateway serves function responses as text/plain.
  */
 async function sitemap() {
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/sitemap?site=${encodeURIComponent(siteUrl)}`,
-  );
-
-  return response.ok
-    ? text(response.body, "application/xml")
-    : new Response("Sitemap unavailable", { status: 502 });
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/sitemap?site=${encodeURIComponent(siteUrl)}`,
+      { signal: AbortSignal.timeout(10000) },
+    );
+    if (!response.ok) return new Response("Sitemap unavailable", { status: 502 });
+    // Consume the body inside the deadline/error boundary, before caching a 200.
+    return text(await response.text(), "application/xml");
+  } catch {
+    return new Response("Sitemap unavailable", { status: 502 });
+  }
 }
 
 export default {

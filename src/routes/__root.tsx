@@ -21,6 +21,7 @@ import {
   seo,
   siteName,
   titleFor,
+  verificationMeta,
   type Contact,
 } from "../lib/club/seo";
 import { safeUrl } from "../lib/club/model";
@@ -88,6 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         { name: "author", content: siteName[lang] },
+        ...verificationMeta(),
         ...seo({
           lang,
           title: titleFor(page, lang),

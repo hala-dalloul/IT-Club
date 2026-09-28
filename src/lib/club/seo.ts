@@ -182,6 +182,9 @@ export function seo({
   path,
   image,
   published,
+  modified,
+  article = false,
+  imageAlt,
   noindex = false,
 }: {
   lang: Lang;
@@ -190,6 +193,9 @@ export function seo({
   path: string;
   image?: string | undefined;
   published?: string | undefined;
+  modified?: string | undefined;
+  article?: boolean;
+  imageAlt?: string | undefined;
   noindex?: boolean;
 }): Meta[] {
   const other: Lang = lang === "ar" ? "en" : "ar";
@@ -198,17 +204,23 @@ export function seo({
   return [
     { title },
     { name: "description", content: description },
-    { name: "robots", content: noindex ? "noindex,nofollow" : "index,follow" },
+    {
+      name: "robots",
+      content: noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large",
+    },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:url", content: `${siteUrl}${path}` },
-    { property: "og:type", content: published ? "article" : "website" },
+    { property: "og:type", content: article ? "article" : "website" },
     { property: "og:image", content: image ?? `${siteUrl}/og/default-${lang}.jpg` },
+    { property: "og:image:alt", content: imageAlt ?? siteName[lang] },
+    { name: "twitter:image:alt", content: imageAlt ?? siteName[lang] },
     { property: "og:site_name", content: siteName[lang] },
     { property: "og:locale", content: locale(lang) },
     { property: "og:locale:alternate", content: locale(other) },
     { name: "twitter:card", content: "summary_large_image" },
-    ...(published ? [{ property: "article:published_time", content: published }] : []),
+    ...(article && published ? [{ property: "article:published_time", content: published }] : []),
+    ...(article && modified ? [{ property: "article:modified_time", content: modified }] : []),
   ];
 }
 
@@ -233,14 +245,19 @@ export function alternates(lang: Lang, page: string) {
 /** Tags for one news, event or member page, from the item itself. */
 export function itemSeo(item: Content, lang: Lang, path: string, noindex: boolean) {
   const summary = lang === "en" ? item.summary_en || item.summary : item.summary;
+  const article = pageOf(path).split("/")[0] === "news";
+  const image = item.images?.map(safeUrl).find(Boolean);
 
   return seo({
     lang,
     title: `${local(item, "title", lang)} | ${siteName[lang]}`,
-    description: summary?.trim() || excerpt(local(item, "description", lang)),
+    description: excerpt(summary?.trim() || local(item, "description", lang)),
     path,
-    image: item.images?.map(safeUrl).find(Boolean),
-    published: item.date,
+    image,
+    article,
+    imageAlt: image ? local(item, "title", lang) : siteName[lang],
+    published: article ? item.date : undefined,
+    modified: article ? item.updatedAt : undefined,
     noindex,
   });
 }
@@ -295,7 +312,7 @@ export function organizationLd(lang: Lang, contact: Contact) {
       {
         "@type": "WebSite",
         "@id": `${siteUrl}/#website`,
-        url: `${siteUrl}${hrefOf(lang, "")}`,
+        url: `${siteUrl}/`,
         name: siteName[lang],
         alternateName: siteName[other],
         inLanguage: lang,
@@ -339,18 +356,26 @@ export function itemLd(item: Content, lang: Lang, path: string) {
     },
   ];
 
-  if (section === "news")
+  if (section === "news") {
+    const images = item.images?.map(safeUrl).filter(Boolean) ?? [];
     graph.push({
       "@type": "NewsArticle",
-      headline: title.slice(0, 110),
+      headline: title,
+      description: excerpt(local(item, "description", lang)),
       ...(item.date ? { datePublished: item.date } : {}),
       ...(item.updatedAt ? { dateModified: item.updatedAt } : {}),
-      image: [item.images?.map(safeUrl).find(Boolean) ?? `${siteUrl}/og/default-${lang}.jpg`],
+      ...(images.length ? { image: images } : {}),
       inLanguage: lang,
       mainEntityOfPage: url,
-      author: { "@id": orgId() },
+      author: {
+        "@type": "Organization",
+        "@id": orgId(),
+        name: siteName[lang],
+        url: `${siteUrl}${hrefOf(lang, "about")}`,
+      },
       publisher: { "@id": orgId() },
     });
+  }
 
   return { "@context": "https://schema.org", "@graph": graph };
 }
@@ -361,14 +386,17 @@ export function itemLd(item: Content, lang: Lang, path: string) {
  * One group on purpose: a crawler obeys only the most specific group naming
  * it, so a Googlebot-only group would silently skip every rule written under *.
  */
+// Crawlers must reach admin pages to read their noindex tags. RLS and Auth,
+// not robots.txt, protect private data.
 export const robotsTxt = () =>
-  [
-    "User-agent: *",
-    "Allow: /",
-    "Disallow: /admin",
-    "Disallow: /en/admin",
-    "Disallow: /club/admin",
-    "",
-    `Sitemap: ${siteUrl}/sitemap.xml`,
-    "",
-  ].join("\n");
+  ["User-agent: *", "Allow: /", "", `Sitemap: ${siteUrl}/sitemap.xml`, ""].join("\n");
+
+/** Public ownership tokens supplied by the site's search-console accounts. */
+export function verificationMeta(): Meta[] {
+  const google = import.meta.env.VITE_GOOGLE_SITE_VERIFICATION?.trim();
+  const bing = import.meta.env.VITE_BING_SITE_VERIFICATION?.trim();
+  return [
+    ...(google ? [{ name: "google-site-verification", content: google }] : []),
+    ...(bing ? [{ name: "msvalidate.01", content: bing }] : []),
+  ];
+}

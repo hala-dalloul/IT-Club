@@ -5,18 +5,6 @@ import { configured, loadPublic } from "@/lib/club/public-api";
 /** How long the edge may serve a cached copy of the public club data. */
 const TTL = 60;
 
-/**
- * A fetch that asks Cloudflare to cache the read.
- *
- * Does nothing on a workers.dev subdomain, where neither the Cache API nor the
- * `cf` options are active — which is why the memory cache below exists. It
- * starts working the day this moves to a custom domain.
- */
-const cachingFetch: typeof fetch = (input, init) =>
-  // SAFETY: `cf` is a Cloudflare extension to RequestInit that the DOM lib does
-  // not declare; every other runtime ignores the unknown property.
-  fetch(input, { ...init, cf: { cacheTtl: TTL, cacheEverything: true } } as RequestInit);
-
 type Public = Awaited<ReturnType<typeof loadPublic>>;
 
 let inflight: { at: number; value: Promise<Public> } | undefined;
@@ -31,8 +19,9 @@ let inflight: { at: number; value: Promise<Public> } | undefined;
  * rest are served from memory. Caching the promise rather than the result also
  * collapses a burst of concurrent requests into a single fetch.
  *
- * A minute of staleness is invisible: the browser refetches the same query on
- * mount and an admin save invalidates it. A failed fetch is not cached, so the
+ * The isolate cache lasts 60 seconds. Hydrated clients may retain that snapshot
+ * for another 60 seconds; active clients poll every minute. Admin saves only
+ * invalidate the current browser. A failed fetch is not cached, so the
  * next request retries rather than inheriting the error for a minute.
  */
 function publicData(fresh = false) {
@@ -45,8 +34,8 @@ function publicData(fresh = false) {
 
   if (!fresh && inflight && now - inflight.at < TTL * 1000) return inflight.value;
 
-  // A fresh read skips the edge cache too, or it would get the same stale copy.
-  const value = loadPublic(fresh ? fetch : cachingFetch);
+  // One server cache layer avoids stacking isolate and upstream HTTP TTLs.
+  const value = loadPublic((input, init) => fetch(input, { ...init, cache: "no-store" }));
   inflight = { at: now, value };
   value.catch(() => {
     if (inflight?.value === value) inflight = undefined;
@@ -80,7 +69,7 @@ export function loadClubData(queryClient: QueryClient) {
 }
 
 /**
- * Refetch past both caches, for a URL the cached copy does not know.
+ * Refetch past the query and isolate caches, for a URL the cached copy does not know.
  *
  * The cached payload can be up to a minute old, so an item published in that
  * minute would otherwise answer 404 to whoever opens its link first.

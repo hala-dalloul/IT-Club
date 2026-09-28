@@ -60,6 +60,8 @@ import {
 } from "@/lib/club/model";
 import { submitToSheet, submissionError } from "@/lib/club/sheets";
 import { ContactPage } from "./ContactPage";
+import { siteName } from "@/lib/club/seo";
+import { ContentImage } from "./ContentImage";
 
 // The admin console pulls in the media library, registration tables and their
 // deps. Only signed-in staff open it, so keep it out of the visitor bundle.
@@ -304,7 +306,14 @@ function Card({
   return (
     <article className="club-card flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card">
       <div className="relative aspect-video w-full overflow-hidden">
-        {image ? (
+        {!partner ? (
+          <ContentImage
+            src={image}
+            alt={title}
+            lang={lang}
+            className="club-card-media h-full w-full object-cover"
+          />
+        ) : image ? (
           <img
             src={image}
             alt={title}
@@ -739,8 +748,38 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
 
   return (
     <>
+      <nav
+        aria-label={ar ? "مسار التنقل" : "Breadcrumb"}
+        className="mb-6 text-sm text-muted-foreground"
+      >
+        <ol className="flex flex-wrap items-center gap-2">
+          <li>
+            <ClubLink path="" className="hover:text-primary underline-offset-4 hover:underline">
+              {siteName[lang]}
+            </ClubLink>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <ClubLink path={kind} className="hover:text-primary underline-offset-4 hover:underline">
+              {labels[kind][ar ? 0 : 1]}
+            </ClubLink>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="text-foreground">
+            {local(item, "title", lang)}
+          </li>
+        </ol>
+      </nav>
       <Heading ar={item.title} en={item.title_en} />
       <article className="rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
+        {kind === "news" && (
+          <p className="mb-2 text-sm text-muted-foreground">
+            {ar ? "بواسطة " : "By "}
+            <ClubLink path="about" className="underline underline-offset-4 hover:text-primary">
+              {siteName[lang]}
+            </ClubLink>
+          </p>
+        )}
         {item.date && (
           <time dateTime={item.date} className="text-primary font-bold">
             {item.date}
@@ -750,21 +789,36 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
         <p className="mt-5 whitespace-pre-line text-base leading-loose text-muted-foreground">
           {local(item, "description", lang)}
         </p>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          {item.images
-            ?.filter((x) => safeUrl(x))
-            .map((url, i) => (
-              <img
-                key={url}
-                src={url}
-                alt={`${local(item, "title", lang)} — ${i + 1}`}
-                width={800}
-                height={600}
-                loading="lazy"
-                className="w-full rounded-2xl object-contain"
-              />
-            ))}
-        </div>
+        {(kind === "news" || kind === "events") && !item.images?.some((image) => safeUrl(image)) ? (
+          <figure className="mt-8 overflow-hidden rounded-2xl border border-border">
+            <ContentImage
+              alt={local(item, "title", lang)}
+              lang={lang}
+              className="aspect-[1200/630] w-full object-cover"
+            />
+            <figcaption className="px-4 py-2 text-xs text-muted-foreground">
+              {ar
+                ? "تصميم تعريفي للنادي — تُضاف صور الخبر أو الفعالية عند توفرها."
+                : "Club illustration — photos will be added when available."}
+            </figcaption>
+          </figure>
+        ) : (
+          <div className="mt-8 grid gap-5 sm:grid-cols-2">
+            {item.images
+              ?.filter((x) => safeUrl(x))
+              .map((url, i) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`${local(item, "title", lang)} — ${i + 1}`}
+                  width={800}
+                  height={600}
+                  loading="lazy"
+                  className="w-full rounded-2xl object-contain"
+                />
+              ))}
+          </div>
+        )}
         <div className="mt-7 flex flex-wrap gap-3">
           {(
             [
