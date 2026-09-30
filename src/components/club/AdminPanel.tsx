@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { RegistrationAdmin } from "./RegistrationAdmin";
 import { sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
@@ -270,24 +271,38 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
       if (aBoard !== bBoard) return aBoard ? -1 : 1;
       return aBoard ? (a.displayOrder ?? 10000) - (b.displayOrder ?? 10000) : 0;
     });
-  const [eventDateOrder, setEventDateOrder] = useState(false);
+  // Admin-list ordering only: remembered in this browser, never sent to the
+  // database, so it cannot change what the public site shows.
+  const dateOrderKeys = {
+    events: "club-admin-event-date-order",
+    news: "club-admin-news-date-order",
+  } as const;
+  const [dateOrder, setDateOrder] = useState({ events: false, news: false });
   useEffect(() => {
     try {
-      setEventDateOrder(localStorage.getItem("club-admin-event-date-order") === "true");
+      setDateOrder({
+        events: localStorage.getItem(dateOrderKeys.events) === "true",
+        news: localStorage.getItem(dateOrderKeys.news) === "true",
+      });
     } catch {
       /* Storage is optional. */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const eventItems = [...data.events].sort((a, b) => {
-    const created = (item: Content) =>
-      Date.parse(item.createdAt || (typeof item.updatedAt === "string" ? item.updatedAt : "")) || 0;
-    const eventDate = (item: Content) => Date.parse(item.date || "") || 0;
-    return (
-      (eventDateOrder ? eventDate(b) - eventDate(a) : 0) ||
-      created(b) - created(a) ||
-      a.id.localeCompare(b.id)
-    );
-  });
+  const sortByDate = (items: Content[], byDate: boolean) =>
+    [...items].sort((a, b) => {
+      const created = (item: Content) =>
+        Date.parse(item.createdAt || (typeof item.updatedAt === "string" ? item.updatedAt : "")) ||
+        0;
+      const itemDate = (item: Content) => Date.parse(item.date || "") || 0;
+      return (
+        (byDate ? itemDate(b) - itemDate(a) : 0) ||
+        created(b) - created(a) ||
+        a.id.localeCompare(b.id)
+      );
+    });
+  const eventItems = sortByDate(data.events, dateOrder.events);
+  const newsItems = sortByDate(data.news, dateOrder.news);
 
   // SAFETY: the ternary itself performs the ContentCollection membership check;
   // the cast only satisfies Array<ContentCollection>.includes's parameter type.
@@ -413,54 +428,85 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         ))}
       </nav>
       <div className="rounded-[2rem] border border-border bg-card p-4 sm:p-6">
-        {activeCollection === "events" && (
-          <section
-            aria-label={ar ? "ترتيب الفعاليات" : "Event ordering"}
-            className="mb-6 rounded-2xl border border-border bg-card p-5"
-          >
-            <h2 className="mb-3 font-bold">
-              {ar ? "ترتيب الفعاليات في لوحة الإدارة" : "Event ordering in the admin panel"}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3">
-              <BrandButton
-                variant={eventDateOrder ? "primary" : "outline"}
-                type="button"
-                role="switch"
-                aria-checked={eventDateOrder}
-                onClick={() => {
-                  const enabled = !eventDateOrder;
-                  setEventDateOrder(enabled);
-                  try {
-                    localStorage.setItem("club-admin-event-date-order", String(enabled));
-                  } catch {
-                    /* Storage is optional. */
-                  }
-                }}
+        {(activeCollection === "events" || activeCollection === "news") &&
+          (() => {
+            const kind = activeCollection;
+            const isNews = kind === "news";
+            const byDate = dateOrder[kind];
+            return (
+              <section
+                aria-label={
+                  isNews
+                    ? ar
+                      ? "ترتيب الأخبار"
+                      : "News ordering"
+                    : ar
+                      ? "ترتيب الفعاليات"
+                      : "Event ordering"
+                }
+                className="mb-6 rounded-2xl border border-border bg-card p-5"
               >
-                {ar ? "الترتيب حسب موعد الفعالية" : "Sort by event date"}
-                <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">
-                  {eventDateOrder ? (ar ? "مفعّل" : "On") : ar ? "متوقف" : "Off"}
-                </span>
-              </BrandButton>
-              {data.events.some((item) => !item.createdAt) && (
-                <p role="status" className="text-sm text-muted-foreground">
-                  {ar
-                    ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
-                    : "Apply the database migration to track creation dates; using last update temporarily."}
-                </p>
-              )}
-              <span className="text-sm text-muted-foreground">
-                {eventDateOrder
-                  ? ar
-                    ? "موعد الفعالية: الأحدث أولًا"
-                    : "Event date: newest first"
-                  : ar
-                    ? "تاريخ الإضافة: الأحدث أولًا"
-                    : "Date added: newest first"}
-              </span>
-            </div>
-          </section>
-        )}
+                <h2 className="mb-3 font-bold">
+                  {isNews
+                    ? ar
+                      ? "ترتيب الأخبار في لوحة الإدارة"
+                      : "News ordering in the admin panel"
+                    : ar
+                      ? "ترتيب الفعاليات في لوحة الإدارة"
+                      : "Event ordering in the admin panel"}
+                </h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <BrandButton
+                    variant={byDate ? "primary" : "outline"}
+                    className={cn("w-full sm:w-auto", byDate && "border-2 border-transparent")}
+                    type="button"
+                    role="switch"
+                    aria-checked={byDate}
+                    onClick={() => {
+                      const enabled = !byDate;
+                      setDateOrder((prev) => ({ ...prev, [kind]: enabled }));
+                      try {
+                        localStorage.setItem(dateOrderKeys[kind], String(enabled));
+                      } catch {
+                        /* Storage is optional. */
+                      }
+                    }}
+                  >
+                    {isNews
+                      ? ar
+                        ? "الترتيب حسب تاريخ الخبر"
+                        : "Sort by news date"
+                      : ar
+                        ? "الترتيب حسب موعد الفعالية"
+                        : "Sort by event date"}
+                    <span className="min-w-16 rounded-full bg-background/20 px-2 py-0.5 text-center text-xs">
+                      {byDate ? (ar ? "مفعّل" : "On") : ar ? "متوقف" : "Off"}
+                    </span>
+                  </BrandButton>
+                  {data[kind].some((item) => !item.createdAt) && (
+                    <p role="status" className="text-sm text-muted-foreground">
+                      {ar
+                        ? "يلزم تحديث قاعدة البيانات لحفظ تاريخ الإضافة؛ يُستخدم آخر تعديل مؤقتًا."
+                        : "Apply the database migration to track creation dates; using last update temporarily."}
+                    </p>
+                  )}
+                  <span className="min-h-5 basis-full text-sm text-muted-foreground sm:min-w-48 sm:basis-auto">
+                    {byDate
+                      ? isNews
+                        ? ar
+                          ? "تاريخ الخبر: الأحدث أولًا"
+                          : "News date: newest first"
+                        : ar
+                          ? "موعد الفعالية: الأحدث أولًا"
+                          : "Event date: newest first"
+                      : ar
+                        ? "تاريخ الإضافة: الأحدث أولًا"
+                        : "Date added: newest first"}
+                  </span>
+                </div>
+              </section>
+            );
+          })()}
 
         {notice && (
           <p role="status" className="mb-6 rounded-2xl bg-brand-gradient-soft p-4">
@@ -537,9 +583,11 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                 )}
                 {(activeCollection === "events"
                   ? eventItems
-                  : activeCollection === "members"
-                    ? memberItems
-                    : data[activeCollection]
+                  : activeCollection === "news"
+                    ? newsItems
+                    : activeCollection === "members"
+                      ? memberItems
+                      : data[activeCollection]
                 ).map((item) => (
                   <article
                     key={item.id}
