@@ -77,6 +77,10 @@ test("news markup keeps full headlines, names its author, and omits unrelated fa
   assert.equal(article.author["@type"], "Organization");
   assert.equal(article.author.url, `${api.siteUrl}/en/about`);
   assert.equal(article.image, undefined);
+  const crumbs = api
+    .itemLd(item, "ar", "/news/example")
+    ["@graph"].find((node) => node["@type"] === "BreadcrumbList").itemListElement;
+  assert.equal(crumbs[1].name, "الأخبار");
   const tags = api.itemSeo(
     { ...item, images: ["https://example.com/photo.jpg"] },
     "en",

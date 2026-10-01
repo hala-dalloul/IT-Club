@@ -11,16 +11,7 @@ import {
 } from "./model";
 import { hrefOf, itemPage, pageOf } from "./paths";
 import { contentExists } from "./public-api";
-import {
-  alternates,
-  itemLd,
-  itemSeo,
-  ldJson,
-  pages as copy,
-  seo,
-  titleFor,
-  type PageKey,
-} from "./seo";
+import { alternates, itemLd, itemSeo, ldJson, pages as copy, seo, type PageKey } from "./seo";
 import { loadClubData, refreshClubData } from "./ssr-data";
 
 /**
@@ -154,7 +145,7 @@ export function pageHead(
   return {
     meta: seo({
       lang,
-      title: titleFor(key, lang),
+      title: copy[key][lang].title,
       description: copy[key][lang].description,
       path,
       noindex,
@@ -167,7 +158,7 @@ export function homeHead(lang: Lang) {
   return {
     meta: seo({
       lang,
-      title: titleFor("home", lang),
+      title: copy.home[lang].title,
       description: copy.home[lang].description,
       path: hrefOf(lang, ""),
     }),

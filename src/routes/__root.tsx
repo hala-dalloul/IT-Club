@@ -20,7 +20,6 @@ import {
   pages,
   seo,
   siteName,
-  titleFor,
   verificationMeta,
   type Contact,
 } from "../lib/club/seo";
@@ -92,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         ...verificationMeta(),
         ...seo({
           lang,
-          title: titleFor(page, lang),
+          title: pages[page][lang].title,
           description: pages[page][lang].description,
           path: "/",
           noindex: Boolean(match.globalNotFound),

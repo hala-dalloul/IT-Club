@@ -1,5 +1,13 @@
 import logo from "@/assets/ucas-logo.webp";
-import { collegeUrl, local, safeUrl, type Content, type Lang } from "./model";
+import {
+  collegeUrl,
+  labels,
+  local,
+  safeUrl,
+  type Content,
+  type ContentCollection,
+  type Lang,
+} from "./model";
 import { hrefOf, pageOf } from "./paths";
 
 /**
@@ -21,138 +29,140 @@ export const siteName: Record<Lang, string> = {
 type Copy = { title: string; description: string };
 
 /**
- * Title and description for every fixed page, per language.
+ * The full <title> and meta description of every fixed page, per language.
  *
- * Descriptions stay near 155 characters, the length search results show, and
- * only state what the page itself says.
+ * Home, about, team, events, news, join and contact use the marketing team's
+ * approved copy word for word (SEO brief, 25 September 2026); edit it only
+ * with them. The rest keep the "Page | Club" pattern.
  */
 export const pages = {
   home: {
     ar: {
-      title: "النادي التكنولوجي | الكلية الجامعية للعلوم التطبيقية",
+      title: "النادي التكنولوجي UCAS | نادي تكنولوجيا المعلومات",
       description:
-        "مجتمع طلابي في الكلية الجامعية للعلوم التطبيقية يجمع المهتمين بالتقنية: أخبار النادي وفعالياته وفريقه وطريقة الانضمام.",
+        "النادي التكنولوجي في الكلية الجامعية للعلوم التطبيقية UCAS. نادٍ طلابي يديره طلبته، يجمع المهتمين بالبرمجة والتصميم والألعاب. تعرف على فعالياتنا وانضم إلينا.",
     },
     en: {
-      title: "UCAS IT Club | University College of Applied Sciences",
+      title: "UCAS IT Club | Technology Club at UCAS",
       description:
-        "A student technology community at the University College of Applied Sciences: club news, events, the team, and how to join.",
+        "UCAS IT Club is a student-run tech community at University College of Applied Sciences, focused on coding, design, and gaming. Join us today.",
     },
   },
   about: {
     ar: {
-      title: "من نحن",
+      title: "من نحن | رؤية ورسالة النادي التكنولوجي UCAS",
       description:
-        "رؤية النادي التكنولوجي ورسالته وأهدافه ولجانه، ومجالات عمله: تطبيقات الموبايل ومواقع الويب والألعاب والوسائط المتعددة.",
+        "تعرف على رؤية النادي التكنولوجي UCAS ورسالته ولجانه الثلاث، ومجالات عمله: تطبيقات الموبايل، مواقع الويب، الألعاب، والوسائط المتعددة.",
     },
     en: {
-      title: "About",
+      title: "About Us | UCAS IT Club Vision & Mission",
       description:
-        "The UCAS IT Club's vision, mission, goals and committees, and the fields it works in: mobile apps, websites, games and multimedia.",
+        "Discover UCAS IT Club's vision, mission, and committees — working across mobile apps, web development, games, and multimedia.",
     },
   },
   members: {
     ar: {
-      title: "الفريق",
+      title: "فريق النادي التكنولوجي UCAS | الأعضاء واللجان",
       description:
-        "تعرّف على الهيئة الإدارية ولجان الإعلام والعلاقات العامة والأنشطة في النادي التكنولوجي.",
+        "تعرف على فريق النادي التكنولوجي UCAS وأعضائه ولجانه الثلاث: الإعلام والعلاقات العامة والأنشطة. طلبة يديرون النادي بشغف وعمل جماعي.",
     },
     en: {
-      title: "Team",
+      title: "UCAS IT Club Team | Members & Committees",
       description:
-        "Meet the UCAS IT Club's administrative board and its media, public relations and activities committees.",
+        "Meet the UCAS IT Club team — student members across three committees: Media, Public Relations, and Activities. Run by students, for students.",
     },
   },
   events: {
     ar: {
-      title: "الفعاليات",
+      title: "فعاليات النادي التكنولوجي UCAS | الأنشطة والورش",
       description:
-        "فعاليات النادي التكنولوجي القادمة والسابقة في الكلية الجامعية للعلوم التطبيقية.",
+        "تابع فعاليات النادي التكنولوجي UCAS المتنوعة: ورش تقنية، مبادرات مجتمعية، وأنشطة طلابية قادمة وسابقة يشارك فيها طلبة الكلية.",
     },
     en: {
-      title: "Events",
+      title: "UCAS IT Club Events | Workshops & Activities",
       description:
-        "Upcoming and past UCAS IT Club events at the University College of Applied Sciences.",
+        "Explore UCAS IT Club's diverse events: tech workshops, community initiatives, and student activities — upcoming and past.",
     },
   },
   news: {
     ar: {
-      title: "الأخبار",
-      description: "آخر أخبار النادي التكنولوجي وإعلاناته في الكلية الجامعية للعلوم التطبيقية.",
+      title: "أخبار النادي التكنولوجي UCAS | آخر المستجدات",
+      description:
+        "آخر أخبار النادي التكنولوجي UCAS: انتخابات الهيئة الإدارية، ترشيحات القيادة، وشراكات النادي مع عمادة تكنولوجيا المعلومات وغيرها من المستجدات.",
     },
     en: {
-      title: "News",
+      title: "UCAS IT Club News | Latest Updates",
       description:
-        "The latest UCAS IT Club news and announcements from the University College of Applied Sciences.",
+        "Stay updated with the latest UCAS IT Club news: board elections, leadership nominations, partnerships, and club announcements.",
     },
   },
   partners: {
     ar: {
-      title: "الشراكات",
+      title: "الشراكات | النادي التكنولوجي",
       description: "الجهات التي يتعاون معها النادي التكنولوجي في الكلية الجامعية للعلوم التطبيقية.",
     },
     en: {
-      title: "Partners",
+      title: "Partners | UCAS IT Club",
       description:
         "The organisations the UCAS IT Club works with at the University College of Applied Sciences.",
     },
   },
   join: {
     ar: {
-      title: "انضم إلينا",
-      description: "قدّم طلب الانضمام إلى النادي التكنولوجي واختر اللجنة التي تناسبك.",
+      title: "انضم للنادي التكنولوجي UCAS | شروط التسجيل",
+      description:
+        "كل ما تحتاج معرفته عن الانضمام للنادي التكنولوجي UCAS: شروط العضوية، خطوات التقديم، ومواعيد فتح باب التسجيل عند توفرها.",
     },
     en: {
-      title: "Join",
-      description: "Apply to join the UCAS IT Club and choose the committee that suits you.",
+      title: "Join UCAS IT Club | Membership & How to Apply",
+      description:
+        "Everything you need to know about joining UCAS IT Club: membership requirements, application steps, and registration updates.",
     },
   },
   contact: {
     ar: {
-      title: "تواصل معنا",
-      description: "راسل النادي التكنولوجي عبر البريد الإلكتروني أو لينكدإن أو إنستغرام أو فيسبوك.",
+      title: "تواصل معنا | النادي التكنولوجي UCAS",
+      description:
+        "تواصل مع النادي التكنولوجي UCAS عبر البريد الإلكتروني أو نموذج التواصل المباشر لأي استفسار أو تعاون أو اقتراح.",
     },
     en: {
-      title: "Contact",
-      description: "Reach the UCAS IT Club by email, LinkedIn, Instagram or Facebook.",
+      title: "Contact Us | UCAS IT Club",
+      description:
+        "Get in touch with UCAS IT Club via email or our contact form for inquiries, collaboration, or feedback.",
     },
   },
   privacy: {
     ar: {
-      title: "الخصوصية والكوكيز",
+      title: "الخصوصية والكوكيز | النادي التكنولوجي",
       description:
         "ما الذي يحفظه موقع النادي التكنولوجي، وكيف تُستخدم بيانات النماذج، وكيف تطلب حذفها.",
     },
     en: {
-      title: "Privacy and cookies",
+      title: "Privacy and cookies | UCAS IT Club",
       description:
         "What the UCAS IT Club site stores, how form data is used, and how to request deletion.",
     },
   },
   admin: {
-    ar: { title: "الإدارة", description: "لوحة إدارة محتوى النادي التكنولوجي." },
-    en: { title: "Admin", description: "Content management for the UCAS IT Club." },
+    ar: {
+      title: "الإدارة | النادي التكنولوجي",
+      description: "لوحة إدارة محتوى النادي التكنولوجي.",
+    },
+    en: { title: "Admin | UCAS IT Club", description: "Content management for the UCAS IT Club." },
   },
   missing: {
     ar: {
-      title: "الصفحة غير موجودة",
+      title: "الصفحة غير موجودة | النادي التكنولوجي",
       description: "الصفحة المطلوبة غير موجودة في موقع النادي التكنولوجي.",
     },
     en: {
-      title: "Page not found",
+      title: "Page not found | UCAS IT Club",
       description: "This page does not exist on the UCAS IT Club site.",
     },
   },
 } satisfies Record<string, Record<Lang, Copy>>;
 
 export type PageKey = keyof typeof pages;
-
-/** "Page | Club", except the home title, which already carries the name. */
-export function titleFor(page: PageKey, lang: Lang) {
-  const { title } = pages[page][lang];
-
-  return page === "home" ? title : `${title} | ${siteName[lang]}`;
-}
 
 /** Plain text trimmed at a word boundary, for a meta description. */
 export function excerpt(text: string, max = 155) {
@@ -332,8 +342,8 @@ export function itemLd(item: Content, lang: Lang, path: string) {
   const [section = ""] = page.split("/");
   const url = `${siteUrl}${path}`;
   const title = local(item, "title", lang);
-  // SAFETY: section comes from a validated page path, one of pages' keys.
-  const sectionName = pages[section as PageKey]?.[lang].title ?? section;
+  // SAFETY: section comes from a validated page path, one of the collections.
+  const sectionName = labels[section as ContentCollection]?.[lang === "ar" ? 0 : 1] ?? section;
 
   const graph: Record<string, unknown>[] = [
     {
