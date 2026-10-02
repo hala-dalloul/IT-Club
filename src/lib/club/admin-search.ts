@@ -1,4 +1,5 @@
 import type { Content } from "./model";
+import { plainRichText } from "./rich-text";
 
 export function normalizeAdminSearch(value: string) {
   return value
@@ -22,5 +23,5 @@ export function matchesArticleSearch(item: Content, query: string) {
     item.summary_en,
     item.date,
     item.slug,
-  ].some((value) => normalizeAdminSearch(value || "").includes(normalized));
+  ].some((value) => normalizeAdminSearch(plainRichText(value)).includes(normalized));
 }

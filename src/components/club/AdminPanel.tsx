@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { RegistrationAdmin } from "./RegistrationAdmin";
 import { sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
+import { RichTextEditor } from "./RichTextEditor";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1067,14 +1068,12 @@ function ContentEditor({
           <label key={key} className="block text-sm font-bold">
             <span className="mb-2 block">{ar ? a : en}</span>
             {key.startsWith("description") ? (
-              <Textarea
+              <RichTextEditor
                 name={key}
                 required
-                minLength={2}
-                maxLength={20000}
                 defaultValue={item?.[key] || ""}
                 dir={key.endsWith("_en") ? "ltr" : "rtl"}
-                rows={6}
+                onDirty={() => setDirty(true)}
               />
             ) : (
               <Input
@@ -1398,12 +1397,11 @@ function SettingsEditor({
         <label key={key} className="block">
           <span className="mb-2 block text-sm font-bold">{pair[ar ? 0 : 1]}</span>
           {["vision", "mission", "goals"].some((prefix) => key.startsWith(prefix)) ? (
-            <Textarea
+            <RichTextEditor
               name={key}
               defaultValue={initial[key as TextSetting]}
-              maxLength={10000}
-              rows={5}
               dir={key.endsWith("_en") ? "ltr" : "rtl"}
+              onDirty={() => setDirty(true)}
             />
           ) : (
             <Input

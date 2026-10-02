@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+const visibleContent = (value: string) =>
+  value
+    .replace(/^::club-rich-text-v1::/, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(nbsp|#160);/gi, " ")
+    .trim();
+
 export const collections = ["members", "events", "news", "partners"] as const;
 
 export type ContentCollection = (typeof collections)[number];
@@ -208,7 +215,15 @@ export const contentSchema = z
     gender: z.enum(["male", "female"]).optional(),
     title: text,
     title_en: text,
-    description: z.string().trim().min(2).max(20000),
-    description_en: z.string().trim().min(2).max(20000),
+    description: z
+      .string()
+      .trim()
+      .max(20000)
+      .refine((value) => visibleContent(value).length >= 2),
+    description_en: z
+      .string()
+      .trim()
+      .max(20000)
+      .refine((value) => visibleContent(value).length >= 2),
   })
   .passthrough();

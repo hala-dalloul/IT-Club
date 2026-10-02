@@ -9,6 +9,7 @@ import {
   type Lang,
 } from "./model";
 import { hrefOf, pageOf } from "./paths";
+import { plainRichText } from "./rich-text";
 
 /**
  * Absolute origin for share tags; og:url and og:image must be absolute.
@@ -166,7 +167,7 @@ export type PageKey = keyof typeof pages;
 
 /** Plain text trimmed at a word boundary, for a meta description. */
 export function excerpt(text: string, max = 155) {
-  const flat = text.replace(/\s+/g, " ").trim();
+  const flat = plainRichText(text).replace(/\s+/g, " ").trim();
 
   if (flat.length <= max) return flat;
 

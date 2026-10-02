@@ -168,12 +168,18 @@ test("floating join waits for the real registration capacity", () => {
 });
 
 test("admin article search matches Arabic, English, dates, and ignores Arabic marks", () => {
-  const { matchesArticleSearch } = compile("src/lib/club/admin-search.ts", {});
+  const richText = compile("src/lib/club/rich-text.ts", {});
+  const { matchesArticleSearch } = compile("src/lib/club/admin-search.ts", {
+    require: (name) => {
+      if (name === "./rich-text") return richText;
+      throw new Error(`Unexpected import: ${name}`);
+    },
+  });
   const item = {
     id: "event-1",
     title: "فَعَّاليةُ البرمجة",
     title_en: "Programming Day",
-    description: "لقاء طلابي",
+    description: richText.encodeRichText("<p>لقاء طلابي</p>"),
     description_en: "Student gathering",
     date: "2026-10-20",
   };
@@ -183,6 +189,25 @@ test("admin article search matches Arabic, English, dates, and ignores Arabic ma
   assert.equal(matchesArticleSearch(item, "2026-10"), true);
   assert.equal(matchesArticleSearch(item, "روبوتات"), false);
   assert.equal(matchesArticleSearch(item, ""), true);
+});
+
+test("rich text preserves supported formatting and removes unsafe markup", () => {
+  const richText = compile("src/lib/club/rich-text.ts", {});
+  const value = richText.encodeRichText(
+    '<h2>عنوان</h2><p><strong>نص</strong> <a href="https://example.com">رابط</a></p><img src=x onerror=alert(1)><script>alert(1)</script><a href="javascript:alert(1)">خطر</a>',
+  );
+  const html = richText.richTextHtml(value);
+
+  assert.match(html, /<h2>عنوان<\/h2>/);
+  assert.match(html, /<strong>نص<\/strong>/);
+  assert.match(html, /href="https:\/\/example\.com\/"/);
+  assert.doesNotMatch(html, /<script|<img|onerror|javascript:/i);
+  assert.match(richText.plainRichText(value), /عنوان/);
+  const goals = richText.splitRichText(
+    richText.encodeRichText("<strong>الهدف الأول</strong><br><em>الهدف الثاني</em>"),
+  );
+  assert.equal(goals.length, 2);
+  assert.match(richText.richTextHtml(goals[0]), /<strong>/);
 });
 
 test("the footer never renders an application link", () => {

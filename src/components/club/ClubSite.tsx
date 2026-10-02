@@ -47,6 +47,8 @@ import {
 import { ContactPage } from "./ContactPage";
 import { siteName } from "@/lib/club/seo";
 import { ContentImage } from "./ContentImage";
+import { RichText } from "./RichText";
+import { plainRichText, splitRichText } from "@/lib/club/rich-text";
 
 // The admin console pulls in the media library, registration tables and their
 // deps. Only signed-in staff open it, so keep it out of the visitor bundle.
@@ -345,7 +347,7 @@ function Card({
         <p
           className={`mt-3 text-base leading-relaxed text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}
         >
-          {local(item, "description", lang)}
+          {plainRichText(local(item, "description", lang))}
         </p>
         {partner ? (
           <div className="mt-auto pt-5">
@@ -505,7 +507,8 @@ function Home() {
 function About() {
   const { lang, settings, data } = useClub();
   const ar = lang === "ar";
-  const goals = (settings[ar ? "goals" : "goals_en"] || "").split("\n").filter(Boolean);
+  const goalsValue = settings[ar ? "goals" : "goals_en"] || "";
+  const goals = splitRichText(goalsValue);
 
   return (
     <>
@@ -530,6 +533,12 @@ function About() {
           // `${key}_en` is exactly "vision_en" | "mission_en".
           const enKey = `${key}_en` as "vision_en" | "mission_en";
           const Icon = key === "vision" ? Eye : Target;
+          const configured = settings[ar ? key : enKey] || "";
+          const statement = plainRichText(configured).trim()
+            ? configured
+            : ar
+              ? "سيُنشر النص الرسمي المعتمد قريبًا."
+              : "The approved official statement will be published here.";
 
           return (
             <Reveal key={key} delay={i * 110}>
@@ -546,12 +555,10 @@ function About() {
                       ? "رسالتنا"
                       : "Our mission"}
                 </h2>
-                <p className="mt-5 whitespace-pre-line text-base leading-loose text-muted-foreground">
-                  {settings[ar ? key : enKey] ||
-                    (ar
-                      ? "سيُنشر النص الرسمي المعتمد قريبًا."
-                      : "The approved official statement will be published here.")}
-                </p>
+                <RichText
+                  value={statement}
+                  className="mt-5 text-base leading-loose text-muted-foreground"
+                />
               </article>
             </Reveal>
           );
@@ -602,7 +609,7 @@ function About() {
                 >
                   {i + 1}
                 </strong>
-                <span className="leading-loose">{goal}</span>
+                <RichText value={goal} className="min-w-0 leading-loose" />
               </div>
             </Reveal>
           ))}
@@ -772,9 +779,10 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
           </time>
         )}
         {item.role && <p className="font-bold text-primary">{local(item, "role", lang)}</p>}
-        <p className="mt-5 whitespace-pre-line text-base leading-loose text-muted-foreground">
-          {local(item, "description", lang)}
-        </p>
+        <RichText
+          value={local(item, "description", lang)}
+          className="mt-5 text-base leading-loose text-muted-foreground"
+        />
         {(kind === "news" || kind === "events") && !item.images?.some((image) => safeUrl(image)) ? (
           <figure className="mt-8 overflow-hidden rounded-2xl border border-border">
             <ContentImage

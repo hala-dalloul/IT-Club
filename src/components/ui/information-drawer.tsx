@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/sheet";
 import { safeUrl, type Content, type Lang } from "@/lib/club/model";
 import logo from "@/assets/ucas-logo.webp";
+import { RichText } from "@/components/club/RichText";
+import { plainRichText } from "@/lib/club/rich-text";
 
 /** Team cards and an accessible detail drawer, adapted to the club's content model. */
 export default function InformationDrawer({ teams, lang }: { teams: Content[]; lang: Lang }) {
@@ -48,7 +50,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                       {name}
                     </span>
                     <span className="mt-1 block truncate text-xs sm:text-sm">
-                      {role || description}
+                      {role || plainRichText(description)}
                     </span>
                   </span>
                   <ArrowUpRight className="hidden shrink-0 sm:block" size={22} />
@@ -80,9 +82,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                   </SheetDescription>
                 </div>
               </div>
-              <p className="my-8 whitespace-pre-line break-words text-base leading-loose">
-                {description}
-              </p>
+              <RichText value={description} className="my-8 text-base leading-loose" />
               <div className="flex flex-wrap items-center gap-5">
                 {safeUrl(member.githubUrl) && (
                   <a
