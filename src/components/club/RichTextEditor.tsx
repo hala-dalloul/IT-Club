@@ -18,31 +18,12 @@ type Props = {
   defaultValue?: string;
   dir: "rtl" | "ltr";
   required?: boolean;
-  syncGroup?: string;
   onDirty?: () => void;
 };
 
-type FormatAction =
-  | { type: "command"; name: string; value?: string; active?: boolean }
-  | { type: "block"; value: "p" | "h2" | "blockquote" }
-  | { type: "clear" };
-
-type SelectionSnapshot = { start: number; end: number };
-
-const formatSyncEvent = "club-rich-text-format";
-
-export function RichTextEditor({
-  name,
-  defaultValue = "",
-  dir,
-  required,
-  syncGroup,
-  onDirty,
-}: Props) {
+export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty }: Props) {
   const editor = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
-  const editorId = useRef(Symbol(name));
-  const applySynchronizedAction = useRef<(action: FormatAction) => void>(() => undefined);
   const [value, setValue] = useState(defaultValue);
   const [preview, setPreview] = useState(false);
 
@@ -76,100 +57,19 @@ export function RichTextEditor({
     onDirty?.();
   };
 
-  const selectionSnapshot = (): SelectionSnapshot => {
-    const root = editor.current;
-    const range = savedRange.current;
-    const total = root?.textContent?.length || 0;
-    if (!root || !range || !total) return { start: 0, end: 0 };
-
-    const offset = (container: Node, position: number) => {
-      const before = document.createRange();
-      before.selectNodeContents(root);
-      before.setEnd(container, position);
-      return before.toString().length / total;
-    };
-
-    return {
-      start: offset(range.startContainer, range.startOffset),
-      end: offset(range.endContainer, range.endOffset),
-    };
-  };
-
-  const setSynchronizedSelection = ({ start, end }: SelectionSnapshot) => {
-    const root = editor.current;
-    if (!root) return;
-    const nodes: Text[] = [];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let node = walker.nextNode();
-    while (node) {
-      nodes.push(node as Text);
-      node = walker.nextNode();
-    }
-    const total = nodes.reduce((length, text) => length + text.data.length, 0);
-    const locate = (ratio: number): [Node, number] => {
-      let remaining = Math.round(Math.min(1, Math.max(0, ratio)) * total);
-      for (const text of nodes) {
-        if (remaining <= text.data.length) return [text, remaining];
-        remaining -= text.data.length;
-      }
-      return nodes.length ? [nodes.at(-1)!, nodes.at(-1)!.data.length] : [root, 0];
-    };
-    const [startNode, startOffset] = locate(start);
-    const [endNode, endOffset] = locate(end);
-    const range = document.createRange();
-    range.setStart(startNode, startOffset);
-    range.setEnd(endNode, endOffset);
-    savedRange.current = range;
-  };
-
-  const broadcast = (action: FormatAction) => {
-    if (!syncGroup) return;
-    window.dispatchEvent(
-      new CustomEvent(formatSyncEvent, {
-        detail: {
-          action,
-          group: syncGroup,
-          selection: selectionSnapshot(),
-          source: editorId.current,
-        },
-      }),
-    );
-    restoreSelection();
-  };
-
-  const command = (
-    name: string,
-    commandValue?: string,
-    synchronize = true,
-    desiredState?: boolean,
-  ) => {
+  const command = (name: string, commandValue?: string) => {
     restoreSelection();
     document.execCommand("styleWithCSS", false, "false");
-    if (desiredState === undefined || document.queryCommandState(name) !== desiredState) {
-      document.execCommand(name, false, commandValue);
-    }
+    document.execCommand(name, false, commandValue);
     rememberSelection();
     update();
-    if (synchronize) {
-      const toggledCommands = new Set([
-        "bold",
-        "italic",
-        "insertUnorderedList",
-        "insertOrderedList",
-      ]);
-      const action: Extract<FormatAction, { type: "command" }> = { type: "command", name };
-      if (commandValue !== undefined) action.value = commandValue;
-      if (toggledCommands.has(name)) action.active = document.queryCommandState(name);
-      broadcast(action);
-    }
   };
 
-  const setBlock = (value: "p" | "h2" | "blockquote", synchronize = true) => {
+  const setBlock = (value: "p" | "h2" | "blockquote") => {
     restoreSelection();
     document.execCommand("formatBlock", false, value);
     rememberSelection();
     update();
-    if (synchronize) broadcast({ type: "block", value });
   };
 
   const toggleBlock = (tag: "h2" | "blockquote") => {
@@ -180,7 +80,7 @@ export function RichTextEditor({
     setBlock(current === tag ? "p" : tag);
   };
 
-  const clearFormatting = (synchronize = true) => {
+  const clearFormatting = () => {
     restoreSelection();
     const unorderedList = document.queryCommandState("insertUnorderedList");
     const orderedList = document.queryCommandState("insertOrderedList");
@@ -191,33 +91,7 @@ export function RichTextEditor({
     document.execCommand("formatBlock", false, "p");
     rememberSelection();
     update();
-    if (synchronize) broadcast({ type: "clear" });
   };
-
-  applySynchronizedAction.current = (action) => {
-    if (action.type === "command") command(action.name, action.value, false, action.active);
-    if (action.type === "block") setBlock(action.value, false);
-    if (action.type === "clear") clearFormatting(false);
-  };
-
-  useEffect(() => {
-    if (!syncGroup) return;
-    const receive = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          action: FormatAction;
-          group: string;
-          selection: SelectionSnapshot;
-          source: symbol;
-        }>
-      ).detail;
-      if (detail.group !== syncGroup || detail.source === editorId.current) return;
-      setSynchronizedSelection(detail.selection);
-      applySynchronizedAction.current(detail.action);
-    };
-    window.addEventListener(formatSyncEvent, receive);
-    return () => window.removeEventListener(formatSyncEvent, receive);
-  }, [syncGroup]);
 
   const buttonClass =
     "inline-flex size-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";

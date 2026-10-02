@@ -1073,7 +1073,6 @@ function ContentEditor({
                 required
                 defaultValue={item?.[key] || ""}
                 dir={key.endsWith("_en") ? "ltr" : "rtl"}
-                syncGroup="content-description"
                 onDirty={() => setDirty(true)}
               />
             ) : (
@@ -1402,7 +1401,6 @@ function SettingsEditor({
               name={key}
               defaultValue={initial[key as TextSetting]}
               dir={key.endsWith("_en") ? "ltr" : "rtl"}
-              syncGroup={`settings-${key.replace(/_en$/, "")}`}
               onDirty={() => setDirty(true)}
             />
           ) : (
