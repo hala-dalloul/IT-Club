@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bold,
   Eye,
@@ -26,6 +26,12 @@ export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty
   const savedRange = useRef<Range | null>(null);
   const [value, setValue] = useState(defaultValue);
   const [preview, setPreview] = useState(false);
+
+  useEffect(() => {
+    if (editor.current) editor.current.innerHTML = richTextHtml(defaultValue);
+    savedRange.current = null;
+    setValue(defaultValue);
+  }, [defaultValue, name]);
 
   const rememberSelection = () => {
     const selection = window.getSelection();
@@ -179,7 +185,6 @@ export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty
         onKeyUp={rememberSelection}
         onMouseUp={rememberSelection}
         onSelect={rememberSelection}
-        dangerouslySetInnerHTML={{ __html: richTextHtml(defaultValue) }}
       />
       {preview && (
         <div className="border-t border-border bg-muted/20 px-4 py-3">
