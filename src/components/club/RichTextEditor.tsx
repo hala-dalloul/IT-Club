@@ -23,8 +23,27 @@ type Props = {
 
 export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty }: Props) {
   const editor = useRef<HTMLDivElement>(null);
+  const savedRange = useRef<Range | null>(null);
   const [value, setValue] = useState(defaultValue);
   const [preview, setPreview] = useState(false);
+
+  const rememberSelection = () => {
+    const selection = window.getSelection();
+    if (!editor.current || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (editor.current.contains(range.commonAncestorContainer)) {
+      savedRange.current = range.cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (!editor.current) return;
+    editor.current.focus();
+    if (!savedRange.current) return;
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(savedRange.current);
+  };
 
   const update = () => {
     if (!editor.current) return;
@@ -33,8 +52,10 @@ export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty
   };
 
   const command = (name: string, commandValue?: string) => {
-    editor.current?.focus();
+    restoreSelection();
+    document.execCommand("styleWithCSS", false, "false");
     document.execCommand(name, false, commandValue);
+    rememberSelection();
     update();
   };
 
@@ -150,8 +171,14 @@ export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty
         suppressContentEditableWarning
         role="textbox"
         aria-multiline="true"
-        className="min-h-40 px-4 py-3 leading-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-        onInput={update}
+        className="min-h-40 px-4 py-3 leading-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&_a]:font-bold [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:my-4 [&_blockquote]:border-s-4 [&_blockquote]:border-primary/30 [&_blockquote]:ps-4 [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-2xl [&_h2]:font-black [&_li]:my-1 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:ps-7 [&_p]:my-3 [&_strong]:font-black [&_ul]:my-4 [&_ul]:list-disc [&_ul]:ps-7"
+        onInput={() => {
+          rememberSelection();
+          update();
+        }}
+        onKeyUp={rememberSelection}
+        onMouseUp={rememberSelection}
+        onSelect={rememberSelection}
         dangerouslySetInnerHTML={{ __html: richTextHtml(defaultValue) }}
       />
       {preview && (
