@@ -22,6 +22,7 @@ import {
   saveSettings,
 } from "@/lib/club/supabase";
 import { loadPublic } from "@/lib/club/public-api";
+import { matchesArticleSearch, normalizeAdminSearch } from "@/lib/club/admin-search";
 import {
   collections,
   labels,
@@ -253,16 +254,11 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
 
   const [tab, setTab] = useState("dashboard");
   const [memberSearch, setMemberSearch] = useState("");
-  const normalizeName = (value: string) =>
-    value
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "")
-      .toLocaleLowerCase()
-      .trim();
+  const [articleSearch, setArticleSearch] = useState({ events: "", news: "" });
   const memberItems = data.members
     .filter((item) =>
       [item.title, item.title_en].some((name) =>
-        normalizeName(name || "").includes(normalizeName(memberSearch)),
+        normalizeAdminSearch(name || "").includes(normalizeAdminSearch(memberSearch)),
       ),
     )
     .sort((a, b) => {
@@ -301,8 +297,12 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         a.id.localeCompare(b.id)
       );
     });
-  const eventItems = sortByDate(data.events, dateOrder.events);
-  const newsItems = sortByDate(data.news, dateOrder.news);
+  const eventItems = sortByDate(data.events, dateOrder.events).filter((item) =>
+    matchesArticleSearch(item, articleSearch.events),
+  );
+  const newsItems = sortByDate(data.news, dateOrder.news).filter((item) =>
+    matchesArticleSearch(item, articleSearch.news),
+  );
 
   // SAFETY: the ternary itself performs the ContentCollection membership check;
   // the cast only satisfies Array<ContentCollection>.includes's parameter type.
@@ -575,6 +575,40 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                       {ar ? "لا يوجد أعضاء بهذا الاسم." : "No members match this name."}
                     </p>
                   )}
+                </label>
+              )}
+              {(activeCollection === "events" || activeCollection === "news") && (
+                <label className="mb-6 block">
+                  <span className="mb-2 block text-sm font-bold">
+                    {activeCollection === "events"
+                      ? ar
+                        ? "البحث في الفعاليات"
+                        : "Search events"
+                      : ar
+                        ? "البحث في الأخبار"
+                        : "Search news"}
+                  </span>
+                  <Input
+                    type="search"
+                    value={articleSearch[activeCollection]}
+                    onChange={(event) =>
+                      setArticleSearch((current) => ({
+                        ...current,
+                        [activeCollection]: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      ar
+                        ? "ابحث بالعنوان أو الوصف أو التاريخ"
+                        : "Search by title, description, or date"
+                    }
+                  />
+                  {(activeCollection === "events" ? eventItems : newsItems).length === 0 &&
+                    data[activeCollection].length > 0 && (
+                      <p role="status" className="mt-2 text-sm text-muted-foreground">
+                        {ar ? "لا توجد نتائج مطابقة للبحث." : "No items match your search."}
+                      </p>
+                    )}
                 </label>
               )}
               <div className="space-y-3">

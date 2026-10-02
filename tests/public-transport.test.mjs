@@ -166,3 +166,21 @@ test("floating join waits for the real registration capacity", () => {
     /if \(!settings\.registrationOpen \|\| registration\.open !== true\) return null/,
   );
 });
+
+test("admin article search matches Arabic, English, dates, and ignores Arabic marks", () => {
+  const { matchesArticleSearch } = compile("src/lib/club/admin-search.ts", {});
+  const item = {
+    id: "event-1",
+    title: "فَعَّاليةُ البرمجة",
+    title_en: "Programming Day",
+    description: "لقاء طلابي",
+    description_en: "Student gathering",
+    date: "2026-10-20",
+  };
+
+  assert.equal(matchesArticleSearch(item, "فعالية البرمجة"), true);
+  assert.equal(matchesArticleSearch(item, "student"), true);
+  assert.equal(matchesArticleSearch(item, "2026-10"), true);
+  assert.equal(matchesArticleSearch(item, "روبوتات"), false);
+  assert.equal(matchesArticleSearch(item, ""), true);
+});
