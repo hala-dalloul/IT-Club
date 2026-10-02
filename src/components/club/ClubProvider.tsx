@@ -37,14 +37,19 @@ export function ClubProvider({ children }: { children: ReactNode }) {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
-    void recordVisit()
-      .then((count) => {
-        if (active) setVisitorCount(count);
-      })
-      .catch(() => {});
+    // Visit accounting is useful, but it must not compete with hydration,
+    // fonts and above-the-fold assets on a slow phone connection.
+    const timer = window.setTimeout(() => {
+      void recordVisit()
+        .then((count) => {
+          if (active) setVisitorCount(count);
+        })
+        .catch(() => {});
+    }, 1500);
 
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
   // The URL is the language: /en/... is English, everything else Arabic. No

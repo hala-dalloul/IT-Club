@@ -82,9 +82,10 @@ test("sitemap upstream exceptions return an uncached 502", async () => {
   assert.equal(response.headers.get("Cache-Control"), null);
 });
 
-test("SSR coalesces reads, bypasses HTTP caching, and retries failures", async () => {
+test("SSR coalesces reads, retries failures, and bypasses caches at the origin", async () => {
   let loads = 0;
   let fail = true;
+  const fetches = [];
   const api = compile("src/lib/club/ssr-data.ts", {
     require: (name) =>
       name.includes("ClubProvider")
@@ -99,8 +100,7 @@ test("SSR coalesces reads, bypasses HTTP caching, and retries failures", async (
             },
           },
     fetch: async (_url, init) => {
-      assert.equal(init.cache, "no-store");
-      assert.equal(init.cf, undefined);
+      fetches.push(init);
       return Response.json([]);
     },
   });
@@ -112,6 +112,47 @@ test("SSR coalesces reads, bypasses HTTP caching, and retries failures", async (
   fail = false;
   await Promise.all([api.loadClubData(client), api.loadClubData(client)]);
   assert.equal(loads, 2);
+  assert.equal(fetches[0].cache, "no-store");
   await api.refreshClubData(client);
   assert.equal(loads, 3);
+  assert.equal(fetches[1].cache, "no-store");
+  assert.equal(fetches[1].cf, undefined);
+});
+
+test("SSR public data survives worker-isolate restarts in the edge cache", async () => {
+  const stored = new Map();
+  const cache = {
+    async match(request) {
+      return stored.get(request.url)?.clone();
+    },
+    async put(request, response) {
+      stored.set(request.url, response.clone());
+    },
+  };
+  let originLoads = 0;
+  const context = {
+    Request,
+    caches: { default: cache },
+    fetch: async () => Response.json([]),
+    require: (name) =>
+      name.includes("ClubProvider")
+        ? { clubPublicKey: ["club-public"] }
+        : {
+            configured: true,
+            loadPublic: async () => {
+              originLoads++;
+              return { data: { members: [] }, settings: { email: "club@example.test" } };
+            },
+          },
+  };
+  const client = {
+    ensureQueryData: (options) => options.queryFn(),
+    fetchQuery: (options) => options.queryFn(),
+  };
+
+  await compile("src/lib/club/ssr-data.ts", context).loadClubData(client);
+  await compile("src/lib/club/ssr-data.ts", context).loadClubData(client);
+
+  assert.equal(originLoads, 1);
+  assert.equal(stored.size, 1);
 });

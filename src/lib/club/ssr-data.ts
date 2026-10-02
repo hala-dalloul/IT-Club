@@ -4,10 +4,42 @@ import { configured, loadPublic } from "@/lib/club/public-api";
 
 /** How long the edge may serve a cached copy of the public club data. */
 const TTL = 60;
+const cacheOrigin = import.meta.env.VITE_SITE_URL || "https://ucas.itclub-143.workers.dev";
+const publicCachePath = "/.club-cache/data/v1";
 
 type Public = Awaited<ReturnType<typeof loadPublic>>;
 
 let inflight: { at: number; value: Promise<Public> } | undefined;
+
+function defaultCache(): Cache | undefined {
+  return (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
+}
+
+async function edgePublicData(fresh: boolean): Promise<Public> {
+  const cache = defaultCache();
+  const key = cache ? new Request(new URL(publicCachePath, cacheOrigin)) : undefined;
+
+  if (!fresh && cache && key) {
+    const cached = await cache.match(key);
+
+    if (cached) return (await cached.json()) as Public;
+  }
+
+  // The Cache API above is the only cache authority. Origin fetches bypass
+  // browser/runtime caches so a miss always fills it with a known-fresh value.
+  const value = await loadPublic((input, init) => fetch(input, { ...init, cache: "no-store" }));
+
+  if (cache && key) {
+    await cache.put(
+      key,
+      Response.json(value, {
+        headers: { "cache-control": `public, max-age=${TTL}` },
+      }),
+    );
+  }
+
+  return value;
+}
 
 /**
  * The public payload, at most one fetch per isolate per TTL.
@@ -34,8 +66,10 @@ function publicData(fresh = false) {
 
   if (!fresh && inflight && now - inflight.at < TTL * 1000) return inflight.value;
 
-  // One server cache layer avoids stacking isolate and upstream HTTP TTLs.
-  const value = loadPublic((input, init) => fetch(input, { ...init, cache: "no-store" }));
+  // Cache API entries survive worker restarts and are shared by isolates in
+  // the same data centre. A forced refresh replaces the edge entry after an
+  // item is not found in the minute-old snapshot.
+  const value = edgePublicData(fresh);
   inflight = { at: now, value };
   value.catch(() => {
     if (inflight?.value === value) inflight = undefined;

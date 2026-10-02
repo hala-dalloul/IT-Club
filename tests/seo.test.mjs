@@ -175,3 +175,43 @@ test("sitemap proxy bounds requests and never caches origin or body failures", a
     );
   }
 });
+
+test("HTML edge caching varies by theme and excludes private or unbounded URLs", () => {
+  const source = readFileSync("src/server.ts", "utf8");
+  const js = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const exports = {};
+  vm.runInNewContext(js, {
+    exports,
+    URL,
+    Request,
+    Response,
+    Headers,
+    AbortSignal,
+    require: (name) => {
+      if (name.endsWith("seo")) return api;
+      if (name.endsWith("public-api")) return { url: "https://example.supabase.co" };
+      return {};
+    },
+  });
+
+  const light = exports.htmlCacheKey(
+    new Request(`${api.siteUrl}/about`, { headers: { accept: "text/html" } }),
+  );
+  const dark = exports.htmlCacheKey(
+    new Request(`${api.siteUrl}/about`, {
+      headers: { accept: "text/html", cookie: "ucas-theme=dark" },
+    }),
+  );
+  assert.notEqual(light.url, dark.url);
+  assert.equal(exports.htmlCacheKey(new Request(`${api.siteUrl}/admin`)), undefined);
+  assert.equal(exports.htmlCacheKey(new Request(`${api.siteUrl}/about?preview=1`)), undefined);
+  assert.equal(exports.cacheableHtml(Response.json({ ok: true })), false);
+  assert.equal(
+    exports.cacheableHtml(
+      new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+    ),
+    true,
+  );
+});

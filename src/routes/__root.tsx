@@ -27,7 +27,7 @@ import { safeUrl } from "../lib/club/model";
 import { loadClubData } from "../lib/club/ssr-data";
 import { ClubSite, Missing } from "@/components/club/ClubSite";
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -78,10 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     return { contact: { email: settings?.email?.trim() || undefined, profiles } };
   },
   // After the loader: the router infers head's loaderData from it, in object order.
-  head: ({ match, matches, loaderData }) => {
+  head: ({ matches, loaderData }) => {
     const lang = langOf(matches.at(-1)?.pathname ?? "/");
+    const missing = matches.some((routeMatch) => routeMatch.status === "notFound");
+    // TanStack 1.170 currently loses root-loader data in this callback's
+    // generic type, although the runtime value is the loader result above.
+    const rootData = loaderData as unknown as { contact: Contact } | undefined;
     // Only unmatched URLs end here; every page route sets its own tags on top.
-    const page = match.globalNotFound ? "missing" : "home";
+    const page = missing ? "missing" : "home";
 
     return {
       meta: [
@@ -94,9 +98,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           title: pages[page][lang].title,
           description: pages[page][lang].description,
           path: "/",
-          noindex: Boolean(match.globalNotFound),
+          noindex: missing,
         }),
-        ldJson(organizationLd(lang, loaderData?.contact ?? { profiles: [] })),
+        ldJson(organizationLd(lang, rootData?.contact ?? { profiles: [] })),
       ],
       links: [
         {
