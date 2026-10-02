@@ -184,3 +184,10 @@ test("admin article search matches Arabic, English, dates, and ignores Arabic ma
   assert.equal(matchesArticleSearch(item, "روبوتات"), false);
   assert.equal(matchesArticleSearch(item, ""), true);
 });
+
+test("the footer never renders an application link", () => {
+  const source = readFileSync("src/components/club/SiteFooter.tsx", "utf8");
+
+  assert.doesNotMatch(source, /hrefOf\(lang, ["']join["']\)/);
+  assert.doesNotMatch(source, /Apply to join|طلب الانضمام/);
+});

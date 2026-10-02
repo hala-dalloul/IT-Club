@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Mail, ArrowUpRight, Facebook, Instagram, Linkedin, Github } from "lucide-react";
+import { Mail, Facebook, Instagram, Linkedin, Github } from "lucide-react";
 import { useClub } from "./ClubProvider";
 import { Reveal } from "./Reveal";
 import { collegeUrl, isEmptySection, safeUrl } from "@/lib/club/model";
@@ -92,13 +92,6 @@ export function SiteFooter() {
             )}
             <Link to={hrefOf(lang, "contact")} className={itemClass}>
               {ar ? "صفحة التواصل" : "Contact page"}
-            </Link>
-            <Link
-              to={hrefOf(lang, "join")}
-              className="club-action mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-brand-gradient px-5 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5"
-            >
-              {ar ? "طلب الانضمام" : "Apply to join"}
-              <ArrowUpRight size={16} />
             </Link>
           </Column>
         </div>
