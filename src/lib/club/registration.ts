@@ -15,12 +15,13 @@ const key = ["club-registration"];
  * and never polled. A visitor who leaves the tab open for an hour and comes
  * back gets a stale "open" at worst, and the join form checks again on submit.
  */
-export function useRegistration() {
+export function useRegistration(enabled = true) {
   const client = useQueryClient();
 
   const query = useQuery<Registration>({
     queryKey: key,
     queryFn: loadRegistration,
+    enabled,
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,

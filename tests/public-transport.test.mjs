@@ -156,3 +156,13 @@ test("SSR public data survives worker-isolate restarts in the edge cache", async
   assert.equal(originLoads, 1);
   assert.equal(stored.size, 1);
 });
+
+test("floating join waits for the real registration capacity", () => {
+  const source = readFileSync("src/components/club/FloatingJoin.tsx", "utf8");
+
+  assert.match(source, /useRegistration\(settings\.registrationOpen === true\)/);
+  assert.match(
+    source,
+    /if \(!settings\.registrationOpen \|\| registration\.open !== true\) return null/,
+  );
+});
