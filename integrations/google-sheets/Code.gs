@@ -22,7 +22,7 @@ function response_(data) {
 }
 function fail_(code) { throw new Error(code); }
 function errorResponse_(error) {
-  const known = ['INVALID_INPUT', 'UNAUTHORIZED', 'JOIN_CLOSED', 'ALREADY_REGISTERED', 'BUSY', 'NOT_CONFIGURED', 'SHEET_HEADERS_CHANGED'];
+  const known = ['INVALID_INPUT', 'UNAUTHORIZED', 'JOIN_CLOSED', 'EVENT_CLOSED', 'EVENT_SHEET_MISSING', 'ALREADY_REGISTERED', 'BUSY', 'NOT_CONFIGURED', 'SHEET_HEADERS_CHANGED'];
   const code = known.indexOf(error.message) >= 0 ? error.message : 'SERVER_ERROR';
   return response_({ ok: false, code: code });
 }
@@ -111,6 +111,51 @@ function append_(sheet, values) {
   sheet.getRange(sheet.getLastRow() + 1, 1, 1, cells.length).setRichTextValues([cells]).setWrap(true);
   SpreadsheetApp.flush();
 }
+
+const EVENT_HEADERS = ['معرّف الطلب', 'التاريخ', 'معرّف الفعالية', 'اسم الفعالية', 'الاسم الكامل', 'مقدمة الهاتف', 'رقم الهاتف', 'الالتزام بالحضور'];
+function eventSheets_() {
+  const raw = PropertiesService.getScriptProperties().getProperty('EVENT_SHEETS');
+  return raw ? JSON.parse(raw) : {};
+}
+function eventSheetInfo_(eventId) {
+  const info = eventSheets_()[eventId];
+  return info ? { linked: true, url: 'https://docs.google.com/spreadsheets/d/' + info.id + '/edit' } : { linked: false };
+}
+function eventSheet_(eventId) {
+  const info = eventSheets_()[eventId];
+  if (!info || !info.id) fail_('EVENT_SHEET_MISSING');
+  const book = SpreadsheetApp.openById(info.id);
+  let sheet = book.getSheetByName('تسجيلات الموقع');
+  if (!sheet) sheet = book.insertSheet('تسجيلات الموقع');
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, EVENT_HEADERS.length).setValues([EVENT_HEADERS]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    sheet.setRightToLeft(true);
+  }
+  return sheet;
+}
+function eventFromSupabase_(eventId) {
+  if (!/^[0-9a-f-]{36}$/i.test(eventId)) fail_('INVALID_INPUT');
+  const key = PropertiesService.getScriptProperties().getProperty('SUPABASE_PUBLISHABLE_KEY');
+  if (!key) fail_('NOT_CONFIGURED');
+  const url = CLUB.supabaseUrl + '/rest/v1/club_content?select=id,data&id=eq.' + encodeURIComponent(eventId) + '&kind=eq.events&limit=1';
+  const result = UrlFetchApp.fetch(url, { headers: { apikey: key, Authorization: 'Bearer ' + key }, muteHttpExceptions: true });
+  if (result.getResponseCode() !== 200) fail_('SERVER_ERROR');
+  const rows = JSON.parse(result.getContentText());
+  const item = rows[0] && rows[0].data;
+  if (!item || item.status !== 'upcoming' || !item.eventRegistration || item.eventRegistration.enabled !== true) fail_('EVENT_CLOSED');
+  return item;
+}
+function validateEvent_(data, config) {
+  if (!data || typeof data !== 'object') fail_('INVALID_INPUT');
+  const name = config.nameEnabled ? text_(data, 'name', 2, 200) : '';
+  const code = config.phoneEnabled ? text_(data, 'countryCode', 3, 3) : '';
+  const phone = config.phoneEnabled ? text_(data, 'phone', 7, 10) : '';
+  if (config.phoneEnabled && (['970', '972'].indexOf(code) < 0 || !/^\d{7,10}$/.test(phone))) fail_('INVALID_INPUT');
+  const attendance = config.attendanceEnabled ? text_(data, 'attendance', 3, 3) : '';
+  if (config.attendanceEnabled && attendance !== 'yes') fail_('INVALID_INPUT');
+  return [name, code, phone, attendance === 'yes' ? 'نعم' : ''];
+}
 function requireAdmin_(token) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 10000) fail_('UNAUTHORIZED');
   const key = PropertiesService.getScriptProperties().getProperty('SUPABASE_PUBLISHABLE_KEY');
@@ -134,13 +179,48 @@ function doPost(event) {
     try { body = JSON.parse(event.postData.contents); } catch (_) { fail_('INVALID_INPUT'); }
     if (!body || typeof body !== 'object') fail_('INVALID_INPUT');
     const kind = formKind_();
-    if ((kind === 'contact' && body.action !== 'contact') || (kind === 'join' && body.action !== 'join' && body.action !== 'configure')) fail_('INVALID_INPUT');
+    const joinActions = ['join', 'configure', 'eventRegister', 'eventSheetStatus', 'configureEventSheet'];
+    if ((kind === 'contact' && body.action !== 'contact') || (kind === 'join' && joinActions.indexOf(body.action) < 0)) fail_('INVALID_INPUT');
+    if (body.action === 'eventSheetStatus') {
+      requireAdmin_(body.accessToken);
+      return response_({ ok: true, sheet: eventSheetInfo_(body.eventId) });
+    }
+    if (body.action === 'configureEventSheet') {
+      requireAdmin_(body.accessToken);
+      if (!/^[0-9a-f-]{36}$/i.test(body.eventId) || typeof body.title !== 'string' || body.title.trim().length < 2) fail_('INVALID_INPUT');
+      return response_(locked_(function() {
+        let book;
+        if (body.sheetUrl) {
+          const match = String(body.sheetUrl).match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+          if (!match) fail_('INVALID_INPUT');
+          book = SpreadsheetApp.openById(match[1]);
+        } else {
+          book = SpreadsheetApp.create('تسجيلات فعالية - ' + body.title.trim().slice(0, 150));
+        }
+        const map = eventSheets_();
+        map[body.eventId] = { id: book.getId() };
+        PropertiesService.getScriptProperties().setProperty('EVENT_SHEETS', JSON.stringify(map));
+        eventSheet_(body.eventId);
+        return { ok: true, sheet: eventSheetInfo_(body.eventId) };
+      }));
+    }
     if (body.action === 'configure') {
       requireAdmin_(body.accessToken);
       if (typeof body.enabled !== 'boolean' || !Number.isInteger(body.limit) || body.limit < 1 || body.limit > 100000) fail_('INVALID_INPUT');
       return response_(locked_(function() {
         PropertiesService.getScriptProperties().setProperty('JOIN_SETTINGS', JSON.stringify({ enabled: body.enabled, limit: body.limit }));
         return { ok: true, registration: status_() };
+      }));
+    }
+    if (body.action === 'eventRegister') {
+      const item = eventFromSupabase_(body.eventId);
+      const values = validateEvent_(body.data, item.eventRegistration);
+      if (typeof body.requestId !== 'string' || !/^[0-9a-f-]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) fail_('INVALID_INPUT');
+      return response_(locked_(function() {
+        const sheet = eventSheet_(body.eventId);
+        if (exists_(sheet, 1, body.requestId)) return { ok: true, duplicate: true };
+        append_(sheet, [body.requestId, new Date().toISOString(), body.eventId, item.title].concat(values));
+        return { ok: true };
       }));
     }
     if (body.action !== 'contact' && body.action !== 'join') fail_('INVALID_INPUT');

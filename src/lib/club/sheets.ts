@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { contactSchema, joinSchema } from "./model";
+import { contactSchema, eventSignupSchema, joinSchema } from "./model";
 
 export const sheetLinks = {
   contact:
@@ -29,7 +29,7 @@ export class SheetsError extends Error {}
 export const isOpen = (r: Registration) =>
   r.enabled && r.open && r.count < r.limit && r.remaining > 0;
 
-type RequestBody = Record<string, string | number | boolean | Record<string, string>>;
+type RequestBody = Record<string, string | number | boolean | Record<string, string | undefined>>;
 
 function isStringCode(value: unknown): value is { code: string } {
   return (
@@ -110,6 +110,44 @@ export async function submitToSheet(
   await request(join ? "join" : "contact", { action: join ? "join" : "contact", requestId, data });
 }
 
+const eventSheetSchema = z.object({ linked: z.boolean(), url: z.string().url().optional() });
+
+async function adminEventRequest(body: RequestBody) {
+  const { supabase } = await import("./supabase");
+  const { data, error } = await supabase().auth.getSession();
+  if (error || !data.session) throw new SheetsError("UNAUTHORIZED");
+  return request("join", { ...body, accessToken: data.session.access_token });
+}
+
+export async function eventSheetStatus(eventId: string) {
+  const value = await adminEventRequest({ action: "eventSheetStatus", eventId });
+  return eventSheetSchema.parse(value.sheet);
+}
+
+export async function configureEventSheet(eventId: string, title: string, sheetUrl?: string) {
+  const value = await adminEventRequest({
+    action: "configureEventSheet",
+    eventId,
+    title,
+    sheetUrl: sheetUrl?.trim() || "",
+  });
+  return eventSheetSchema.parse(value.sheet);
+}
+
+export async function submitEventSignup(
+  eventId: string,
+  values: Record<string, string>,
+  requestId: string,
+) {
+  const data = eventSignupSchema.parse({
+    name: values["name"] || undefined,
+    countryCode: values["countryCode"] || undefined,
+    phone: values["phone"] || undefined,
+    attendance: values["attendance"] || undefined,
+  });
+  await request("join", { action: "eventRegister", eventId, requestId, data });
+}
+
 export function submissionError(cause: unknown, ar: boolean) {
   const code = cause instanceof Error ? cause.message : "";
 
@@ -130,6 +168,12 @@ export function submissionError(cause: unknown, ar: boolean) {
     return ar
       ? "إعداد ربط Google Sheets غير مكتمل."
       : "Google Sheets integration setup is incomplete.";
+
+  if (code === "EVENT_CLOSED")
+    return ar ? "التسجيل لهذه الفعالية غير متاح حاليًا." : "Registration is unavailable.";
+
+  if (code === "EVENT_SHEET_MISSING")
+    return ar ? "لم يتم ربط شيت بهذه الفعالية بعد." : "No sheet is linked to this event.";
 
   return ar
     ? "تعذر تأكيد العملية. تحققي من الاتصال وحاولي مجددًا؛ إعادة الإرسال لن تكرر الطلب نفسه."

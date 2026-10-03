@@ -50,10 +50,45 @@ export type Content = {
   partnershipType?: string;
   partnershipType_en?: string;
   status?: string;
+  eventRegistration?: EventRegistration;
   createdAt?: string;
   updatedAt?: string;
   updatedBy?: string;
 };
+
+export type EventRegistration = {
+  enabled: boolean;
+  nameEnabled: boolean;
+  phoneEnabled: boolean;
+  attendanceEnabled: boolean;
+};
+
+export const defaultEventRegistration: EventRegistration = {
+  enabled: false,
+  nameEnabled: true,
+  phoneEnabled: true,
+  attendanceEnabled: true,
+};
+
+export const eventRegistrationSchema = z.object({
+  enabled: z.boolean(),
+  nameEnabled: z.boolean(),
+  phoneEnabled: z.boolean(),
+  attendanceEnabled: z.boolean(),
+});
+
+export const eventSignupSchema = z
+  .object({
+    name: z.string().trim().max(200).optional(),
+    countryCode: z.enum(["970", "972"]).optional(),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^\d{7,10}$/)
+      .optional(),
+    attendance: z.literal("yes").optional(),
+  })
+  .strict();
 
 export type Settings = {
   /**

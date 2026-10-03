@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { RegistrationAdmin } from "./RegistrationAdmin";
+import { EventRegistrationAdmin } from "./EventRegistrationAdmin";
 import { sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { RichTextEditor } from "./RichTextEditor";
@@ -29,6 +30,7 @@ import {
   labels,
   committees,
   contentSchema,
+  defaultEventRegistration,
   safeUrl,
   type Content,
   type ContentCollection,
@@ -801,6 +803,9 @@ function ContentEditor({
 
   const [gender, setGender] = useState(item?.gender === "female" ? "female" : "male");
   const [status, setStatus] = useState(item?.status || "upcoming");
+  const [eventRegistration, setEventRegistration] = useState(
+    item?.eventRegistration || defaultEventRegistration,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState("");
@@ -875,7 +880,10 @@ function ContentEditor({
       }
     }
 
-    if (targetKind === "events") value.status = status;
+    if (targetKind === "events") {
+      value.status = status;
+      value.eventRegistration = eventRegistration;
+    }
 
     if (kind === "partners") {
       value.partnershipType = values["partnershipType"] || "";
@@ -1219,25 +1227,36 @@ function ContentEditor({
         </>
       )}
       {targetKind === "events" && (
-        <label className="block">
-          <span className="mb-2 block">{ar ? "الحالة" : "Status"}</span>
-          <Select
-            dir={ar ? "rtl" : "ltr"}
-            value={status}
-            onValueChange={(v) => {
-              setStatus(v);
+        <>
+          <label className="block">
+            <span className="mb-2 block">{ar ? "الحالة" : "Status"}</span>
+            <Select
+              dir={ar ? "rtl" : "ltr"}
+              value={status}
+              onValueChange={(v) => {
+                setStatus(v);
+                setDirty(true);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="upcoming">{ar ? "قادمة" : "Upcoming"}</SelectItem>
+                <SelectItem value="past">{ar ? "سابقة" : "Past"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <EventRegistrationAdmin
+            eventId={item?.id}
+            title={(ar ? item?.title : item?.title_en) || (ar ? "الفعالية" : "Event")}
+            value={eventRegistration}
+            onChange={(next) => {
+              setEventRegistration(next);
               setDirty(true);
             }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="upcoming">{ar ? "قادمة" : "Upcoming"}</SelectItem>
-              <SelectItem value="past">{ar ? "سابقة" : "Past"}</SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
+          />
+        </>
       )}
       <details
         className="rounded-2xl border border-border p-5"

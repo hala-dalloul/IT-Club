@@ -49,6 +49,7 @@ import { siteName } from "@/lib/club/seo";
 import { ContentImage } from "./ContentImage";
 import { RichText } from "./RichText";
 import { plainRichText, splitRichText } from "@/lib/club/rich-text";
+import { EventRegistrationForm } from "./EventRegistrationForm";
 
 // The admin console pulls in the media library, registration tables and their
 // deps. Only signed-in staff open it, so keep it out of the visitor bundle.
@@ -836,6 +837,7 @@ function Detail({ kind, id }: { kind: ContentCollection; id: string }) {
           )}
         </div>
       </article>
+      {kind === "events" && <EventRegistrationForm event={item} />}
       <div className="mt-8">
         <ClubLink path={kind}>{ar ? "العودة للقائمة" : "Back to list"}</ClubLink>
       </div>
