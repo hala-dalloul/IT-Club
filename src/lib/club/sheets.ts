@@ -124,12 +124,11 @@ export async function eventSheetStatus(eventId: string) {
   return eventSheetSchema.parse(value.sheet);
 }
 
-export async function configureEventSheet(eventId: string, title: string, sheetUrl?: string) {
+export async function ensureEventSheet(eventId: string, title: string) {
   const value = await adminEventRequest({
-    action: "configureEventSheet",
+    action: "ensureEventSheet",
     eventId,
     title,
-    sheetUrl: sheetUrl?.trim() || "",
   });
   return eventSheetSchema.parse(value.sheet);
 }

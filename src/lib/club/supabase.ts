@@ -141,6 +141,7 @@ export async function saveContent(
 
   check(result.error);
   changed();
+  return String(result.data.id);
 }
 
 export async function removeContent(kind: ContentCollection, id: string) {

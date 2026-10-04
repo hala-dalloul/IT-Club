@@ -117,16 +117,31 @@ function eventSheets_() {
   const raw = PropertiesService.getScriptProperties().getProperty('EVENT_SHEETS');
   return raw ? JSON.parse(raw) : {};
 }
+function eventTabName_(eventId, title) {
+  const cleanTitle = String(title).trim().replace(/[\[\]:*?\/\\]/g, '-').replace(/\s+/g, ' ');
+  const suffix = ' - ' + eventId.slice(0, 8);
+  const prefix = 'فعالية - ';
+  return prefix + cleanTitle.slice(0, 100 - prefix.length - suffix.length) + suffix;
+}
 function eventSheetInfo_(eventId) {
   const info = eventSheets_()[eventId];
-  return info ? { linked: true, url: 'https://docs.google.com/spreadsheets/d/' + info.id + '/edit' } : { linked: false };
+  if (!info || !info.tabName) return { linked: false };
+  const book = SpreadsheetApp.openById(CLUB.joinSheet);
+  const sheet = book.getSheetByName(info.tabName);
+  return sheet ? { linked: true, url: book.getUrl() + '#gid=' + sheet.getSheetId() } : { linked: false };
 }
-function eventSheet_(eventId) {
-  const info = eventSheets_()[eventId];
-  if (!info || !info.id) fail_('EVENT_SHEET_MISSING');
-  const book = SpreadsheetApp.openById(info.id);
-  let sheet = book.getSheetByName('تسجيلات الموقع');
-  if (!sheet) sheet = book.insertSheet('تسجيلات الموقع');
+function ensureEventSheet_(eventId, title) {
+  if (!/^[0-9a-f-]{36}$/i.test(eventId) || typeof title !== 'string' || title.trim().length < 2) fail_('INVALID_INPUT');
+  const book = SpreadsheetApp.openById(CLUB.joinSheet);
+  const map = eventSheets_();
+  let tabName = map[eventId] && map[eventId].tabName;
+  if (!tabName) {
+    tabName = eventTabName_(eventId, title);
+    map[eventId] = { tabName: tabName };
+    PropertiesService.getScriptProperties().setProperty('EVENT_SHEETS', JSON.stringify(map));
+  }
+  let sheet = book.getSheetByName(tabName);
+  if (!sheet) sheet = book.insertSheet(tabName);
   if (sheet.getLastRow() === 0) {
     sheet.getRange(1, 1, 1, EVENT_HEADERS.length).setValues([EVENT_HEADERS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -179,28 +194,17 @@ function doPost(event) {
     try { body = JSON.parse(event.postData.contents); } catch (_) { fail_('INVALID_INPUT'); }
     if (!body || typeof body !== 'object') fail_('INVALID_INPUT');
     const kind = formKind_();
-    const joinActions = ['join', 'configure', 'eventRegister', 'eventSheetStatus', 'configureEventSheet'];
+    const joinActions = ['join', 'configure', 'eventRegister', 'eventSheetStatus', 'ensureEventSheet', 'configureEventSheet'];
     if ((kind === 'contact' && body.action !== 'contact') || (kind === 'join' && joinActions.indexOf(body.action) < 0)) fail_('INVALID_INPUT');
     if (body.action === 'eventSheetStatus') {
       requireAdmin_(body.accessToken);
       return response_({ ok: true, sheet: eventSheetInfo_(body.eventId) });
     }
-    if (body.action === 'configureEventSheet') {
+    if (body.action === 'ensureEventSheet' || body.action === 'configureEventSheet') {
       requireAdmin_(body.accessToken);
       if (!/^[0-9a-f-]{36}$/i.test(body.eventId) || typeof body.title !== 'string' || body.title.trim().length < 2) fail_('INVALID_INPUT');
       return response_(locked_(function() {
-        let book;
-        if (body.sheetUrl) {
-          const match = String(body.sheetUrl).match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-          if (!match) fail_('INVALID_INPUT');
-          book = SpreadsheetApp.openById(match[1]);
-        } else {
-          book = SpreadsheetApp.create('تسجيلات فعالية - ' + body.title.trim().slice(0, 150));
-        }
-        const map = eventSheets_();
-        map[body.eventId] = { id: book.getId() };
-        PropertiesService.getScriptProperties().setProperty('EVENT_SHEETS', JSON.stringify(map));
-        eventSheet_(body.eventId);
+        ensureEventSheet_(body.eventId, body.title);
         return { ok: true, sheet: eventSheetInfo_(body.eventId) };
       }));
     }
@@ -217,7 +221,7 @@ function doPost(event) {
       const values = validateEvent_(body.data, item.eventRegistration);
       if (typeof body.requestId !== 'string' || !/^[0-9a-f-]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) fail_('INVALID_INPUT');
       return response_(locked_(function() {
-        const sheet = eventSheet_(body.eventId);
+        const sheet = ensureEventSheet_(body.eventId, item.title);
         if (exists_(sheet, 1, body.requestId)) return { ok: true, duplicate: true };
         append_(sheet, [body.requestId, new Date().toISOString(), body.eventId, item.title].concat(values));
         return { ok: true };

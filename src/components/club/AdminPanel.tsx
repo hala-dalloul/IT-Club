@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { RegistrationAdmin } from "./RegistrationAdmin";
 import { EventRegistrationAdmin } from "./EventRegistrationAdmin";
-import { sheetLinks } from "@/lib/club/sheets";
+import { ensureEventSheet, sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { RichTextEditor } from "./RichTextEditor";
 import { useEffect, useState, type FormEvent } from "react";
@@ -921,13 +921,21 @@ function ContentEditor({
     setError("");
 
     try {
-      await saveContent(
+      const savedId = await saveContent(
         targetKind,
         value,
         item?.id,
         kind,
         kind === "members" ? undefined : typedSlug || null,
       );
+
+      if (
+        targetKind === "events" &&
+        status === "upcoming" &&
+        eventRegistration.enabled
+      ) {
+        await ensureEventSheet(savedId, value.title);
+      }
 
       if (item?.id) {
         queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(clubPublicKey, (old) => {
@@ -1249,7 +1257,6 @@ function ContentEditor({
           </label>
           <EventRegistrationAdmin
             eventId={item?.id}
-            title={(ar ? item?.title : item?.title_en) || (ar ? "الفعالية" : "Event")}
             value={eventRegistration}
             onChange={(next) => {
               setEventRegistration(next);
