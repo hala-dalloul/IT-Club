@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import { BrandButton } from "@/components/club/BrandButton";
 import { Input } from "@/components/ui/input";
 import {

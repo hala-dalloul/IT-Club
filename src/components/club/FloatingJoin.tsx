@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import { hrefOf } from "@/lib/club/paths";
 import { useRegistration } from "@/lib/club/registration";
 import mascot from "@/assets/club-mascot.webp";

@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { clubPublicKey } from "@/components/club/ClubProvider";
+import { clubPublicKey } from "@/lib/club/query-keys";
 import { configured, loadPublic } from "@/lib/club/public-api";
 
 /** How long the edge may serve a cached copy of the public club data. */

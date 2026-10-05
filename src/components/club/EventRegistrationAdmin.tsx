@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import type { EventRegistration } from "@/lib/club/model";
 import { eventSheetStatus } from "@/lib/club/sheets";
 

@@ -1,4 +1,4 @@
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 
 /**
  * What the site stores, in plain language.

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, Facebook, Instagram, Linkedin, Github } from "lucide-react";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import { Reveal } from "./Reveal";
 import { collegeUrl, isEmptySection, safeUrl } from "@/lib/club/model";
 import { hrefOf } from "@/lib/club/paths";

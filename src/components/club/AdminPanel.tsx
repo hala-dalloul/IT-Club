@@ -4,10 +4,18 @@ import { EventRegistrationAdmin } from "./EventRegistrationAdmin";
 import { ensureEventSheet, sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { RichTextEditor } from "./RichTextEditor";
-import { useEffect, useState, type FormEvent } from "react";
+import { DeleteButton } from "./admin/DeleteButton";
+import { SettingsEditor } from "./admin/SettingsEditor";
+import { AdminUsersEditor } from "./admin/AdminUsersEditor";
+import {
+  loadAdminDateOrder,
+  sortAdminContentByDate,
+  storeAdminDateOrder,
+} from "./admin/content-order";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
-import { useClub, clubPublicKey } from "./ClubProvider";
+import { useClub, clubPublicKey } from "./club-context";
 import {
   configured,
   observeAuth,
@@ -15,9 +23,6 @@ import {
   signOut,
   loadRole,
   watchQuery,
-  loadAdmins,
-  saveAdmin,
-  removeAdmin,
   saveContent,
   removeContent,
   uploadImage,
@@ -34,7 +39,6 @@ import {
   safeUrl,
   type Content,
   type ContentCollection,
-  type Settings,
 } from "@/lib/club/model";
 import { BrandButton } from "@/components/club/BrandButton";
 import { Input } from "@/components/ui/input";
@@ -47,20 +51,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
   Plus,
   LogOut,
-  Trash2,
   Pencil,
   Upload,
   Users,
@@ -69,12 +61,7 @@ import {
   Handshake,
 } from "lucide-react";
 
-type AdminRow = { id: string; name: string; email: string; role: string };
-
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
-
-/** The Settings keys this form edits: everything except the boolean gate. */
-type TextSetting = Exclude<keyof Settings, "registrationOpen">;
 
 export function AdminPanel() {
   const { lang, setupRequired } = useClub();
@@ -209,38 +196,6 @@ export function AdminPanel() {
   return <AdminWorkspace key={user.id + role} role={role} user={user} />;
 }
 
-function DeleteButton({ onDelete, label }: { onDelete: () => Promise<void>; label: string }) {
-  const { lang } = useClub();
-  const ar = lang === "ar";
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <BrandButton variant="ghost" size="sm" aria-label={label}>
-          <Trash2 size={16} />
-          {ar ? "حذف" : "Delete"}
-        </BrandButton>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{ar ? "حذف هذا العنصر؟" : "Delete this item?"}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {ar
-              ? "سيُحذف العنصر من الموقع. لا يمكن التراجع عن هذا الإجراء."
-              : "The item will be removed from the website. This cannot be undone."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{ar ? "إلغاء" : "Cancel"}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => void onDelete()}>
-            {ar ? "حذف" : "Delete"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
 function AdminWorkspace({ role, user }: { role: string; user: User }) {
   const { lang, data, settings } = useClub();
   const ar = lang === "ar";
@@ -272,38 +227,14 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
     });
   // Admin-list ordering only: remembered in this browser, never sent to the
   // database, so it cannot change what the public site shows.
-  const dateOrderKeys = {
-    events: "club-admin-event-date-order",
-    news: "club-admin-news-date-order",
-  } as const;
   const [dateOrder, setDateOrder] = useState({ events: false, news: false });
   useEffect(() => {
-    try {
-      setDateOrder({
-        events: localStorage.getItem(dateOrderKeys.events) === "true",
-        news: localStorage.getItem(dateOrderKeys.news) === "true",
-      });
-    } catch {
-      /* Storage is optional. */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setDateOrder(loadAdminDateOrder());
   }, []);
-  const sortByDate = (items: Content[], byDate: boolean) =>
-    [...items].sort((a, b) => {
-      const created = (item: Content) =>
-        Date.parse(item.createdAt || (typeof item.updatedAt === "string" ? item.updatedAt : "")) ||
-        0;
-      const itemDate = (item: Content) => Date.parse(item.date || "") || 0;
-      return (
-        (byDate ? itemDate(b) - itemDate(a) : 0) ||
-        created(b) - created(a) ||
-        a.id.localeCompare(b.id)
-      );
-    });
-  const eventItems = sortByDate(data.events, dateOrder.events).filter((item) =>
+  const eventItems = sortAdminContentByDate(data.events, dateOrder.events).filter((item) =>
     matchesArticleSearch(item, articleSearch.events),
   );
-  const newsItems = sortByDate(data.news, dateOrder.news).filter((item) =>
+  const newsItems = sortAdminContentByDate(data.news, dateOrder.news).filter((item) =>
     matchesArticleSearch(item, articleSearch.news),
   );
 
@@ -322,22 +253,16 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         ? "لديك تعديلات غير محفوظة. تجاهل التعديلات والمتابعة؟"
         : "You have unsaved changes. Discard them and continue?",
     );
-  const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [notice, setNotice] = useState("");
-  useEffect(() => {
-    const fail = () =>
+  const adminLoadError = useCallback(
+    () =>
       setNotice(
         ar
           ? "تعذر تحميل بيانات الإدارة. تحقق من إعداد Supabase."
           : "Could not load admin data. Check Supabase setup.",
-      );
-
-    const stops: (() => void)[] = [];
-
-    if (role === "super_admin") stops.push(watchQuery(loadAdmins, setAdmins, fail));
-
-    return () => stops.forEach((stop) => stop());
-  }, [role, ar]);
+      ),
+    [ar],
+  );
 
   async function run(action: () => Promise<void>) {
     setNotice("");
@@ -468,11 +393,7 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
                     onClick={() => {
                       const enabled = !byDate;
                       setDateOrder((prev) => ({ ...prev, [kind]: enabled }));
-                      try {
-                        localStorage.setItem(dateOrderKeys[kind], String(enabled));
-                      } catch {
-                        /* Storage is optional. */
-                      }
+                      storeAdminDateOrder(kind, enabled);
                     }}
                   >
                     {isNews
@@ -691,67 +612,12 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
           />
         )}
         {tab === "admins" && role === "super_admin" && (
-          <>
-            <p className="mb-5 text-muted-foreground">
-              {ar
-                ? "أضف حساب المحرر الموجود في Supabase Authentication باستخدام معرّفه UID. إزالة المحرر هنا تلغي صلاحياته على الموقع."
-                : "Add an existing Supabase Authentication account by its UID. Removing an editor here revokes their website access."}
-            </p>
-            <form
-              className="mb-8 grid gap-4 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const f = e.currentTarget;
-                const values = new FormData(f);
-                const uid = String(values.get("uid")).trim();
-
-                if (uid === user.id || uid.includes("/") || !uid) return;
-                void run(async () => {
-                  await saveAdmin(
-                    uid,
-                    String(values.get("name")).trim(),
-                    String(values.get("email")).trim(),
-                  );
-                  f.reset();
-                });
-              }}
-            >
-              {[
-                ["uid", "UID"],
-                ["name", ar ? "اسم المحرر" : "Editor name"],
-                ["email", ar ? "البريد الإلكتروني" : "Email"],
-              ].map(([key, label]) => (
-                <label key={key} className="block">
-                  <span className="mb-2 block text-sm font-bold">{label}</span>
-                  <Input
-                    name={key!}
-                    type={key === "email" ? "email" : "text"}
-                    required
-                    maxLength={254}
-                  />
-                </label>
-              ))}
-              <BrandButton type="submit">{ar ? "إضافة محرر" : "Add editor"}</BrandButton>
-            </form>
-            <div className="space-y-3">
-              {admins.map((admin) => (
-                <div
-                  key={admin.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5"
-                >
-                  <span>
-                    {admin.name} · {admin.email} · {admin.role}
-                  </span>
-                  {admin.id !== user.id && admin.role === "editor" && (
-                    <DeleteButton
-                      label={admin.name}
-                      onDelete={() => run(() => removeAdmin(admin.id))}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
+          <AdminUsersEditor
+            ar={ar}
+            currentUserId={user.id}
+            onLoadError={adminLoadError}
+            run={run}
+          />
         )}
       </div>
     </>
@@ -929,11 +795,7 @@ function ContentEditor({
         kind === "members" ? undefined : typedSlug || null,
       );
 
-      if (
-        targetKind === "events" &&
-        status === "upcoming" &&
-        eventRegistration.enabled
-      ) {
+      if (targetKind === "events" && status === "upcoming" && eventRegistration.enabled) {
         await ensureEventSheet(savedId, value.title);
       }
 
@@ -1349,99 +1211,6 @@ function ContentEditor({
           {ar ? "إلغاء" : "Cancel"}
         </BrandButton>
       </div>
-    </form>
-  );
-}
-
-function SettingsEditor({
-  initial,
-  onSave,
-  onDirtyChange,
-}: {
-  initial: Settings;
-  onSave: (value: Settings) => Promise<void>;
-  onDirtyChange: (dirty: boolean) => void;
-}) {
-  const { lang } = useClub();
-  const ar = lang === "ar";
-  const [busy, setBusy] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warn);
-
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
-
-  const fields: Record<TextSetting, [string, string]> = {
-    vision: ["الرؤية بالعربية", "Vision in Arabic"],
-    vision_en: ["الرؤية بالإنجليزية", "Vision in English"],
-    mission: ["الرسالة بالعربية", "Mission in Arabic"],
-    mission_en: ["الرسالة بالإنجليزية", "Mission in English"],
-    goals: ["الأهداف بالعربية (كل هدف بسطر)", "Goals in Arabic (one per line)"],
-    goals_en: ["الأهداف بالإنجليزية (كل هدف بسطر)", "Goals in English (one per line)"],
-    email: ["بريد التواصل", "Contact email"],
-    facebook: ["Facebook", "Facebook"],
-    instagram: ["Instagram", "Instagram"],
-    linkedin: ["LinkedIn", "LinkedIn"],
-    github: ["GitHub", "GitHub"],
-  };
-
-  // SAFETY: key ranges over Object.entries(fields), and fields is a Record<keyof Settings, ...>,
-  // so key is always a Settings key.
-  return (
-    <form
-      className="grid gap-5 rounded-3xl border border-border bg-card p-6 sm:grid-cols-2"
-      onChange={() => setDirty(true)}
-      onSubmit={async (e) => {
-        e.preventDefault();
-        setBusy(true);
-        // SAFETY: every field below is named after a Settings key, so the form's
-        // FormData entries exactly match the text half of Settings' shape.
-        const values = Object.fromEntries(new FormData(e.currentTarget)) as Record<
-          TextSetting,
-          string
-        >;
-
-        try {
-          // This form renders only the text fields. Spreading the current
-          // settings underneath keeps registrationOpen, which the registration
-          // panel owns, from being wiped every time someone edits the vision.
-          await onSave({ ...initial, ...values });
-          setDirty(false);
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {Object.entries(fields).map(([key, pair]) => (
-        <label key={key} className="block">
-          <span className="mb-2 block text-sm font-bold">{pair[ar ? 0 : 1]}</span>
-          {["vision", "mission", "goals"].some((prefix) => key.startsWith(prefix)) ? (
-            <RichTextEditor
-              name={key}
-              defaultValue={initial[key as TextSetting]}
-              dir={key.endsWith("_en") ? "ltr" : "rtl"}
-              onDirty={() => setDirty(true)}
-            />
-          ) : (
-            <Input
-              name={key}
-              type={key === "email" ? "email" : "url"}
-              pattern={key === "email" ? undefined : "https://.*"}
-              defaultValue={initial[key as TextSetting]}
-            />
-          )}
-        </label>
-      ))}
-      <BrandButton type="submit" disabled={busy}>
-        {ar ? "حفظ الإعدادات" : "Save settings"}
-      </BrandButton>
     </form>
   );
 }

@@ -10,7 +10,7 @@ export const sheetLinks = {
 const endpoints = {
   contact:
     "https://script.google.com/a/macros/ucas.edu.ps/s/AKfycbxbRhHH3dTxdsvpAD0TSGFae6mtBmLwf3zUApDqe6VGiNvZrE-M4Ni164_0LDu-e1MTow/exec",
-  join: "https://script.google.com/a/macros/ucas.edu.ps/s/AKfycbxvckZM9moWs-jyGrPPQQj8UXcDlpgWRFQn1-YPTBY13nCCBjn_erpmuxqd4WLFSFnt/exec",
+  join: "https://script.google.com/macros/s/AKfycbxV5GRTEe8Y2QEcEPHDFURBXZsZpg6JTZxkya40NJFTBL-sklDQSKrkwmJYmTSQBn1q/exec",
 };
 
 const registrationSchema = z.object({

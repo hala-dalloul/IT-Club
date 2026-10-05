@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 
 export function PageHeading({
   ar,

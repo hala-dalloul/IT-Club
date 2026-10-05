@@ -140,6 +140,7 @@ export async function saveContent(
         .single();
 
   check(result.error);
+  if (!result.data) throw new Error("The saved content was not returned");
   changed();
   return String(result.data.id);
 }

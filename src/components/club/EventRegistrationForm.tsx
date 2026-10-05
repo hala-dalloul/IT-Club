@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Check } from "lucide-react";
 import { BrandButton } from "./BrandButton";
 import { Input } from "@/components/ui/input";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import type { Content } from "@/lib/club/model";
 import { submitEventSignup, submissionError } from "@/lib/club/sheets";
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BrandButton } from "./BrandButton";
 import { PageHeading } from "./PageHeading";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {

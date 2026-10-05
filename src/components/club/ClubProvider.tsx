@@ -1,37 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  emptySettings,
-  type Content,
-  type ContentCollection,
-  type Lang,
-  type Settings,
-} from "@/lib/club/model";
+import { emptySettings, type Settings } from "@/lib/club/model";
 import { configured, loadPublic, SetupRequiredError } from "@/lib/club/public-api";
 import { recordVisit } from "@/lib/club/visits";
 import { useLocation } from "@tanstack/react-router";
 import { langOf } from "@/lib/club/paths";
 
-const emptyData: Record<ContentCollection, Content[]> = {
-  members: [],
-  events: [],
-  news: [],
-  partners: [],
-};
-
-export const clubPublicKey = ["club-public"];
-
-const Context = createContext({
-  // SAFETY: "ar" is a valid member of Lang; widened so the provider's URL-derived value fits.
-  lang: "ar" as Lang,
-  data: emptyData,
-  settings: emptySettings,
-  // SAFETY: no visit count is known yet; widened so ClubProvider's setVisitorCount(number) fits.
-  visitorCount: null as number | null,
-  loading: false,
-  error: false,
-  setupRequired: false,
-});
+import { ClubContext, clubPublicKey, emptyClubData } from "./club-context";
 
 export function ClubProvider({ children }: { children: ReactNode }) {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
@@ -76,7 +51,7 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     refetchInterval: 60000,
   });
 
-  const data = query.data?.data ?? emptyData;
+  const data = query.data?.data ?? emptyClubData;
 
   const settings = useMemo<Settings>(
     () => ({ ...emptySettings, ...query.data?.settings }),
@@ -100,7 +75,5 @@ export function ClubProvider({ children }: { children: ReactNode }) {
     [lang, data, settings, loading, error, setupRequired, visitorCount],
   );
 
-  return <Context.Provider value={value}>{children}</Context.Provider>;
+  return <ClubContext.Provider value={value}>{children}</ClubContext.Provider>;
 }
-
-export const useClub = () => useContext(Context);

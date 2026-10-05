@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useClub } from "./ClubProvider";
+import { useClub } from "./club-context";
 import {
   configured,
   loadMedia,
@@ -23,7 +23,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 
-export const mediaKey = ["club-media"];
+const mediaKey = ["club-media"];
 
 const noAssets: MediaAsset[] = [];
 

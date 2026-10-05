@@ -4,7 +4,7 @@ A web-based content management and administration platform for the IT Club, buil
 
 ## Overview
 
-The platform combines a public club website, an administration dashboard, and a centralized media library.
+The platform combines a bilingual public club website, an administration dashboard, a centralized media library, and Google Sheets-backed registration workflows.
 
 The current application exposes:
 
@@ -22,9 +22,10 @@ Supabase provides authentication, PostgreSQL data management, Row Level Security
 
 ### Public Platform
 - Club information and configurable content.
-- Projects, members, events, achievements, and partners.
+- Members, events, news, and partners.
 - Public media.
-- Contact and membership submissions.
+- Membership and event registration through Google Sheets.
+- Social contact channels without storing contact messages.
 
 ### Administration
 - Authenticated administration.
@@ -46,29 +47,27 @@ Supabase provides authentication, PostgreSQL data management, Row Level Security
 ## Architecture
 
 ```text
-Web Application
-├── Public Club Website
-├── Administration Dashboard
-└── Game
-        |
-        v
-Supabase
-├── Authentication
-├── PostgreSQL
-├── Row Level Security
-└── Storage
+Web Application (TanStack Start)
+├── Public website (SSR + React Query)
+│   └── Public PostgREST reads
+├── Administration dashboard
+│   └── Supabase Auth, PostgreSQL, RLS, and Storage
+└── Registration workflows
+    └── Google Apps Script and Google Sheets
 ```
 
 ## Data Model
 
 | Table | Responsibility |
 |---|---|
-| `club_content` | Projects, members, events, achievements, partners |
+| `club_content` | Members, events, news, and partners |
 | `club_settings` | Official club text and links |
-| `club_submissions` | Membership and contact submissions |
+| `club_visits` | Privacy-preserving session visit count |
 | `club_admins` | Editor and super administrator roles |
 | `club_media` | Media library records |
 | `club_content_media` | Media/content relationships |
+
+`club_submissions` remains in the original migration for legacy compatibility, but new membership and event registrations are stored in Google Sheets. It is not part of the current public workflow.
 
 ## Authorization
 
@@ -92,7 +91,7 @@ Public media is available to the club website, while media-library management re
 | Authentication | Supabase Auth |
 | Authorization | PostgreSQL RLS |
 | Storage | Supabase Storage |
-| Testing | PGlite |
+| Testing | Node test runner and PGlite |
 | Formatting | Prettier |
 | Linting | ESLint |
 
@@ -112,9 +111,14 @@ bun install --frozen-lockfile
 bun run dev
 bun run typecheck
 bun run test
+bun run lint
 bun run build
 bun run build:static
 ```
+
+Run `bun run check` before merging to execute type checking, tests, linting, and the production build in sequence.
+
+See [docs/architecture.md](docs/architecture.md) for runtime paths, module boundaries, and the maintenance checklist.
 
 ## Database Setup
 
@@ -135,11 +139,12 @@ Local database tests do not replace verification against a real Supabase deploym
 Before deployment:
 
 1. Configure the required `VITE_SUPABASE_*` variables.
-2. Apply the database migration to the intended Supabase project.
+2. Apply every migration in `supabase/migrations` to the intended Supabase project, in filename order.
 3. Configure administrative accounts.
-4. Verify RLS policies.
-5. Test authentication, media uploads, content editing, and submissions.
-6. Build the client for the selected hosting platform.
+4. Deploy and configure the current Google Apps Script integration.
+5. Verify RLS policies.
+6. Test authentication, media uploads, content editing, membership registration, and event registration.
+7. Build the application for the selected hosting platform.
 
 Do not commit `.env.local` or production secrets.
 
