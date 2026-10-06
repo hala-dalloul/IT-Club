@@ -18,7 +18,7 @@ export const Route = createFileRoute("/club/$")({
     const hit = loaded && ref && isCollection(kind) ? findItem(loaded.data, kind, ref) : undefined;
 
     throw redirect({
-      href: hrefOf("ar", hit ? itemPage(hit.kind, hit.item) : page),
+      href: hrefOf("ar", hit ? itemPage(hit.kind, hit.item, loaded!.data) : page),
       statusCode: 301,
     });
   },

@@ -773,7 +773,7 @@ function ContentEditor({
     }
 
     // Members keep their ids in URLs; everything else has a readable name.
-    const typedSlug = values["slug"]?.trim().toLowerCase() ?? "";
+    const typedSlug = values["slug"]?.trim().toLowerCase() || item?.slug || "";
 
     if (kind !== "members" && typedSlug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(typedSlug)) {
       setError(
@@ -981,26 +981,6 @@ function ContentEditor({
           </label>
         ))}
       </div>
-      {kind !== "members" && (
-        <label className="block text-sm font-bold">
-          <span className="mb-2 block">{ar ? "اسم الرابط" : "Link name"}</span>
-          <div className="flex items-center gap-2" dir="ltr">
-            <span className="shrink-0 text-muted-foreground">/{targetKind}/</span>
-            <Input
-              name="slug"
-              maxLength={80}
-              defaultValue={item?.slug || ""}
-              placeholder={ar ? "يُنشأ من العنوان الإنجليزي" : "generated from the English title"}
-              dir="ltr"
-            />
-          </div>
-          <span className="mt-2 block font-normal text-muted-foreground">
-            {ar
-              ? "اتركه فارغًا ليُنشأ تلقائيًا. تغييره لاحقًا يُعطّل الروابط التي نُشرت سابقًا."
-              : "Leave empty to generate one. Changing it later breaks links already shared."}
-          </span>
-        </label>
-      )}
       {isArticle && (
         <div className="grid gap-5 sm:grid-cols-2">
           {(

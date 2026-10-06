@@ -225,12 +225,59 @@ export function isEmptySection(path: string, data: Record<ContentCollection, Con
 export const kindsFor = (kind: ContentCollection): ContentCollection[] =>
   kind === "news" ? ["news", "events"] : kind === "events" ? ["events", "news"] : [kind];
 
+/** Stable public numbering: articles oldest-first, then partners, with the board first on team. */
+export function publicIndexOrder(items: Content[], kind: ContentCollection) {
+  const created = (item: Content) => item.createdAt || item.date || item.id;
+
+  return [...items].sort((a, b) => {
+    if (kind === "events" || kind === "news") {
+      const byDate = (a.date || a.createdAt || "").localeCompare(b.date || b.createdAt || "");
+      return byDate || created(a).localeCompare(created(b)) || a.id.localeCompare(b.id);
+    }
+
+    if (kind === "members") {
+      const boardA = a.isFounder || a.committee === "administrative" ? 0 : 1;
+      const boardB = b.isFounder || b.committee === "administrative" ? 0 : 1;
+      if (boardA !== boardB) return boardA - boardB;
+      if (boardA === 0)
+        return (
+          (a.displayOrder ?? 10000) - (b.displayOrder ?? 10000) ||
+          created(a).localeCompare(created(b)) ||
+          a.id.localeCompare(b.id)
+        );
+      const committeeA = committees.findIndex(([key]) => key === a.committee);
+      const committeeB = committees.findIndex(([key]) => key === b.committee);
+      return (
+        (committeeA < 0 ? committees.length : committeeA) -
+          (committeeB < 0 ? committees.length : committeeB) ||
+        created(a).localeCompare(created(b)) ||
+        a.id.localeCompare(b.id)
+      );
+    }
+
+    return created(a).localeCompare(created(b)) || a.id.localeCompare(b.id);
+  });
+}
+
+export function publicItemIndex(
+  data: Record<ContentCollection, Content[]>,
+  kind: ContentCollection,
+  item: Pick<Content, "id">,
+) {
+  return publicIndexOrder(data[kind], kind).findIndex((candidate) => candidate.id === item.id) + 1;
+}
+
 /** The item a URL names, by readable slug or by id, and the list it lives in. */
 export function findItem(
   data: Record<ContentCollection, Content[]>,
   kind: ContentCollection,
   ref: string,
 ) {
+  if (/^[1-9][0-9]*$/.test(ref)) {
+    const item = publicIndexOrder(data[kind], kind)[Number(ref) - 1];
+    if (item) return { kind, item };
+  }
+
   for (const k of kindsFor(kind)) {
     const item = data[k].find((x) => x.slug === ref || x.id === ref);
 

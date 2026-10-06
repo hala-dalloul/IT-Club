@@ -1,6 +1,6 @@
 // The site's sitemap: every public page in Arabic and English, with each
 // page's two language versions linked as alternates, and news, events and
-// partners by their readable names. Built live from club_content, so a new
+// partners by their one-based public index. Built live from club_content, so a new
 // item appears as soon as it is published.
 //
 // Called by the site's /sitemap.xml, which passes its own origin as ?site= so
@@ -22,7 +22,13 @@ const sections = ["members", "events", "news", "partners"];
 // Kinds whose items have public, indexable pages. Member pages are noindex.
 const itemKinds = ["events", "news", "partners"];
 
-type Row = { id: string; kind: string; slug: string | null; updated_at: string };
+type Row = {
+  id: string;
+  kind: string;
+  data: { date?: string } | null;
+  created_at: string;
+  updated_at: string;
+};
 
 const href = (site: string, lang: "ar" | "en", page: string) => {
   const [first = "", ...rest] = page.split("/").filter(Boolean);
@@ -65,7 +71,7 @@ Deno.serve(async (req) => {
     if (!key) throw new Error("Missing publishable key");
     for (let offset = 0; ;) {
       const response = await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/rest/v1/club_content?select=id,kind,slug,updated_at&order=updated_at.desc,id.asc&offset=${offset}&limit=500`,
+        `${Deno.env.get("SUPABASE_URL")}/rest/v1/club_content?select=id,kind,data,created_at,updated_at&order=updated_at.desc,id.asc&offset=${offset}&limit=500`,
         { headers: { apikey: key }, signal },
       );
       if (!response.ok) throw new Error("Content could not be read");
@@ -89,9 +95,27 @@ Deno.serve(async (req) => {
     if (rows.some((row) => row.kind === kind)) body += entry(site, kind, latest(kind));
   }
 
-  for (const row of rows) {
-    if (itemKinds.includes(row.kind))
-      body += entry(site, `${row.kind}/${row.slug || row.id}`, row.updated_at);
+  for (const kind of itemKinds) {
+    const ordered = rows
+      .filter((row) => row.kind === kind)
+      .sort((a, b) => {
+        const aOrder =
+          kind === "events" || kind === "news"
+            ? a.data?.date || a.created_at || a.id
+            : a.created_at || a.id;
+        const bOrder =
+          kind === "events" || kind === "news"
+            ? b.data?.date || b.created_at || b.id
+            : b.created_at || b.id;
+        return (
+          aOrder.localeCompare(bOrder) ||
+          (a.created_at || "").localeCompare(b.created_at || "") ||
+          a.id.localeCompare(b.id)
+        );
+      });
+    ordered.forEach((row, index) => {
+      body += entry(site, `${kind}/${index + 1}`, row.updated_at);
+    });
   }
 
   const xml =

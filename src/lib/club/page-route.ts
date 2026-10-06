@@ -110,7 +110,7 @@ export async function loadPage(
   }
 
   // Old id links and the other kind's path move to the item's own address.
-  moveTo(itemPage(hit.kind, hit.item));
+  moveTo(itemPage(hit.kind, hit.item, loaded.data));
 
   return { item: hit.item };
 }

@@ -47,7 +47,7 @@ function sitemap(fetcher) {
   return () => handler(new Request("https://example.test?site=https://club.example"));
 }
 
-test("sitemap reads beyond one API page and uses stable ordering", async () => {
+test("sitemap reads beyond one API page and numbers items oldest-first", async () => {
   const calls = [];
   const run = sitemap(async (input, init) => {
     const url = new URL(input);
@@ -60,17 +60,26 @@ test("sitemap reads beyond one API page and uses stable ordering", async () => {
         ? Array.from({ length: 500 }, (_, i) => ({
             id: String(i),
             kind: "news",
-            slug: `item-${i}`,
+            data: { date: `2026-09-${String((i % 27) + 1).padStart(2, "0")}` },
+            created_at: "2026-09-27",
             updated_at: "2026-09-27",
           }))
         : offset === 500
-          ? [{ id: "last", kind: "news", slug: "last", updated_at: "2026-09-26" }]
+          ? [
+              {
+                id: "last",
+                kind: "news",
+                data: { date: "2026-08-01" },
+                created_at: "2026-08-01",
+                updated_at: "2026-09-26",
+              },
+            ]
           : [],
     );
   });
   const response = await run();
   assert.equal(response.status, 200);
-  assert.match(await response.text(), /news\/last/);
+  assert.match(await response.text(), /news\/501/);
   assert.ok(calls.length >= 2);
 });
 

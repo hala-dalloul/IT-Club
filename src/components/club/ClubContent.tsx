@@ -81,7 +81,7 @@ function Card({
   kind: Exclude<ContentCollection, "members">;
   compact?: boolean;
 }) {
-  const { lang } = useClub();
+  const { lang, data } = useClub();
   const title = local(item, "title", lang);
   const image = item.images?.map(safeUrl).find(Boolean);
   const partner = kind === "partners";
@@ -165,7 +165,7 @@ function Card({
           </div>
         ) : (
           <ClubLink
-            path={itemPage(kind, item)}
+            path={itemPage(kind, item, data)}
             className="club-card-cta mt-auto inline-flex items-center gap-2 pt-5 font-bold text-primary"
           >
             {lang === "ar" ? "التفاصيل" : "View details"}

@@ -1,4 +1,4 @@
-import type { Content, ContentCollection, Lang } from "./model";
+import { publicItemIndex, type Content, type ContentCollection, type Lang } from "./model";
 
 /**
  * Every public URL, in one place.
@@ -36,9 +36,13 @@ export function hrefOf(lang: Lang, page: string): string {
   return path ? `${prefix}/${path}` : prefix || "/";
 }
 
-/** Readable name when the item has one, its id otherwise. */
-export function itemPage(kind: ContentCollection, item: Pick<Content, "id" | "slug">) {
-  return `${kind}/${item.slug || item.id}`;
+/** Public item addresses use their one-based position in the collection. */
+export function itemPage(
+  kind: ContentCollection,
+  item: Pick<Content, "id">,
+  data: Record<ContentCollection, Content[]>,
+) {
+  return `${kind}/${publicItemIndex(data, kind, item)}`;
 }
 
 /** The same page in the other language. */
