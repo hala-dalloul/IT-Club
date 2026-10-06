@@ -4,6 +4,7 @@ import { EventRegistrationAdmin } from "./EventRegistrationAdmin";
 import { ensureEventSheet, sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { RichTextEditor } from "./RichTextEditor";
+import { ImageCropper } from "./ImageCropper";
 import { DeleteButton } from "./admin/DeleteButton";
 import { SettingsEditor } from "./admin/SettingsEditor";
 import { AdminUsersEditor } from "./admin/AdminUsersEditor";
@@ -676,6 +677,7 @@ function ContentEditor({
   const [error, setError] = useState("");
   const [preview, setPreview] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   useEffect(() => {
     if (!file) {
       setPreview("");
@@ -1180,15 +1182,32 @@ function ContentEditor({
             type="file"
             accept="image/png,image/jpeg,image/webp"
             disabled={busy}
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              const selected = e.target.files?.[0] || null;
+              setFile(null);
+              setCropSource(selected);
+              e.target.value = "";
+            }}
           />
         </label>
+        {cropSource && (
+          <ImageCropper
+            file={cropSource}
+            ar={ar}
+            onConfirm={(cropped) => {
+              setFile(cropped);
+              setCropSource(null);
+              setDirty(true);
+            }}
+            onCancel={() => setCropSource(null)}
+          />
+        )}
         {preview && (
           <div className="mt-4">
             <img
               src={preview}
               alt={ar ? "معاينة قبل الرفع" : "Preview before upload"}
-              className="max-h-48 rounded-xl object-contain"
+              className="aspect-video w-full max-w-xl rounded-xl object-cover"
             />
             <div className="mt-3 flex gap-3">
               <BrandButton type="button" disabled={busy} onClick={() => void upload()}>
@@ -1204,7 +1223,7 @@ function ContentEditor({
       </fieldset>
       {error && <p role="alert">{error}</p>}
       <div className="flex flex-wrap gap-3">
-        <BrandButton type="submit" disabled={busy || !!file}>
+        <BrandButton type="submit" disabled={busy || !!file || !!cropSource}>
           {busy ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "حفظ ونشر" : "Save and publish"}
         </BrandButton>
         <BrandButton type="button" variant="outline" disabled={busy} onClick={onCancel}>

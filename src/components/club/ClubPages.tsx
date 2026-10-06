@@ -426,7 +426,7 @@ export function DetailPage({ kind, id }: { kind: ContentCollection; id: string }
                   width={800}
                   height={600}
                   loading="lazy"
-                  className="w-full rounded-2xl object-contain"
+                  className={`${index === 0 ? "aspect-video sm:col-span-2" : "aspect-video"} w-full rounded-2xl object-cover`}
                 />
               ))}
           </div>
