@@ -155,6 +155,17 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
                 </div>
               </div>
             </section>
+
+            <section aria-labelledby={`event-information-${event.id}`}>
+              <h2 id={`event-information-${event.id}`} className="club-rule text-2xl font-black">
+                {ar ? "معلومات الفعالية" : "Event information"}
+              </h2>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {facts.map((fact) => (
+                  <EventFact key={fact.label} {...fact} />
+                ))}
+              </dl>
+            </section>
           </div>
 
           <div className="space-y-8 lg:col-start-1 lg:row-start-1">
@@ -171,17 +182,6 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
                 }
                 className="mt-4 text-base leading-loose text-muted-foreground"
               />
-            </section>
-
-            <section aria-labelledby={`event-information-${event.id}`}>
-              <h2 id={`event-information-${event.id}`} className="club-rule text-2xl font-black">
-                {ar ? "معلومات الفعالية" : "Event information"}
-              </h2>
-              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                {facts.map((fact) => (
-                  <EventFact key={fact.label} {...fact} />
-                ))}
-              </dl>
             </section>
 
             {registrationAvailable ? (
