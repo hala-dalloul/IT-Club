@@ -10,10 +10,11 @@ test("news details use a dedicated maintainable component", () => {
   assert.match(pages, /kind === "news"[\s\S]*<NewsDetail news=\{item\} lang=\{lang\}/);
 });
 
-test("news layout keeps the image on the desktop right and content on the left", () => {
-  assert.match(detail, /<figure[\s\S]*lg:col-start-2 lg:row-start-1/);
-  assert.match(detail, /space-y-6 lg:col-start-1 lg:row-start-1/);
-  assert.match(detail, /lg:grid-cols-2/);
+test("news text flows beside the image and then continues below it like a newspaper", () => {
+  assert.match(detail, /flow-root/);
+  assert.match(detail, /<figure[\s\S]*lg:float-right[\s\S]*lg:w-\[48%\]/);
+  assert.match(detail, /clear-both mt-10/);
+  assert.doesNotMatch(detail, /lg:grid-cols-2/);
 });
 
 test("news images use horizontal frames", () => {
@@ -26,10 +27,7 @@ test("news content includes its headline, date, author and localized body", () =
   assert.match(detail, /<h1/);
   assert.match(detail, /formattedNewsDate/);
   assert.match(detail, /siteName\[lang\]/);
-  assert.match(detail, /splitRichTextAtHalf/);
-  assert.match(detail, /value=\{leadDescription\}/);
-  assert.match(detail, /value=\{continuedDescription\}/);
-  assert.match(detail, /تكملة الخبر/);
+  assert.match(detail, /local\(news, "description", lang\)/);
 });
 
 test("news design retains theme-aware semantic colors", () => {
