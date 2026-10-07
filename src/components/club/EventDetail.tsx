@@ -2,7 +2,11 @@ import { useState, type ReactNode } from "react";
 import { CalendarDays, Clock3, Hourglass, Tag, UserRound } from "lucide-react";
 import type { Content, Lang } from "@/lib/club/model";
 import { safeUrl } from "@/lib/club/model";
-import { eventHasEnded, eventRegistrationIsAvailable } from "@/lib/club/event-timing";
+import {
+  eventHasEnded,
+  eventRegistrationIsAvailable,
+  formatEventTime,
+} from "@/lib/club/event-timing";
 import { BrandButton } from "./BrandButton";
 import { ContentImage } from "./ContentImage";
 import { EventRegistrationForm } from "./EventRegistrationForm";
@@ -80,7 +84,7 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
     {
       icon: Clock3,
       label: ar ? "الموعد" : "Time",
-      value: event.eventTime?.trim() || unavailable,
+      value: formatEventTime(event.eventTime, lang) || unavailable,
     },
     {
       icon: Hourglass,

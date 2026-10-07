@@ -33,6 +33,7 @@ test("information section includes date, time, duration and event type", () => {
   }
   assert.match(detail, /معلومات الفعالية/);
   assert.match(detail, /Event information/);
+  assert.match(detail, /formatEventTime\(event\.eventTime, lang\)/);
 });
 
 test("presenter section supports localized name and one-line bio", () => {

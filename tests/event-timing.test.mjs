@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { eventHasEnded, eventRegistrationIsAvailable } from "../src/lib/club/event-timing.ts";
+import {
+  eventHasEnded,
+  eventRegistrationIsAvailable,
+  formatEventTime,
+} from "../src/lib/club/event-timing.ts";
 
 const base = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -56,4 +60,11 @@ test("legacy upcoming events without detailed timing keep their status-based beh
     }),
     true,
   );
+});
+
+test("event times are displayed using a localized 12-hour clock", () => {
+  assert.equal(formatEventTime("00:05", "en"), "12:05 AM");
+  assert.equal(formatEventTime("13:30", "en"), "1:30 PM");
+  assert.match(formatEventTime("13:30", "ar"), /١:٣٠\s*م/);
+  assert.equal(formatEventTime("24:00", "ar"), "");
 });

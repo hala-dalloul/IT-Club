@@ -1,4 +1,4 @@
-import type { Content } from "./model";
+import type { Content, Lang } from "./model";
 
 const eventTimeZone = "Asia/Hebron";
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,6 +24,19 @@ function localParts(now: Date) {
     date: `${values["year"]}-${values["month"]}-${values["day"]}`,
     minutes: Number(values["hour"]) * 60 + Number(values["minute"]),
   };
+}
+
+/** Format the stored 24-hour value for visitors using a 12-hour clock. */
+export function formatEventTime(time: string | undefined, lang: Lang) {
+  if (!time || !timePattern.test(time)) return "";
+  const [hour = 0, minute = 0] = time.split(":").map(Number);
+
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-PS" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)));
 }
 
 /** Whether the event has ended in the club's local Asia/Hebron time. */
