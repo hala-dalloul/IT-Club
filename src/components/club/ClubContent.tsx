@@ -5,6 +5,7 @@ import InformationDrawer from "@/components/ui/information-drawer";
 import logo from "@/assets/ucas-logo.webp";
 import { hrefOf, itemPage } from "@/lib/club/paths";
 import { local, safeUrl, type Content, type ContentCollection } from "@/lib/club/model";
+import { contentImageUrls } from "@/lib/club/google-drive";
 import { plainRichText } from "@/lib/club/rich-text";
 import { useClub } from "./club-context";
 import { ContentImage } from "./ContentImage";
@@ -83,7 +84,7 @@ function Card({
 }) {
   const { lang, data } = useClub();
   const title = local(item, "title", lang);
-  const image = item.images?.map(safeUrl).find(Boolean);
+  const image = contentImageUrls(item)[0];
   const partner = kind === "partners";
   const status = item.status === "upcoming" || item.status === "past" ? item.status : undefined;
 

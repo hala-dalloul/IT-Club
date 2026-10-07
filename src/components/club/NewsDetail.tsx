@@ -1,5 +1,6 @@
 import { CalendarDays, UserRound } from "lucide-react";
-import { local, safeUrl, type Content, type Lang } from "@/lib/club/model";
+import { local, type Content, type Lang } from "@/lib/club/model";
+import { contentImageUrls } from "@/lib/club/google-drive";
 import { siteName } from "@/lib/club/seo";
 import { ClubLink } from "./ClubContent";
 import { ContentImage } from "./ContentImage";
@@ -19,7 +20,7 @@ function formattedNewsDate(date: string, lang: Lang) {
 export function NewsDetail({ news, lang }: { news: Content; lang: Lang }) {
   const ar = lang === "ar";
   const title = local(news, "title", lang);
-  const validImages = news.images?.filter((image) => safeUrl(image)) ?? [];
+  const validImages = contentImageUrls(news);
   const cover = validImages[0];
 
   return (

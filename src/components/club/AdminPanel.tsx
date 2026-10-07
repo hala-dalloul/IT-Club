@@ -31,6 +31,7 @@ import {
 } from "@/lib/club/supabase";
 import { loadPublic } from "@/lib/club/public-api";
 import { matchesArticleSearch, normalizeAdminSearch } from "@/lib/club/admin-search";
+import { googleDriveImageUrl } from "@/lib/club/google-drive";
 import {
   collections,
   labels,
@@ -655,6 +656,8 @@ function ContentEditor({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   const [images, setImages] = useState(item?.images || []);
+  const [driveImageUrls, setDriveImageUrls] = useState(item?.driveImageUrls || []);
+  const [driveImageLink, setDriveImageLink] = useState("");
   const isArticle = kind === "events" || kind === "news";
   const [articleKind, setArticleKind] = useState<"events" | "news">(
     kind === "news" ? "news" : "events",
@@ -717,6 +720,8 @@ function ContentEditor({
       description_en: values["description_en"]!.trim(),
       images,
     };
+
+    if (isArticle) value.driveImageUrls = driveImageUrls;
 
     if (kind === "members") {
       value.role = values["role"] || "";
@@ -896,6 +901,28 @@ function ContentEditor({
     } finally {
       setBusy(false);
     }
+  }
+
+  function addDriveImage() {
+    const url = googleDriveImageUrl(driveImageLink);
+
+    if (!url) {
+      setError(
+        ar
+          ? "ألصق رابط ملف صورة صحيحًا من Google Drive."
+          : "Paste a valid Google Drive image file link.",
+      );
+      return;
+    }
+    if (driveImageUrls.length >= 20) {
+      setError(ar ? "الحد الأقصى 20 صورة." : "You can add up to 20 images.");
+      return;
+    }
+
+    setDriveImageUrls((current) => (current.includes(url) ? current : [...current, url]));
+    setDriveImageLink("");
+    setError("");
+    setDirty(true);
   }
 
   const extraFields: [keyof Content, string, string, string][] =
@@ -1200,98 +1227,178 @@ function ContentEditor({
           />
         </>
       )}
-      <details
-        className="rounded-2xl border border-border p-5"
-        onToggle={(e) => setMediaPickerOpen(e.currentTarget.open)}
-      >
-        <summary className="cursor-pointer font-bold">
-          {ar ? "اختيار من مكتبة الصور" : "Choose from media library"}
-        </summary>
-        {mediaPickerOpen && (
-          <MediaLibrary
-            onSelect={(url) => {
-              setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
-              setDirty(true);
-            }}
-          />
-        )}
-      </details>
-      <fieldset className="rounded-2xl border border-border p-5">
-        <legend className="px-2 font-bold">{ar ? "الصور" : "Images"}</legend>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {ar
-            ? "اختاري الصور من المكتبة أو ارفعي صورة، ثم اضغطي حفظ ونشر لإظهارها في الموقع. أول صورة هي صورة الغلاف."
-            : "Choose images from the library or upload one, then Save and publish. The first image is the cover."}
-        </p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {images.map((url) => (
-            <div key={url}>
-              <img
-                src={url}
-                alt={ar ? "صورة المحتوى" : "Content image"}
-                className="h-28 w-full rounded-xl object-contain"
-              />
-              <BrandButton
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setImages((prev) => prev.filter((x) => x !== url));
-                  setDirty(true);
-                }}
-              >
-                {ar ? "إزالة" : "Remove"}
-              </BrandButton>
-            </div>
-          ))}
-        </div>
-        <label className="mt-4 block">
-          <span className="mb-2 block text-sm">
-            {ar ? "JPG / PNG / WebP، حتى 5 ميغابايت" : "JPG / PNG / WebP, up to 5 MB"}
-          </span>
-          <Input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={busy}
-            onChange={(e) => {
-              const selected = e.target.files?.[0] || null;
-              setFile(null);
-              setCropSource(selected);
-              e.target.value = "";
-            }}
-          />
-        </label>
-        {cropSource && (
-          <ImageCropper
-            file={cropSource}
-            ar={ar}
-            onConfirm={(cropped) => {
-              setFile(cropped);
-              setCropSource(null);
-              setDirty(true);
-            }}
-            onCancel={() => setCropSource(null)}
-          />
-        )}
-        {preview && (
-          <div className="mt-4">
-            <img
-              src={preview}
-              alt={ar ? "معاينة قبل الرفع" : "Preview before upload"}
-              className="aspect-video w-full max-w-xl rounded-xl object-cover"
+      {isArticle && (
+        <fieldset className="rounded-2xl border border-border p-5">
+          <legend className="px-2 font-bold">
+            {ar ? "صور Google Drive" : "Google Drive images"}
+          </legend>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {ar
+              ? "اجعل صلاحية الملف «أي شخص لديه الرابط»، ثم ألصق رابط الصورة. أول صورة هي صورة الغلاف."
+              : 'Set the file access to "Anyone with the link", then paste its image link. The first image is the cover.'}
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              type="url"
+              dir="ltr"
+              value={driveImageLink}
+              placeholder="https://drive.google.com/file/d/.../view"
+              aria-label={ar ? "رابط الصورة من Google Drive" : "Google Drive image link"}
+              onChange={(event) => setDriveImageLink(event.target.value)}
             />
-            <div className="mt-3 flex gap-3">
-              <BrandButton type="button" disabled={busy} onClick={() => void upload()}>
-                <Upload size={16} />
-                {ar ? "رفع الصورة" : "Upload image"}
-              </BrandButton>
-              <BrandButton type="button" variant="ghost" onClick={() => setFile(null)}>
-                {ar ? "إلغاء الصورة" : "Discard image"}
-              </BrandButton>
-            </div>
+            <BrandButton type="button" variant="outline" onClick={addDriveImage}>
+              {ar ? "إضافة الصورة" : "Add image"}
+            </BrandButton>
           </div>
-        )}
-      </fieldset>
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {driveImageUrls.map((url, index) => (
+              <div key={url}>
+                <img
+                  src={url}
+                  alt={`${ar ? "صورة Drive" : "Drive image"} ${index + 1}`}
+                  className="aspect-video w-full rounded-xl object-cover"
+                />
+                <BrandButton
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setDriveImageUrls((current) => current.filter((image) => image !== url));
+                    setDirty(true);
+                  }}
+                >
+                  {ar ? "إزالة" : "Remove"}
+                </BrandButton>
+              </div>
+            ))}
+          </div>
+          {images.length > 0 && (
+            <div className="mt-6 border-t border-border pt-5">
+              <p className="mb-3 text-sm font-bold">
+                {ar ? "صور قديمة من التخزين الحالي" : "Legacy images from current storage"}
+              </p>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {images.map((url) => (
+                  <div key={url}>
+                    <img
+                      src={url}
+                      alt={ar ? "صورة قديمة" : "Legacy image"}
+                      className="aspect-video w-full rounded-xl object-cover"
+                    />
+                    <BrandButton
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setImages((current) => current.filter((image) => image !== url));
+                        setDirty(true);
+                      }}
+                    >
+                      {ar ? "إزالة" : "Remove"}
+                    </BrandButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </fieldset>
+      )}
+      {!isArticle && (
+        <details
+          className="rounded-2xl border border-border p-5"
+          onToggle={(e) => setMediaPickerOpen(e.currentTarget.open)}
+        >
+          <summary className="cursor-pointer font-bold">
+            {ar ? "اختيار من مكتبة الصور" : "Choose from media library"}
+          </summary>
+          {mediaPickerOpen && (
+            <MediaLibrary
+              onSelect={(url) => {
+                setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+                setDirty(true);
+              }}
+            />
+          )}
+        </details>
+      )}
+      {!isArticle && (
+        <fieldset className="rounded-2xl border border-border p-5">
+          <legend className="px-2 font-bold">{ar ? "الصور" : "Images"}</legend>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {ar
+              ? "اختاري الصور من المكتبة أو ارفعي صورة، ثم اضغطي حفظ ونشر لإظهارها في الموقع. أول صورة هي صورة الغلاف."
+              : "Choose images from the library or upload one, then Save and publish. The first image is the cover."}
+          </p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {images.map((url) => (
+              <div key={url}>
+                <img
+                  src={url}
+                  alt={ar ? "صورة المحتوى" : "Content image"}
+                  className="h-28 w-full rounded-xl object-contain"
+                />
+                <BrandButton
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setImages((prev) => prev.filter((x) => x !== url));
+                    setDirty(true);
+                  }}
+                >
+                  {ar ? "إزالة" : "Remove"}
+                </BrandButton>
+              </div>
+            ))}
+          </div>
+          <label className="mt-4 block">
+            <span className="mb-2 block text-sm">
+              {ar ? "JPG / PNG / WebP، حتى 5 ميغابايت" : "JPG / PNG / WebP, up to 5 MB"}
+            </span>
+            <Input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={busy}
+              onChange={(e) => {
+                const selected = e.target.files?.[0] || null;
+                setFile(null);
+                setCropSource(selected);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {cropSource && (
+            <ImageCropper
+              file={cropSource}
+              ar={ar}
+              onConfirm={(cropped) => {
+                setFile(cropped);
+                setCropSource(null);
+                setDirty(true);
+              }}
+              onCancel={() => setCropSource(null)}
+            />
+          )}
+          {preview && (
+            <div className="mt-4">
+              <img
+                src={preview}
+                alt={ar ? "معاينة قبل الرفع" : "Preview before upload"}
+                className="aspect-video w-full max-w-xl rounded-xl object-cover"
+              />
+              <div className="mt-3 flex gap-3">
+                <BrandButton type="button" disabled={busy} onClick={() => void upload()}>
+                  <Upload size={16} />
+                  {ar ? "رفع الصورة" : "Upload image"}
+                </BrandButton>
+                <BrandButton type="button" variant="ghost" onClick={() => setFile(null)}>
+                  {ar ? "إلغاء الصورة" : "Discard image"}
+                </BrandButton>
+              </div>
+            </div>
+          )}
+        </fieldset>
+      )}
       {error && <p role="alert">{error}</p>}
       <div className="flex flex-wrap gap-3">
         <BrandButton type="submit" disabled={busy || !!file || !!cropSource}>

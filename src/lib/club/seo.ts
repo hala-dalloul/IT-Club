@@ -3,11 +3,11 @@ import {
   collegeUrl,
   labels,
   local,
-  safeUrl,
   type Content,
   type ContentCollection,
   type Lang,
 } from "./model";
+import { contentImageUrls } from "./google-drive";
 import { hrefOf, pageOf } from "./paths";
 import { plainRichText } from "./rich-text";
 
@@ -257,7 +257,7 @@ export function alternates(lang: Lang, page: string) {
 export function itemSeo(item: Content, lang: Lang, path: string, noindex: boolean) {
   const summary = lang === "en" ? item.summary_en || item.summary : item.summary;
   const article = pageOf(path).split("/")[0] === "news";
-  const image = item.images?.map(safeUrl).find(Boolean);
+  const image = contentImageUrls(item)[0];
 
   return seo({
     lang,
@@ -368,7 +368,7 @@ export function itemLd(item: Content, lang: Lang, path: string) {
   ];
 
   if (section === "news") {
-    const images = item.images?.map(safeUrl).filter(Boolean) ?? [];
+    const images = contentImageUrls(item);
     graph.push({
       "@type": "NewsArticle",
       headline: title,

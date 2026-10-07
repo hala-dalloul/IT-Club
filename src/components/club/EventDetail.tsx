@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { CalendarDays, Clock3, Hourglass, Tag, UserRound } from "lucide-react";
 import type { Content, Lang } from "@/lib/club/model";
-import { safeUrl } from "@/lib/club/model";
+import { contentImageUrls } from "@/lib/club/google-drive";
 import {
   eventHasEnded,
   eventRegistrationIsAvailable,
@@ -63,7 +63,7 @@ function EventFact({
 export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
   const ar = lang === "ar";
   const [registrationOpen, setRegistrationOpen] = useState(false);
-  const validImages = event.images?.filter((image) => safeUrl(image)) ?? [];
+  const validImages = contentImageUrls(event);
   const cover = validImages[0];
   const registrationAvailable = eventRegistrationIsAvailable(event);
   const ended = eventHasEnded(event);

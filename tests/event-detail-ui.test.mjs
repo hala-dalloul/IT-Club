@@ -46,6 +46,14 @@ test("admin enters event duration in hours while storage remains in minutes", ()
   assert.match(admin, /item\.durationMinutes \/ 60/);
 });
 
+test("news and events use Google Drive image links instead of uploads", () => {
+  assert.match(admin, /صور Google Drive/);
+  assert.match(admin, /name="durationHours"/);
+  assert.match(admin, /googleDriveImageUrl\(driveImageLink\)/);
+  assert.match(admin, /if \(isArticle\) value\.driveImageUrls = driveImageUrls/);
+  assert.match(admin, /\{!isArticle && \([\s\S]*type="file"/);
+});
+
 test("presenter section supports localized name and one-line bio", () => {
   for (const field of ["presenterName", "presenterName_en", "presenterBio", "presenterBio_en"]) {
     assert.match(detail, new RegExp(`\\b${field}\\b`));

@@ -34,6 +34,9 @@ before(async () => {
     readFileSync("supabase/migrations/202610030001_event_registration_config.sql", "utf8"),
   );
   await db.exec(readFileSync("supabase/migrations/202610060001_event_details.sql", "utf8"));
+  await db.exec(
+    readFileSync("supabase/migrations/202610070001_google_drive_image_links.sql", "utf8"),
+  );
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -395,6 +398,36 @@ test("news and events accept an optional summary; other kinds and bad lengths ar
   await assert.rejects(() => insert("news", { ...data, summary_en: "x".repeat(301) }));
   await assert.rejects(() => insert("news", { ...data, summary: 42 }));
   await assert.rejects(() => insert("partners", { ...data, summary: "Not for partners" }));
+});
+
+test("news and events accept validated Google Drive image fields only", async () => {
+  await as(editor);
+  const data = {
+    title: "Club update",
+    title_en: "Club update",
+    description: "Test description",
+    description_en: "Test description",
+    images: [],
+    date: "2026-10-07",
+  };
+  const driveImage = "https://drive.google.com/thumbnail?id=1AbCdEfGhIjKlMnOpQrStUvWxYz&sz=w2000";
+  const insert = (kind, value) =>
+    db.query("insert into club_content(kind,data) values($1,$2)", [kind, JSON.stringify(value)]);
+
+  await insert("news", { ...data, driveImageUrls: [driveImage] });
+  await insert("events", {
+    ...data,
+    status: "past",
+    driveImageUrls: [driveImage],
+  });
+  await assert.rejects(() => insert("partners", { ...data, driveImageUrls: [driveImage] }));
+  await assert.rejects(() =>
+    insert("news", { ...data, driveImageUrls: ["https://example.com/image.jpg"] }),
+  );
+  await assert.rejects(() => insert("news", { ...data, driveImageUrls: [42] }));
+  await assert.rejects(() =>
+    insert("news", { ...data, driveImageUrls: Array.from({ length: 21 }, () => driveImage) }),
+  );
 });
 
 test("event details accept complete valid data and reject other kinds or malformed values", async () => {

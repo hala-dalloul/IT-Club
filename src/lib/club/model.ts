@@ -34,6 +34,8 @@ export type Content = {
   summary?: string;
   summary_en?: string;
   images?: string[];
+  /** Public Google Drive image URLs used by news and events. */
+  driveImageUrls?: string[];
   technologies?: string[];
   memberIds?: string[];
   role?: string;
@@ -317,6 +319,7 @@ export function memberGender(item: Content): "male" | "female" {
 
 export const contentSchema = z
   .object({
+    driveImageUrls: z.array(z.string().url().max(500)).max(20).optional(),
     displayOrder: z.number().int().min(1).max(9999).optional(),
     gender: z.enum(["male", "female"]).optional(),
     title: text,
