@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 const detail = readFileSync("src/components/club/EventDetail.tsx", "utf8");
 const pages = readFileSync("src/components/club/ClubPages.tsx", "utf8");
+const admin = readFileSync("src/components/club/AdminPanel.tsx", "utf8");
 
 test("event details use a dedicated maintainable component", () => {
   assert.match(pages, /import \{ EventDetail \} from "\.\/EventDetail"/);
@@ -34,6 +35,15 @@ test("information section includes date, time, duration and event type", () => {
   assert.match(detail, /معلومات الفعالية/);
   assert.match(detail, /Event information/);
   assert.match(detail, /formatEventTime\(event\.eventTime, lang\)/);
+  assert.match(detail, /formatEventDuration\(event\.durationMinutes, lang\)/);
+});
+
+test("admin enters event duration in hours while storage remains in minutes", () => {
+  assert.match(admin, /مدة الفعالية بالساعات/);
+  assert.match(admin, /Duration in hours/);
+  assert.match(admin, /name="durationHours"/);
+  assert.match(admin, /durationMinutes: Number\(values\["durationHours"\]\) \* 60/);
+  assert.match(admin, /item\.durationMinutes \/ 60/);
 });
 
 test("presenter section supports localized name and one-line bio", () => {

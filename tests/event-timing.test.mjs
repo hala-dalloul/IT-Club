@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   eventHasEnded,
   eventRegistrationIsAvailable,
+  formatEventDuration,
   formatEventTime,
 } from "../src/lib/club/event-timing.ts";
 
@@ -67,4 +68,12 @@ test("event times are displayed using a localized 12-hour clock", () => {
   assert.equal(formatEventTime("13:30", "en"), "1:30 PM");
   assert.match(formatEventTime("13:30", "ar"), /١:٣٠\s*م/);
   assert.equal(formatEventTime("24:00", "ar"), "");
+});
+
+test("event durations are displayed in localized hours", () => {
+  assert.equal(formatEventDuration(60, "en"), "1 hour");
+  assert.equal(formatEventDuration(120, "en"), "2 hours");
+  assert.equal(formatEventDuration(90, "en"), "1.5 hours");
+  assert.match(formatEventDuration(90, "ar"), /١٫٥ ساعة/);
+  assert.equal(formatEventDuration(0, "ar"), "");
 });

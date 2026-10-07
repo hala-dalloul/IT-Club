@@ -5,6 +5,7 @@ import { safeUrl } from "@/lib/club/model";
 import {
   eventHasEnded,
   eventRegistrationIsAvailable,
+  formatEventDuration,
   formatEventTime,
 } from "@/lib/club/event-timing";
 import { BrandButton } from "./BrandButton";
@@ -89,11 +90,7 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
     {
       icon: Hourglass,
       label: ar ? "المدة" : "Duration",
-      value: event.durationMinutes
-        ? ar
-          ? `${event.durationMinutes} دقيقة`
-          : `${event.durationMinutes} min`
-        : unavailable,
+      value: formatEventDuration(event.durationMinutes, lang) || unavailable,
     },
     {
       icon: Tag,

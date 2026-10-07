@@ -752,7 +752,7 @@ function ContentEditor({
     if (targetKind === "events") {
       const eventDetails = eventDetailsSchema.safeParse({
         eventTime: values["eventTime"],
-        durationMinutes: values["durationMinutes"],
+        durationMinutes: Number(values["durationHours"]) * 60,
         eventType: values["eventType"],
         eventType_en: values["eventType_en"],
         presenterName: values["presenterName"],
@@ -764,8 +764,8 @@ function ContentEditor({
       if (!eventDetails.success) {
         setError(
           ar
-            ? "أكمل معلومات الفعالية والمقدم. يجب أن تكون المدة بين دقيقة و24 ساعة."
-            : "Complete the event and presenter details. Duration must be between 1 minute and 24 hours.",
+            ? "أكمل معلومات الفعالية والمقدم. يجب أن تكون المدة بين ربع ساعة و24 ساعة."
+            : "Complete the event and presenter details. Duration must be between 0.25 and 24 hours.",
         );
         return;
       }
@@ -1113,16 +1113,16 @@ function ContentEditor({
               </label>
               <label className="block text-sm font-bold">
                 <span className="mb-2 block">
-                  {ar ? "مدة الفعالية بالدقائق" : "Duration in minutes"}
+                  {ar ? "مدة الفعالية بالساعات" : "Duration in hours"}
                 </span>
                 <Input
-                  name="durationMinutes"
+                  name="durationHours"
                   type="number"
                   required
-                  min={1}
-                  max={1440}
-                  step={1}
-                  defaultValue={item?.durationMinutes ?? ""}
+                  min={0.25}
+                  max={24}
+                  step={0.25}
+                  defaultValue={item?.durationMinutes ? item.durationMinutes / 60 : ""}
                 />
               </label>
               {(

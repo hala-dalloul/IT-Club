@@ -39,6 +39,19 @@ export function formatEventTime(time: string | undefined, lang: Lang) {
   }).format(new Date(Date.UTC(2000, 0, 1, hour, minute)));
 }
 
+/** Format the stored minute count as hours for the public event details. */
+export function formatEventDuration(durationMinutes: number | undefined, lang: Lang) {
+  if (!Number.isInteger(durationMinutes) || (durationMinutes ?? 0) < 1) return "";
+
+  const hours = durationMinutes! / 60;
+  const value = new Intl.NumberFormat(lang === "ar" ? "ar-PS" : "en-US", {
+    maximumFractionDigits: 2,
+  }).format(hours);
+
+  if (lang === "ar") return `${value} ساعة`;
+  return `${value} ${hours === 1 ? "hour" : "hours"}`;
+}
+
 /** Whether the event has ended in the club's local Asia/Hebron time. */
 export function eventHasEnded(event: Content, now = new Date()) {
   if (event.status === "past") return true;
