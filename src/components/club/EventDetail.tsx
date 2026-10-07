@@ -158,7 +158,7 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
           </div>
 
           <div className="space-y-8 lg:col-start-1 lg:row-start-1">
-            <h1 className="text-3xl font-black text-gradient-brand sm:text-5xl">
+            <h1 className="text-2xl font-black text-gradient-brand sm:text-4xl">
               {lang === "en" ? event.title_en || event.title : event.title}
             </h1>
             <section aria-labelledby={`event-about-${event.id}`}>
