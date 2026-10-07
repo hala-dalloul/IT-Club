@@ -5,6 +5,7 @@ import InformationDrawer from "@/components/ui/information-drawer";
 import logo from "@/assets/ucas-logo.webp";
 import { hrefOf, itemPage } from "@/lib/club/paths";
 import { local, safeUrl, type Content, type ContentCollection } from "@/lib/club/model";
+import { eventDisplayStatus } from "@/lib/club/event-timing";
 import { contentImageUrls } from "@/lib/club/google-drive";
 import { plainRichText } from "@/lib/club/rich-text";
 import { useClub } from "./club-context";
@@ -86,7 +87,7 @@ function Card({
   const title = local(item, "title", lang);
   const image = contentImageUrls(item)[0];
   const partner = kind === "partners";
-  const status = item.status === "upcoming" || item.status === "past" ? item.status : undefined;
+  const status = kind === "events" ? eventDisplayStatus(item) : undefined;
 
   return (
     <article className="club-card flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-card">

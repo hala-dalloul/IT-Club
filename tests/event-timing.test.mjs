@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  eventDisplayStatus,
   eventHasEnded,
   eventRegistrationIsAvailable,
   formatEventDuration,
@@ -29,6 +30,14 @@ const base = {
 test("event timing uses Asia/Hebron and closes at the configured end time", () => {
   assert.equal(eventHasEnded(base, new Date("2026-10-06T10:59:00Z")), false);
   assert.equal(eventHasEnded(base, new Date("2026-10-06T12:00:00Z")), true);
+  assert.equal(eventDisplayStatus(base, new Date("2026-10-06T10:59:00Z")), "upcoming");
+  assert.equal(eventDisplayStatus(base, new Date("2026-10-06T12:00:00Z")), "past");
+});
+
+test("events that cross midnight remain upcoming until their duration ends", () => {
+  const overnight = { ...base, eventTime: "23:30", durationMinutes: 120 };
+  assert.equal(eventDisplayStatus(overnight, new Date("2026-10-06T21:59:00Z")), "upcoming");
+  assert.equal(eventDisplayStatus(overnight, new Date("2026-10-06T22:30:00Z")), "past");
 });
 
 test("past status and past dates close registration", () => {

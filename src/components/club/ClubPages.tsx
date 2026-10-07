@@ -25,6 +25,7 @@ import {
   type ContentCollection,
 } from "@/lib/club/model";
 import { plainRichText, splitRichText } from "@/lib/club/rich-text";
+import { eventDisplayStatus } from "@/lib/club/event-timing";
 import { siteName } from "@/lib/club/seo";
 import { BrandButton } from "./BrandButton";
 import { ClubLink, ContentGrid, Empty, Heading, linkClass } from "./ClubContent";
@@ -39,8 +40,9 @@ import { useClub } from "./club-context";
 export function HomePage() {
   const { lang, data, visitorCount } = useClub();
   const ar = lang === "ar";
-  const past = data.events.filter((item) => item.status === "past");
-  const upcoming = data.events.filter((item) => item.status !== "past");
+  const now = new Date();
+  const past = data.events.filter((item) => eventDisplayStatus(item, now) === "past");
+  const upcoming = data.events.filter((item) => eventDisplayStatus(item, now) !== "past");
   const preview = (upcoming.length ? upcoming : past).slice(0, 3);
 
   return (
@@ -263,7 +265,12 @@ export function ListingPage({ kind }: { kind: ContentCollection }) {
   const { lang, data } = useClub();
   const ar = lang === "ar";
   const [status, setStatus] = useState("all");
-  let items = data[kind].filter((item) => status === "all" || item.status === status);
+  const now = new Date();
+  let items = data[kind].filter(
+    (item) =>
+      status === "all" ||
+      (kind === "events" ? eventDisplayStatus(item, now) : item.status) === status,
+  );
   if (kind === "events" || kind === "news")
     items = [...items].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 

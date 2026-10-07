@@ -3,6 +3,7 @@ import { CalendarDays, Clock3, Hourglass, Tag, UserRound } from "lucide-react";
 import type { Content, Lang } from "@/lib/club/model";
 import { contentImageUrls } from "@/lib/club/google-drive";
 import {
+  eventDisplayStatus,
   eventHasEnded,
   eventRegistrationIsAvailable,
   formatEventDuration,
@@ -67,6 +68,7 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
   const cover = validImages[0];
   const registrationAvailable = eventRegistrationIsAvailable(event);
   const ended = eventHasEnded(event);
+  const displayStatus = eventDisplayStatus(event);
   const presenterName = localizedEventField(event, "presenterName", "presenterName_en", lang);
   const presenterBio = localizedEventField(event, "presenterBio", "presenterBio_en", lang);
   const eventType = localizedEventField(event, "eventType", "eventType_en", lang);
@@ -170,6 +172,11 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
           </div>
 
           <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+            {displayStatus && (
+              <span className="inline-flex rounded-full bg-brand-gradient-soft px-4 py-1.5 text-sm font-bold text-primary">
+                {displayStatus === "past" ? (ar ? "سابقة" : "Past") : ar ? "قادمة" : "Upcoming"}
+              </span>
+            )}
             <h1 className="text-xl font-black text-gradient-brand sm:text-3xl">
               {lang === "en" ? event.title_en || event.title : event.title}
             </h1>

@@ -58,13 +58,25 @@ export function eventHasEnded(event: Content, now = new Date()) {
   if (!event.date || !datePattern.test(event.date)) return false;
 
   const local = localParts(now);
-  if (event.date < local.date) return true;
-  if (event.date > local.date) return false;
-  if (!event.eventTime || !timePattern.test(event.eventTime)) return false;
-  if (!Number.isInteger(event.durationMinutes) || (event.durationMinutes ?? 0) < 1) return false;
+  const eventTime = event.eventTime;
+  const durationMinutes = event.durationMinutes;
+  const hasDetailedTime =
+    Boolean(eventTime && timePattern.test(eventTime)) &&
+    Number.isInteger(durationMinutes) &&
+    (durationMinutes ?? 0) >= 1;
+  if (!hasDetailedTime) return event.date < local.date;
 
-  const [hour = 0, minute = 0] = event.eventTime.split(":").map(Number);
-  return local.minutes >= hour * 60 + minute + event.durationMinutes!;
+  const [hour = 0, minute = 0] = eventTime!.split(":").map(Number);
+  const eventDay = Date.parse(`${event.date}T00:00:00Z`) / 86400000;
+  const localDay = Date.parse(`${local.date}T00:00:00Z`) / 86400000;
+  const elapsed = (localDay - eventDay) * 1440 + local.minutes - hour * 60 - minute;
+  return elapsed >= durationMinutes!;
+}
+
+/** The status visitors should see, even before an editor updates the stored value. */
+export function eventDisplayStatus(event: Content, now = new Date()) {
+  if (event.status !== "upcoming" && event.status !== "past") return undefined;
+  return eventHasEnded(event, now) ? "past" : event.status;
 }
 
 export function eventRegistrationIsAvailable(event: Content, now = new Date()) {
