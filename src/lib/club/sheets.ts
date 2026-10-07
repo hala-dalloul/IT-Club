@@ -110,7 +110,11 @@ export async function submitToSheet(
   await request(join ? "join" : "contact", { action: join ? "join" : "contact", requestId, data });
 }
 
-const eventSheetSchema = z.object({ linked: z.boolean(), url: z.string().url().optional() });
+const uuidSchema = z.string().uuid();
+const eventSheetSchema = z.discriminatedUnion("linked", [
+  z.object({ linked: z.literal(false) }).strict(),
+  z.object({ linked: z.literal(true), url: z.string().url() }).strict(),
+]);
 
 async function adminEventRequest(body: RequestBody) {
   const { supabase } = await import("./supabase");
@@ -120,14 +124,16 @@ async function adminEventRequest(body: RequestBody) {
 }
 
 export async function eventSheetStatus(eventId: string) {
-  const value = await adminEventRequest({ action: "eventSheetStatus", eventId });
+  const validEventId = uuidSchema.parse(eventId);
+  const value = await adminEventRequest({ action: "eventSheetStatus", eventId: validEventId });
   return eventSheetSchema.parse(value.sheet);
 }
 
 export async function ensureEventSheet(eventId: string, title: string) {
+  const validEventId = uuidSchema.parse(eventId);
   const value = await adminEventRequest({
     action: "ensureEventSheet",
-    eventId,
+    eventId: validEventId,
     title,
   });
   return eventSheetSchema.parse(value.sheet);
@@ -138,13 +144,20 @@ export async function submitEventSignup(
   values: Record<string, string>,
   requestId: string,
 ) {
+  const validEventId = uuidSchema.parse(eventId);
+  const validRequestId = uuidSchema.parse(requestId);
   const data = eventSignupSchema.parse({
     name: values["name"] || undefined,
     countryCode: values["countryCode"] || undefined,
     phone: values["phone"] || undefined,
     attendance: values["attendance"] || undefined,
   });
-  await request("join", { action: "eventRegister", eventId, requestId, data });
+  await request("join", {
+    action: "eventRegister",
+    eventId: validEventId,
+    requestId: validRequestId,
+    data,
+  });
 }
 
 export function submissionError(cause: unknown, ar: boolean) {

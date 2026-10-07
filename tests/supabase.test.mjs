@@ -30,6 +30,10 @@ before(async () => {
   await db.exec(readFileSync("supabase/migrations/202609190001_news_content.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609240001_content_summary.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/202609240002_content_slug.sql", "utf8"));
+  await db.exec(
+    readFileSync("supabase/migrations/202610030001_event_registration_config.sql", "utf8"),
+  );
+  await db.exec(readFileSync("supabase/migrations/202610060001_event_details.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -391,6 +395,62 @@ test("news and events accept an optional summary; other kinds and bad lengths ar
   await assert.rejects(() => insert("news", { ...data, summary_en: "x".repeat(301) }));
   await assert.rejects(() => insert("news", { ...data, summary: 42 }));
   await assert.rejects(() => insert("partners", { ...data, summary: "Not for partners" }));
+});
+
+test("event details accept complete valid data and reject other kinds or malformed values", async () => {
+  await as(editor);
+  const event = {
+    title: "ورشة تطوير الويب",
+    title_en: "Web development workshop",
+    description: "وصف الفعالية التجريبية",
+    description_en: "Test event description",
+    images: [],
+    date: "2026-10-06",
+    status: "upcoming",
+  };
+  const details = {
+    eventTime: "18:30",
+    durationMinutes: 120,
+    eventType: "ورشة عمل",
+    eventType_en: "Workshop",
+    presenterName: "أحمد محمد",
+    presenterName_en: "Ahmed Mohammed",
+    presenterBio: "مطور ويب ومدرب تقني",
+    presenterBio_en: "Web developer and technical trainer",
+  };
+  const insert = (kind, value) =>
+    db.query("insert into club_content(kind,data) values($1,$2) returning data", [
+      kind,
+      JSON.stringify(value),
+    ]);
+
+  const saved = await insert("events", { ...event, ...details });
+  assert.deepEqual(
+    Object.fromEntries(Object.keys(details).map((key) => [key, saved.rows[0].data[key]])),
+    details,
+  );
+
+  // Historical events without the new detail group remain valid.
+  await insert("events", event);
+  await assert.rejects(() => insert("news", { ...event, ...details }));
+  await assert.rejects(() => insert("events", { ...event, eventTime: details.eventTime }));
+
+  for (const eventTime of ["6:30", "24:00", "18:60", "not-a-time", 1830]) {
+    await assert.rejects(() => insert("events", { ...event, ...details, eventTime }));
+  }
+  for (const durationMinutes of [0, 1441, 1.5, "120", null]) {
+    await assert.rejects(() => insert("events", { ...event, ...details, durationMinutes }));
+  }
+  for (const [key, value] of [
+    ["eventType", "x"],
+    ["eventType_en", "x".repeat(101)],
+    ["presenterName", "x"],
+    ["presenterName_en", "x".repeat(201)],
+    ["presenterBio", "x"],
+    ["presenterBio_en", "x".repeat(501)],
+  ]) {
+    await assert.rejects(() => insert("events", { ...event, ...details, [key]: value }));
+  }
 });
 
 test("slugs are generated once, unique, editable and never set on members", async () => {

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useClub } from "./club-context";
 import type { Content } from "@/lib/club/model";
 import { submitEventSignup, submissionError } from "@/lib/club/sheets";
+import { eventRegistrationIsAvailable } from "@/lib/club/event-timing";
 
 export function EventRegistrationForm({ event }: { event: Content }) {
   const { lang } = useClub();
@@ -16,7 +17,7 @@ export function EventRegistrationForm({ event }: { event: Content }) {
   const [message, setMessage] = useState("");
   const requestId = useRef<string | undefined>(undefined);
 
-  if (event.status !== "upcoming" || !config?.enabled) return null;
+  if (!config || !eventRegistrationIsAvailable(event)) return null;
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -3,14 +3,17 @@ import vm from "node:vm";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-function harness(kind = "join") {
+function harness(kind = "join", options = {}) {
   const books = new Map(),
     props = new Map();
   let held = false;
+  let nextSheetId = 100;
 
   function sheet() {
     const rows = [];
+    const sheetId = nextSheetId++;
     return {
+      getSheetId: () => sheetId,
       getLastRow: () => rows.length,
       setFrozenRows() {},
       setRightToLeft() {},
@@ -86,6 +89,7 @@ function harness(kind = "join") {
         if (!books.has(id)) books.set(id, new Map());
         const b = books.get(id);
         return {
+          getUrl: () => `https://docs.google.com/spreadsheets/d/${id}/edit`,
           getSheetByName: (n) => b.get(n),
           insertSheet(n) {
             const s = sheet();
@@ -103,9 +107,29 @@ function harness(kind = "join") {
       },
       flush() {},
     },
+    Utilities: {
+      formatDate(_date, timezone, format) {
+        assert.equal(timezone, "Asia/Hebron");
+        if (format === "yyyy-MM-dd") return options.today || "2026-10-06";
+        if (format === "HH:mm") return options.time || "12:00";
+        throw Error(`Unexpected date format: ${format}`);
+      },
+    },
     UrlFetchApp: {
-      fetch() {
-        throw Error("Unexpected authentication call");
+      fetch(url) {
+        if (url.includes("/auth/v1/user"))
+          return mockFetchResponse(options.authenticated === false ? 401 : 200, {
+            id: "admin-user",
+          });
+        if (url.includes("/rest/v1/club_admins"))
+          return mockFetchResponse(200, [{ role: options.adminRole || "super_admin" }]);
+        if (url.includes("/rest/v1/club_content")) {
+          if (options.eventFetchStatus)
+            return mockFetchResponse(options.eventFetchStatus, { message: "failed" });
+          const event = options.event;
+          return mockFetchResponse(200, event ? [{ id: options.eventId, data: event }] : []);
+        }
+        throw Error(`Unexpected fetch: ${url}`);
       },
     },
   });
@@ -114,9 +138,17 @@ function harness(kind = "join") {
   props.set("FORM_KIND", kind);
   context.setup();
   return {
+    books,
     context,
     props,
     post: (b) => context.doPost({ postData: { contents: JSON.stringify(b) } }),
+  };
+}
+
+function mockFetchResponse(status, value) {
+  return {
+    getResponseCode: () => status,
+    getContentText: () => JSON.stringify(value),
   };
 }
 
@@ -131,6 +163,52 @@ const data = {
 };
 
 const id = (n) => "00000000-0000-4000-8000-" + String(n).padStart(12, "0");
+const eventId = id(900);
+const adminToken = "valid-admin-access-token-for-tests";
+
+function eventHarness(eventPatch = {}, options = {}) {
+  const event = {
+    title: "Web Engineering Workshop",
+    date: "2099-10-06",
+    eventTime: "10:00",
+    durationMinutes: 120,
+    status: "upcoming",
+    eventRegistration: {
+      enabled: true,
+      nameEnabled: true,
+      phoneEnabled: true,
+      attendanceEnabled: true,
+    },
+    ...eventPatch,
+  };
+  const result = harness("join", { eventId, event, ...options });
+  result.props.set("SUPABASE_PUBLISHABLE_KEY", "public-key");
+  return { ...result, event };
+}
+
+function linkEvent(post, title = "Untrusted browser title") {
+  return post({
+    action: "ensureEventSheet",
+    accessToken: adminToken,
+    eventId,
+    title,
+  });
+}
+
+function eventSignup(requestId = id(901), dataPatch = {}) {
+  return {
+    action: "eventRegister",
+    eventId,
+    requestId,
+    data: {
+      name: "Test Attendee",
+      countryCode: "970",
+      phone: "599123456",
+      attendance: "yes",
+      ...dataPatch,
+    },
+  };
+}
 
 test("closed by default; exactly 40 applications; duplicate retries do not count", () => {
   const { context, props, post } = harness();
@@ -204,5 +282,147 @@ test("join validates university email and numeric phone and student ID", () => {
     const { props, post } = harness();
     props.set("JOIN_SETTINGS", JSON.stringify({ enabled: true, limit: 40 }));
     assert.equal(post({ action: "join", requestId: id(1), data: { ...data, phone } }).ok, true);
+  }
+});
+
+test("event registration requires an admin-linked tab and stores the configured fields", () => {
+  const { books, props, post } = eventHarness();
+  assert.equal(post(eventSignup()).code, "EVENT_SHEET_MISSING");
+
+  const linked = linkEvent(post);
+  assert.equal(linked.ok, true);
+  assert.equal(linked.sheet.linked, true);
+  assert.match(linked.sheet.url, /^https:\/\/docs\.google\.com\/spreadsheets\//);
+
+  const mapping = JSON.parse(props.get("EVENT_SHEETS"));
+  assert.match(mapping[eventId].tabName, /Web Engineering Workshop/);
+  assert.doesNotMatch(mapping[eventId].tabName, /Untrusted browser title/);
+  const sheet = books
+    .get("1v6RYlzZujoRSAHvOwsY_FQ7X5s3UOHW8E9b3SGxzcWg")
+    .get(mapping[eventId].tabName);
+
+  assert.equal(post(eventSignup()).ok, true);
+  assert.deepEqual(
+    sheet.getRange(2, 1, 1, 8).getValues()[0].map(String),
+    [
+      id(901),
+      sheet.getRange(2, 2, 1, 1).getValues()[0][0],
+      eventId,
+      "Web Engineering Workshop",
+      "Test Attendee",
+      "970",
+      "599123456",
+      "نعم",
+    ].map(String),
+  );
+});
+
+test("event request IDs make network retries idempotent", () => {
+  const { books, props, post } = eventHarness();
+  assert.equal(linkEvent(post).ok, true);
+  assert.equal(post(eventSignup(id(902))).ok, true);
+  assert.equal(post(eventSignup(id(902))).duplicate, true);
+  const mapping = JSON.parse(props.get("EVENT_SHEETS"));
+  const sheet = books
+    .get("1v6RYlzZujoRSAHvOwsY_FQ7X5s3UOHW8E9b3SGxzcWg")
+    .get(mapping[eventId].tabName);
+  assert.equal(sheet.getLastRow(), 2);
+  assert.equal(post(eventSignup(id(903))).ok, true);
+  assert.equal(sheet.getLastRow(), 3);
+});
+
+test("event registration validates real UUIDs and all enabled fields", () => {
+  const { post } = eventHarness();
+  assert.equal(linkEvent(post).ok, true);
+  for (const body of [
+    { ...eventSignup(), eventId: "------------------------------------" },
+    { ...eventSignup(), eventId: "not-a-uuid" },
+    { ...eventSignup(), requestId: "request-1" },
+    eventSignup(id(904), { name: "x" }),
+    eventSignup(id(905), { countryCode: "971" }),
+    eventSignup(id(906), { phone: "59912" }),
+    eventSignup(id(907), { phone: "59912abc" }),
+    eventSignup(id(908), { attendance: "no" }),
+  ]) {
+    assert.equal(post(body).code, "INVALID_INPUT");
+  }
+});
+
+test("disabled event fields are not required and are saved as empty cells", () => {
+  const { books, props, post } = eventHarness({
+    eventRegistration: {
+      enabled: true,
+      nameEnabled: false,
+      phoneEnabled: false,
+      attendanceEnabled: false,
+    },
+  });
+  assert.equal(linkEvent(post).ok, true);
+  assert.equal(post({ action: "eventRegister", eventId, requestId: id(909), data: {} }).ok, true);
+  const mapping = JSON.parse(props.get("EVENT_SHEETS"));
+  const sheet = books
+    .get("1v6RYlzZujoRSAHvOwsY_FQ7X5s3UOHW8E9b3SGxzcWg")
+    .get(mapping[eventId].tabName);
+  assert.deepEqual(sheet.getRange(2, 5, 1, 4).getValues()[0], ["", "", "", ""]);
+});
+
+test("closed, disabled, missing and elapsed events reject registrations", () => {
+  for (const eventPatch of [
+    { status: "past" },
+    { eventRegistration: { enabled: false } },
+    { date: "2026-10-05" },
+    { date: "2026-99-99" },
+    { date: "2026-10-06", eventTime: "09:00", durationMinutes: 60 },
+  ]) {
+    const { post } = eventHarness(eventPatch);
+    assert.equal(post(eventSignup()).code, "EVENT_CLOSED");
+    assert.equal(linkEvent(post).code, "EVENT_CLOSED");
+  }
+  const { post } = eventHarness({}, { event: undefined });
+  assert.equal(post(eventSignup()).code, "EVENT_CLOSED");
+});
+
+test("an upcoming event remains open before its local end time", () => {
+  const { post } = eventHarness({
+    date: "2026-10-06",
+    eventTime: "13:00",
+    durationMinutes: 60,
+  });
+  assert.equal(linkEvent(post).ok, true);
+  assert.equal(post(eventSignup()).ok, true);
+});
+
+test("only a validated super admin can create or inspect event tabs", () => {
+  for (const options of [{ authenticated: false }, { adminRole: "editor" }]) {
+    const { post } = eventHarness({}, options);
+    assert.equal(linkEvent(post).code, "UNAUTHORIZED");
+    assert.equal(
+      post({ action: "eventSheetStatus", accessToken: adminToken, eventId }).code,
+      "UNAUTHORIZED",
+    );
+  }
+  const { post } = eventHarness();
+  assert.equal(
+    post({ action: "eventSheetStatus", accessToken: adminToken, eventId: "x" }).code,
+    "INVALID_INPUT",
+  );
+});
+
+test("changed event headers stop writes instead of corrupting the tab", () => {
+  const { books, props, post } = eventHarness();
+  assert.equal(linkEvent(post).ok, true);
+  const mapping = JSON.parse(props.get("EVENT_SHEETS"));
+  const sheet = books
+    .get("1v6RYlzZujoRSAHvOwsY_FQ7X5s3UOHW8E9b3SGxzcWg")
+    .get(mapping[eventId].tabName);
+  sheet.getRange(1, 1, 1, 1).setValues([["عنوان تم تغييره"]]);
+  assert.equal(post(eventSignup()).code, "SHEET_HEADERS_CHANGED");
+  assert.equal(sheet.getLastRow(), 1);
+});
+
+test("contact deployments reject every event action", () => {
+  const { post } = harness("contact");
+  for (const action of ["eventRegister", "eventSheetStatus", "ensureEventSheet"]) {
+    assert.equal(post({ action, eventId, requestId: id(910), data: {} }).code, "INVALID_INPUT");
   }
 });

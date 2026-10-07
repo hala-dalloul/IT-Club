@@ -30,7 +30,7 @@ import { BrandButton } from "./BrandButton";
 import { ClubLink, ContentGrid, Empty, Heading, linkClass } from "./ClubContent";
 import { ContentImage } from "./ContentImage";
 import { CountUp } from "./CountUp";
-import { EventRegistrationForm } from "./EventRegistrationForm";
+import { EventDetail } from "./EventDetail";
 import { Reveal } from "./Reveal";
 import { RichText } from "./RichText";
 import { useClub } from "./club-context";
@@ -381,80 +381,83 @@ export function DetailPage({ kind, id }: { kind: ContentCollection; id: string }
           </li>
         </ol>
       </nav>
-      <Heading ar={item.title} en={item.title_en} />
-      <article className="rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
-        {kind === "news" && (
-          <p className="mb-2 text-sm text-muted-foreground">
-            {ar ? "بواسطة " : "By "}
-            <ClubLink path="about" className="underline underline-offset-4 hover:text-primary">
-              {siteName[lang]}
-            </ClubLink>
-          </p>
-        )}
-        {item.date && (
-          <time dateTime={item.date} className="text-primary font-bold">
-            {item.date}
-          </time>
-        )}
-        {item.role && <p className="font-bold text-primary">{local(item, "role", lang)}</p>}
-        <RichText
-          value={local(item, "description", lang)}
-          className="mt-5 text-base leading-loose text-muted-foreground"
-        />
-        {(kind === "news" || kind === "events") && !item.images?.some((image) => safeUrl(image)) ? (
-          <figure className="mt-8 overflow-hidden rounded-2xl border border-border">
-            <ContentImage
-              alt={local(item, "title", lang)}
-              lang={lang}
-              className="aspect-[1200/630] w-full object-cover"
-            />
-            <figcaption className="px-4 py-2 text-xs text-muted-foreground">
-              {ar
-                ? "تصميم تعريفي للنادي — تُضاف صور الخبر أو الفعالية عند توفرها."
-                : "Club illustration — photos will be added when available."}
-            </figcaption>
-          </figure>
-        ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2">
-            {item.images
-              ?.filter((image) => safeUrl(image))
-              .map((url, index) => (
-                <img
-                  key={url}
-                  src={url}
-                  alt={`${local(item, "title", lang)} — ${index + 1}`}
-                  width={800}
-                  height={600}
-                  loading="lazy"
-                  className={`${index === 0 ? "aspect-video sm:col-span-2" : "aspect-video"} w-full rounded-2xl object-cover`}
-                />
-              ))}
-          </div>
-        )}
-        <div className="mt-7 flex flex-wrap gap-3">
-          {(
-            [
-              ["githubUrl", "GitHub"],
-              ["linkedinUrl", "LinkedIn"],
-            ] as const
-          ).map(
-            ([key, label]) =>
-              safeUrl(item[key]) && (
-                <a
-                  key={key}
-                  href={safeUrl(item[key])}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkClass}
-                >
-                  {label}
-                  <ExternalLink size={16} />
-                </a>
-              ),
+      {kind !== "events" && <Heading ar={item.title} en={item.title_en} />}
+      {kind === "events" ? (
+        <EventDetail event={item} lang={lang} />
+      ) : (
+        <article className="rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
+          {kind === "news" && (
+            <p className="mb-2 text-sm text-muted-foreground">
+              {ar ? "بواسطة " : "By "}
+              <ClubLink path="about" className="underline underline-offset-4 hover:text-primary">
+                {siteName[lang]}
+              </ClubLink>
+            </p>
           )}
-        </div>
-      </article>
-      {kind === "events" && <EventRegistrationForm event={item} />}
+          {item.date && (
+            <time dateTime={item.date} className="text-primary font-bold">
+              {item.date}
+            </time>
+          )}
+          {item.role && <p className="font-bold text-primary">{local(item, "role", lang)}</p>}
+          <RichText
+            value={local(item, "description", lang)}
+            className="mt-5 text-base leading-loose text-muted-foreground"
+          />
+          {kind === "news" && !item.images?.some((image) => safeUrl(image)) ? (
+            <figure className="mt-8 overflow-hidden rounded-2xl border border-border">
+              <ContentImage
+                alt={local(item, "title", lang)}
+                lang={lang}
+                className="aspect-[1200/630] w-full object-cover"
+              />
+              <figcaption className="px-4 py-2 text-xs text-muted-foreground">
+                {ar
+                  ? "تصميم تعريفي للنادي — تُضاف صور الخبر أو الفعالية عند توفرها."
+                  : "Club illustration — photos will be added when available."}
+              </figcaption>
+            </figure>
+          ) : (
+            <div className="mt-8 grid gap-5 sm:grid-cols-2">
+              {item.images
+                ?.filter((image) => safeUrl(image))
+                .map((url, index) => (
+                  <img
+                    key={url}
+                    src={url}
+                    alt={`${local(item, "title", lang)} — ${index + 1}`}
+                    width={800}
+                    height={600}
+                    loading="lazy"
+                    className={`${index === 0 ? "aspect-video sm:col-span-2" : "aspect-video"} w-full rounded-2xl object-cover`}
+                  />
+                ))}
+            </div>
+          )}
+          <div className="mt-7 flex flex-wrap gap-3">
+            {(
+              [
+                ["githubUrl", "GitHub"],
+                ["linkedinUrl", "LinkedIn"],
+              ] as const
+            ).map(
+              ([key, label]) =>
+                safeUrl(item[key]) && (
+                  <a
+                    key={key}
+                    href={safeUrl(item[key])}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass}
+                  >
+                    {label}
+                    <ExternalLink size={16} />
+                  </a>
+                ),
+            )}
+          </div>
+        </article>
+      )}
       <div className="mt-8">
         <ClubLink path={kind}>{ar ? "العودة للقائمة" : "Back to list"}</ClubLink>
       </div>

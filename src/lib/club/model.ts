@@ -50,6 +50,16 @@ export type Content = {
   partnershipType?: string;
   partnershipType_en?: string;
   status?: string;
+  /** Event-only local time, stored as 24-hour HH:MM. */
+  eventTime?: string;
+  /** Event-only duration in whole minutes. */
+  durationMinutes?: number;
+  eventType?: string;
+  eventType_en?: string;
+  presenterName?: string;
+  presenterName_en?: string;
+  presenterBio?: string;
+  presenterBio_en?: string;
   eventRegistration?: EventRegistration;
   createdAt?: string;
   updatedAt?: string;
@@ -76,6 +86,20 @@ export const eventRegistrationSchema = z.object({
   phoneEnabled: z.boolean(),
   attendanceEnabled: z.boolean(),
 });
+
+/** Details shown in the event information and presenter sections. */
+export const eventDetailsSchema = z
+  .object({
+    eventTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),
+    durationMinutes: z.coerce.number().int().min(1).max(1440),
+    eventType: z.string().trim().min(2).max(100),
+    eventType_en: z.string().trim().min(2).max(100),
+    presenterName: z.string().trim().min(2).max(200),
+    presenterName_en: z.string().trim().min(2).max(200),
+    presenterBio: z.string().trim().min(2).max(500),
+    presenterBio_en: z.string().trim().min(2).max(500),
+  })
+  .strict();
 
 export const eventSignupSchema = z
   .object({

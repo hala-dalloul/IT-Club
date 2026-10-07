@@ -37,6 +37,7 @@ import {
   committees,
   contentSchema,
   defaultEventRegistration,
+  eventDetailsSchema,
   safeUrl,
   type Content,
   type ContentCollection,
@@ -749,6 +750,27 @@ function ContentEditor({
     }
 
     if (targetKind === "events") {
+      const eventDetails = eventDetailsSchema.safeParse({
+        eventTime: values["eventTime"],
+        durationMinutes: values["durationMinutes"],
+        eventType: values["eventType"],
+        eventType_en: values["eventType_en"],
+        presenterName: values["presenterName"],
+        presenterName_en: values["presenterName_en"],
+        presenterBio: values["presenterBio"],
+        presenterBio_en: values["presenterBio_en"],
+      });
+
+      if (!eventDetails.success) {
+        setError(
+          ar
+            ? "أكمل معلومات الفعالية والمقدم. يجب أن تكون المدة بين دقيقة و24 ساعة."
+            : "Complete the event and presenter details. Duration must be between 1 minute and 24 hours.",
+        );
+        return;
+      }
+
+      Object.assign(value, eventDetails.data);
       value.status = status;
       value.eventRegistration = eventRegistration;
     }
@@ -1080,6 +1102,75 @@ function ContentEditor({
       )}
       {targetKind === "events" && (
         <>
+          <fieldset className="space-y-5 rounded-2xl border border-border p-5">
+            <legend className="px-2 font-bold">
+              {ar ? "معلومات الفعالية والمقدم" : "Event and presenter details"}
+            </legend>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block text-sm font-bold">
+                <span className="mb-2 block">{ar ? "وقت الفعالية" : "Event time"}</span>
+                <Input name="eventTime" type="time" required defaultValue={item?.eventTime || ""} />
+              </label>
+              <label className="block text-sm font-bold">
+                <span className="mb-2 block">
+                  {ar ? "مدة الفعالية بالدقائق" : "Duration in minutes"}
+                </span>
+                <Input
+                  name="durationMinutes"
+                  type="number"
+                  required
+                  min={1}
+                  max={1440}
+                  step={1}
+                  defaultValue={item?.durationMinutes ?? ""}
+                />
+              </label>
+              {(
+                [
+                  ["eventType", "نوع الفعالية بالعربية", "Event type in Arabic", 100],
+                  ["eventType_en", "نوع الفعالية بالإنجليزية", "Event type in English", 100],
+                  ["presenterName", "اسم مقدم الفعالية بالعربية", "Presenter name in Arabic", 200],
+                  [
+                    "presenterName_en",
+                    "اسم مقدم الفعالية بالإنجليزية",
+                    "Presenter name in English",
+                    200,
+                  ],
+                ] as const
+              ).map(([key, a, en, maxLength]) => (
+                <label key={key} className="block text-sm font-bold">
+                  <span className="mb-2 block">{ar ? a : en}</span>
+                  <Input
+                    name={key}
+                    required
+                    minLength={2}
+                    maxLength={maxLength}
+                    defaultValue={item?.[key] || ""}
+                    dir={key.endsWith("_en") ? "ltr" : "rtl"}
+                  />
+                </label>
+              ))}
+              {(
+                [
+                  ["presenterBio", "سطر عن المقدم بالعربية", "Presenter bio in Arabic"],
+                  ["presenterBio_en", "سطر عن المقدم بالإنجليزية", "Presenter bio in English"],
+                ] as const
+              ).map(([key, a, en]) => (
+                <label key={key} className="block text-sm font-bold">
+                  <span className="mb-2 block">{ar ? a : en}</span>
+                  <Textarea
+                    name={key}
+                    required
+                    minLength={2}
+                    maxLength={500}
+                    rows={3}
+                    defaultValue={item?.[key] || ""}
+                    dir={key.endsWith("_en") ? "ltr" : "rtl"}
+                  />
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <label className="block">
             <span className="mb-2 block">{ar ? "الحالة" : "Status"}</span>
             <Select

@@ -19,7 +19,7 @@ export function EventRegistrationAdmin({
   useEffect(() => {
     if (!eventId) return;
     void eventSheetStatus(eventId)
-      .then((sheet) => setLinkedUrl(sheet.url || ""))
+      .then((sheet) => setLinkedUrl(sheet.linked ? sheet.url : ""))
       .catch(() => {});
   }, [eventId]);
 
