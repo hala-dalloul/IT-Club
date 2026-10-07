@@ -65,13 +65,13 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
               <div className="mb-6 border-b border-border pb-4 text-sm text-muted-foreground">
                 {index + 1} / {teams.length}
               </div>
-              <div className="grid grid-cols-[112px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
+              <div className="grid grid-cols-[128px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[184px_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[232px_minmax(0,1fr)]">
                 <img
                   src={image}
                   alt={name}
                   width={450}
                   height={600}
-                  className={`aspect-[3/4] w-full max-w-[200px] rounded-2xl ${fit}`}
+                  className={`aspect-[3/4] w-full max-w-[232px] rounded-2xl ${fit}`}
                 />
                 <div className="min-w-0">
                   <SheetTitle className="break-words text-2xl font-black leading-relaxed sm:text-3xl">

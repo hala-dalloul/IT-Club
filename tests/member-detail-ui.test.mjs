@@ -5,10 +5,10 @@ import { readFileSync } from "node:fs";
 const drawer = readFileSync("src/components/ui/information-drawer.tsx", "utf8");
 
 test("member details keep a compact portrait directly beside the text", () => {
-  assert.match(drawer, /grid-cols-\[112px_minmax\(0,1fr\)\]/);
-  assert.match(drawer, /sm:grid-cols-\[160px_minmax\(0,1fr\)\]/);
-  assert.match(drawer, /lg:grid-cols-\[200px_minmax\(0,1fr\)\]/);
-  assert.match(drawer, /max-w-\[200px\]/);
+  assert.match(drawer, /grid-cols-\[128px_minmax\(0,1fr\)\]/);
+  assert.match(drawer, /sm:grid-cols-\[184px_minmax\(0,1fr\)\]/);
+  assert.match(drawer, /lg:grid-cols-\[232px_minmax\(0,1fr\)\]/);
+  assert.match(drawer, /max-w-\[232px\]/);
 });
 
 test("member biography and social links stay in the text column", () => {
