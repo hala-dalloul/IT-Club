@@ -10,12 +10,18 @@ test("news details use a dedicated maintainable component", () => {
   assert.match(pages, /kind === "news"[\s\S]*<NewsDetail news=\{item\} lang=\{lang\}/);
 });
 
-test("news text flows beside the image and continues below it without a forced split", () => {
-  assert.match(detail, /flow-root/);
-  assert.match(detail, /<figure[\s\S]*lg:float-end[\s\S]*lg:w-\[48%\]/);
-  assert.match(detail, /clear-both mt-10/);
-  assert.doesNotMatch(detail, /lg:grid-cols-2/);
+test("news body balances automatically across two newspaper columns on desktop", () => {
+  assert.match(detail, /lg:columns-2/);
+  assert.match(detail, /lg:\[column-fill:balance\]/);
+  assert.match(detail, /lg:gap-12/);
+  assert.match(detail, /break-after-avoid-column/);
   assert.doesNotMatch(detail, /splitRichTextAtHalf/);
+});
+
+test("news keeps the image and headline side by side above the two-column body", () => {
+  assert.match(detail, /<figure[\s\S]*lg:col-start-2 lg:row-start-1/);
+  assert.match(detail, /<header className="lg:col-start-1 lg:row-start-1"/);
+  assert.match(detail, /lg:grid-cols-2/);
 });
 
 test("news images use horizontal frames", () => {
