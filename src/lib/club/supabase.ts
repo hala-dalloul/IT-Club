@@ -33,6 +33,13 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 
 type Row = Record<string, JsonValue>;
 
+const contentTables: Record<ContentCollection, string> = {
+  members: "club_members",
+  events: "club_events",
+  news: "club_news",
+  partners: "club_content",
+};
+
 async function rows(table: string, order = "id", tie = "id") {
   const result: Row[] = [];
 
@@ -125,19 +132,30 @@ export async function saveContent(
   }
   contentSchema.parse(value);
 
-  const result = id
-    ? await supabase()
-        .from("club_content")
-        .update({ kind, data: value, ...(slug === undefined ? {} : { slug }) })
-        .eq("id", id)
-        .eq("kind", originalKind)
-        .select("id")
-        .single()
-    : await supabase()
-        .from("club_content")
-        .insert({ kind, data: value, ...(slug === undefined ? {} : { slug }) })
-        .select("id")
-        .single();
+  if (id && kind !== originalKind) {
+    const moved = await supabase().rpc("club_move_article", {
+      source_kind: originalKind,
+      target_kind: kind,
+      article_id: id,
+      new_data: value,
+      new_slug: slug ?? null,
+    });
+    check(moved.error);
+    if (!moved.data) throw new Error("The moved article was not returned");
+    changed();
+    return String(moved.data);
+  }
+
+  const table = contentTables[kind];
+  const values = {
+    ...(kind === "partners" ? { kind } : {}),
+    data: value,
+    ...(slug === undefined ? {} : { slug }),
+  };
+  const query = id
+    ? supabase().from(table).update(values).eq("id", id)
+    : supabase().from(table).insert(values);
+  const result = await query.select("id").single();
 
   check(result.error);
   if (!result.data) throw new Error("The saved content was not returned");
@@ -146,13 +164,9 @@ export async function saveContent(
 }
 
 export async function removeContent(kind: ContentCollection, id: string) {
-  const { error } = await supabase()
-    .from("club_content")
-    .delete()
-    .eq("kind", kind)
-    .eq("id", id)
-    .select("id")
-    .single();
+  let query = supabase().from(contentTables[kind]).delete().eq("id", id);
+  if (kind === "partners") query = query.eq("kind", kind);
+  const { error } = await query.select("id").single();
 
   check(error);
   changed();
@@ -284,10 +298,19 @@ export type MediaAsset = {
 };
 
 export async function loadMedia(): Promise<MediaAsset[]> {
-  const [assets, links] = await Promise.all([
+  const [assets, contentLinks, memberLinks, eventLinks, newsLinks] = await Promise.all([
     rows("club_media", "created_at"),
     rows("club_content_media", "content_id", "media_id"),
+    rows("club_member_media", "member_id", "media_id"),
+    rows("club_event_media", "event_id", "media_id"),
+    rows("club_news_media", "news_id", "media_id"),
   ]);
+  const links = [
+    ...contentLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["content_id"] })),
+    ...memberLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["member_id"] })),
+    ...eventLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["event_id"] })),
+    ...newsLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["news_id"] })),
+  ];
 
   return assets.map((a) => ({
     id: String(a["id"]),
@@ -297,7 +320,11 @@ export async function loadMedia(): Promise<MediaAsset[]> {
     size: Number(a["size"]),
     mime: String(a["mime"]),
     deleting: Boolean(a["deleting"]),
-    usedBy: links.filter((l) => l["media_id"] === a["id"]).map((l) => String(l["content_id"])),
+    usedBy: [
+      ...new Set(
+        links.filter((link) => link.mediaId === a["id"]).map((link) => String(link.ownerId)),
+      ),
+    ],
   }));
 }
 

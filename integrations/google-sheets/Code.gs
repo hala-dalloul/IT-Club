@@ -296,9 +296,9 @@ function eventFromSupabase_(eventId) {
   if (!key) fail_("NOT_CONFIGURED");
   const url =
     CLUB.supabaseUrl +
-    "/rest/v1/club_content?select=id,data&id=eq." +
+    "/rest/v1/club_events?select=id,data&id=eq." +
     encodeURIComponent(eventId) +
-    "&kind=eq.events&limit=1";
+    "&limit=1";
   const result = UrlFetchApp.fetch(url, {
     headers: { apikey: key, Authorization: "Bearer " + key },
     muteHttpExceptions: true,

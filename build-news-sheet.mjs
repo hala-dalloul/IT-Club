@@ -9,7 +9,7 @@ const outputPath = `${outputDir}/اخبار-الموقع.xlsx`;
 const previewPath = `${outputDir}/preview.png`;
 const sourceUrl = "https://ucas.itclub-143.workers.dev/news";
 const apiUrl =
-  "https://jxweaxenswbjpxxjmihb.supabase.co/rest/v1/club_content?select=id,slug,data,created_at,updated_at&kind=eq.news&order=updated_at.desc,id.asc";
+  "https://jxweaxenswbjpxxjmihb.supabase.co/rest/v1/club_news?select=id,slug,data,created_at,updated_at&order=updated_at.desc,id.asc";
 const publicKey = "sb_publishable_kHJik-SCyMiMQ7nn2SRHbQ_0FR6CpOZ";
 
 function plainText(value = "") {

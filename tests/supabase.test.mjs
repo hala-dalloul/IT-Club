@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { test, before, after } from "node:test";
 
 let db;
+let migratedRows;
 
 const owner = "00000000-0000-4000-8000-000000000001",
   editor = "00000000-0000-4000-8000-000000000002",
@@ -22,6 +23,7 @@ before(async () => {
     `create role anon;create role authenticated;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,storage to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;grant select,insert,delete on storage.objects to authenticated;create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;`,
   );
   await db.exec(readFileSync("supabase/migrations/202609090001_club.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/202609150001_content_created_at.sql", "utf8"));
   await db.exec(
     readFileSync("supabase/migrations/202609150002_administrative_committee.sql", "utf8"),
   );
@@ -37,6 +39,27 @@ before(async () => {
   await db.exec(
     readFileSync("supabase/migrations/202610070001_google_drive_image_links.sql", "utf8"),
   );
+  const legacyBase = {
+    title: "محتوى قديم",
+    title_en: "Legacy content",
+    description: "وصف المحتوى القديم",
+    description_en: "Legacy content description",
+    images: [],
+  };
+  const seeded = await Promise.all([
+    db.query("insert into club_content(kind,data) values('members',$1) returning id,created_at", [
+      JSON.stringify({ ...legacyBase, committee: "media", isFounder: false }),
+    ]),
+    db.query(
+      "insert into club_content(kind,data) values('events',$1) returning id,slug,created_at",
+      [JSON.stringify({ ...legacyBase, date: "2026-10-07", status: "past" })],
+    ),
+    db.query("insert into club_content(kind,data) values('news',$1) returning id,slug,created_at", [
+      JSON.stringify({ ...legacyBase, date: "2026-10-07" }),
+    ]),
+  ]);
+  migratedRows = seeded.map((result) => result.rows[0]);
+  await db.exec(readFileSync("supabase/migrations/202610070002_split_content_tables.sql", "utf8"));
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -82,6 +105,50 @@ const addContent = (value = payload) =>
     "projects",
     JSON.stringify(value),
   ]);
+
+test("existing members, events and news copy to dedicated tables without changing identity", async () => {
+  await as(null);
+  const [member, event, news] = migratedRows;
+  const migratedMember = (
+    await db.query("select id,created_at from club_members where id=$1", [member.id])
+  ).rows[0];
+  const migratedEvent = (
+    await db.query("select id,slug,created_at from club_events where id=$1", [event.id])
+  ).rows[0];
+  const migratedNews = (
+    await db.query("select id,slug,created_at from club_news where id=$1", [news.id])
+  ).rows[0];
+
+  assert.equal(migratedMember.id, member.id);
+  assert.equal(String(migratedMember.created_at), String(member.created_at));
+  assert.equal(migratedEvent.slug, event.slug);
+  assert.equal(String(migratedEvent.created_at), String(event.created_at));
+  assert.equal(migratedNews.slug, news.slug);
+  assert.equal(String(migratedNews.created_at), String(news.created_at));
+  assert.equal(
+    (await db.query("select id from club_content where kind in ('members','events','news')")).rows
+      .length,
+    3,
+  );
+  await as(editor);
+  const archivedUpdate = await db.query(
+    "update club_content set data=data where id=$1 returning id",
+    [member.id],
+  );
+  assert.equal(archivedUpdate.rows.length, 0);
+  await assert.rejects(() =>
+    db.query("insert into club_content(kind,data) values('news',$1)", [
+      JSON.stringify({
+        title: "Archived write",
+        title_en: "Archived write",
+        description: "Archived write must fail",
+        description_en: "Archived write must fail",
+        images: [],
+        date: "2026-10-07",
+      }),
+    ]),
+  );
+});
 
 test("anonymous cannot write content, read applications or grant themselves admin", async () => {
   await as(null);
@@ -239,28 +306,27 @@ test("editor can move a member into and out of the administrative committee", as
     committee: "media",
     isFounder: false,
   };
-  const inserted = await db.query(
-    "insert into club_content(kind,data) values('members',$1) returning id",
-    [JSON.stringify(member)],
-  );
+  const inserted = await db.query("insert into club_members(data) values($1) returning id", [
+    JSON.stringify(member),
+  ]);
   const id = inserted.rows[0].id;
   const board = { ...member, committee: "administrative", isFounder: true };
-  await db.query("update club_content set data=$1 where id=$2", [JSON.stringify(board), id]);
-  let saved = (await db.query("select data from club_content where id=$1", [id])).rows[0].data;
+  await db.query("update club_members set data=$1 where id=$2", [JSON.stringify(board), id]);
+  let saved = (await db.query("select data from club_members where id=$1", [id])).rows[0].data;
   assert.equal(saved.committee, "administrative");
   assert.equal(saved.isFounder, true);
-  await db.query("update club_content set data=$1 where id=$2", [JSON.stringify(member), id]);
-  saved = (await db.query("select data from club_content where id=$1", [id])).rows[0].data;
+  await db.query("update club_members set data=$1 where id=$2", [JSON.stringify(member), id]);
+  saved = (await db.query("select data from club_members where id=$1", [id])).rows[0].data;
   assert.equal(saved.committee, "media");
   assert.equal(saved.isFounder, false);
   await assert.rejects(() =>
-    db.query("update club_content set data=$1 where id=$2", [
+    db.query("update club_members set data=$1 where id=$2", [
       JSON.stringify({ ...member, committee: "invalid" }),
       id,
     ]),
   );
   await as(outsider);
-  const denied = await db.query("update club_content set data=$1 where id=$2 returning id", [
+  const denied = await db.query("update club_members set data=$1 where id=$2 returning id", [
     JSON.stringify(board),
     id,
   ]);
@@ -280,24 +346,23 @@ test("member gender accepts both groups and legacy members while rejecting inval
   };
   for (const gender of [undefined, "male", "female"]) {
     const data = gender ? { ...member, gender } : member;
-    const result = await db.query(
-      "insert into club_content(kind,data) values('members',$1) returning id,data",
-      [JSON.stringify(data)],
-    );
+    const result = await db.query("insert into club_members(data) values($1) returning id,data", [
+      JSON.stringify(data),
+    ]);
     assert.equal(result.rows[0].data.gender, gender);
     const id = result.rows[0].id;
-    await db.query("update club_content set data=$1 where id=$2", [
+    await db.query("update club_members set data=$1 where id=$2", [
       JSON.stringify({ ...member, gender: "female" }),
       id,
     ]);
     assert.equal(
-      (await db.query("select data from club_content where id=$1", [id])).rows[0].data.gender,
+      (await db.query("select data from club_members where id=$1", [id])).rows[0].data.gender,
       "female",
     );
   }
   for (const gender of ["invalid", null, 12]) {
     await assert.rejects(() =>
-      db.query("insert into club_content(kind,data) values('members',$1)", [
+      db.query("insert into club_members(data) values($1)", [
         JSON.stringify({ ...member, gender }),
       ]),
     );
@@ -316,15 +381,14 @@ test("board order accepts optional positive integers and rejects invalid values"
     isFounder: true,
   };
   for (const displayOrder of [1, 2, 9999]) {
-    const result = await db.query(
-      "insert into club_content(kind,data) values('members',$1) returning data",
-      [JSON.stringify({ ...member, displayOrder })],
-    );
+    const result = await db.query("insert into club_members(data) values($1) returning data", [
+      JSON.stringify({ ...member, displayOrder }),
+    ]);
     assert.equal(result.rows[0].data.displayOrder, displayOrder);
   }
   for (const displayOrder of [0, -1, 1.5, 10000, "1", null]) {
     await assert.rejects(() =>
-      db.query("insert into club_content(kind,data) values('members',$1)", [
+      db.query("insert into club_members(data) values($1)", [
         JSON.stringify({ ...member, displayOrder }),
       ]),
     );
@@ -342,39 +406,38 @@ test("news and events are separate and can be reclassified without changing iden
     date: "2026-09-19",
   };
   const inserted = await db.query(
-    "insert into club_content(kind,data) values('news',$1) returning id",
+    "insert into club_news(data) values($1) returning id,slug,created_at",
     [JSON.stringify(data)],
   );
   const id = inserted.rows[0].id;
-  assert.equal(
-    (await db.query("select id from club_content where kind='events' and id=$1", [id])).rows.length,
-    0,
-  );
-  await assert.rejects(() => db.query("update club_content set kind='events' where id=$1", [id]));
-  await db.query("update club_content set kind='events',data=$1 where id=$2", [
+  const slug = inserted.rows[0].slug;
+  const createdAt = inserted.rows[0].created_at.toISOString();
+  assert.equal((await db.query("select id from club_events where id=$1", [id])).rows.length, 0);
+  await db.query("select club_move_article('news','events',$1,$2,$3)", [
+    id,
     JSON.stringify({ ...data, status: "upcoming" }),
-    id,
+    slug,
   ]);
-  assert.equal(
-    (await db.query("select kind from club_content where id=$1", [id])).rows[0].kind,
-    "events",
-  );
-  await db.query("update club_content set kind='news',data=$1 where id=$2", [
-    JSON.stringify(data),
+  const moved = (await db.query("select id,slug,created_at from club_events where id=$1", [id]))
+    .rows[0];
+  assert.equal(moved.id, id);
+  assert.equal(moved.slug, slug);
+  assert.equal(moved.created_at.toISOString(), createdAt);
+  assert.equal((await db.query("select id from club_news where id=$1", [id])).rows.length, 0);
+  await db.query("select club_move_article('events','news',$1,$2,$3)", [
     id,
+    JSON.stringify(data),
+    slug,
   ]);
   await assert.rejects(() =>
-    db.query("insert into club_content(kind,data) values('news',$1)", [
+    db.query("insert into club_news(data) values($1)", [
       JSON.stringify({ ...data, date: "invalid" }),
     ]),
   );
   await as(null);
-  assert.equal(
-    (await db.query("select id from club_content where kind='news' and id=$1", [id])).rows.length,
-    1,
-  );
+  assert.equal((await db.query("select id from club_news where id=$1", [id])).rows.length, 1);
   await assert.rejects(() =>
-    db.query("insert into club_content(kind,data) values('news',$1)", [JSON.stringify(data)]),
+    db.query("insert into club_news(data) values($1)", [JSON.stringify(data)]),
   );
 });
 
@@ -389,7 +452,11 @@ test("news and events accept an optional summary; other kinds and bad lengths ar
     date: "2026-09-24",
   };
   const insert = (kind, value) =>
-    db.query("insert into club_content(kind,data) values($1,$2)", [kind, JSON.stringify(value)]);
+    kind === "partners"
+      ? db.query("insert into club_content(kind,data) values('partners',$1)", [
+          JSON.stringify(value),
+        ])
+      : db.query(`insert into club_${kind}(data) values($1)`, [JSON.stringify(value)]);
 
   await insert("news", { ...data, summary: "ملخص قصير", summary_en: "A short summary" });
   await insert("events", { ...data, status: "past", summary_en: "English only" });
@@ -412,7 +479,11 @@ test("news and events accept validated Google Drive image fields only", async ()
   };
   const driveImage = "https://drive.google.com/thumbnail?id=1AbCdEfGhIjKlMnOpQrStUvWxYz&sz=w2000";
   const insert = (kind, value) =>
-    db.query("insert into club_content(kind,data) values($1,$2)", [kind, JSON.stringify(value)]);
+    kind === "partners"
+      ? db.query("insert into club_content(kind,data) values('partners',$1)", [
+          JSON.stringify(value),
+        ])
+      : db.query(`insert into club_${kind}(data) values($1)`, [JSON.stringify(value)]);
 
   await insert("news", { ...data, driveImageUrls: [driveImage] });
   await insert("events", {
@@ -452,10 +523,7 @@ test("event details accept complete valid data and reject other kinds or malform
     presenterBio_en: "Web developer and technical trainer",
   };
   const insert = (kind, value) =>
-    db.query("insert into club_content(kind,data) values($1,$2) returning data", [
-      kind,
-      JSON.stringify(value),
-    ]);
+    db.query(`insert into club_${kind}(data) values($1) returning data`, [JSON.stringify(value)]);
 
   const saved = await insert("events", { ...event, ...details });
   assert.deepEqual(
@@ -496,13 +564,20 @@ test("slugs are generated once, unique, editable and never set on members", asyn
     images: [],
     date: "2026-09-24",
   });
-  const add = async (kind, value, slug) =>
-    (
-      await db.query(
-        "insert into club_content(kind,data,slug) values($1,$2,$3) returning id,slug",
-        [kind, JSON.stringify(value), slug ?? null],
-      )
+  const add = async (kind, value, slug) => {
+    if (kind === "members")
+      return (
+        await db.query("insert into club_members(data) values($1) returning id", [
+          JSON.stringify(value),
+        ])
+      ).rows[0];
+    return (
+      await db.query(`insert into club_${kind}(data,slug) values($1,$2) returning id,slug`, [
+        JSON.stringify(value),
+        slug ?? null,
+      ])
     ).rows[0];
+  };
 
   const first = await add("news", data("The Club announces its Board of Directors for 2026"));
   assert.equal(first.slug, "club-announces-board-directors-2026");
@@ -518,17 +593,17 @@ test("slugs are generated once, unique, editable and never set on members", asyn
   const long = await add("news", data("word ".repeat(40)));
   assert.ok(long.slug.length <= 60);
 
-  await db.query("update club_content set data=$1 where id=$2", [
+  await db.query("update club_news set data=$1 where id=$2", [
     JSON.stringify(data("A completely different title")),
     first.id,
   ]);
   assert.equal(
-    (await db.query("select slug from club_content where id=$1", [first.id])).rows[0].slug,
+    (await db.query("select slug from club_news where id=$1", [first.id])).rows[0].slug,
     "club-announces-board-directors-2026",
   );
-  await db.query("update club_content set slug=null where id=$1", [first.id]);
+  await db.query("update club_news set slug=null where id=$1", [first.id]);
   assert.equal(
-    (await db.query("select slug from club_content where id=$1", [first.id])).rows[0].slug,
+    (await db.query("select slug from club_news where id=$1", [first.id])).rows[0].slug,
     "completely-different-title",
   );
 
@@ -540,5 +615,5 @@ test("slugs are generated once, unique, editable and never set on members", asyn
     { ...data("Member Name"), committee: "media", isFounder: false, gender: "male" },
     "member-link",
   );
-  assert.equal(member.slug, null);
+  assert.equal(member.slug, undefined);
 });

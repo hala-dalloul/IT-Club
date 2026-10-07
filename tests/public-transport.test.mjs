@@ -24,6 +24,10 @@ test("public reads use one stable order and propagate cancellation", async () =>
   const api = compile("src/lib/club/public-api.ts", { fetch: fetcher });
   await api.loadPublic(fetcher, controller.signal);
   const content = calls.find((c) => c.url.pathname.endsWith("club_content"));
+  assert.deepEqual(
+    new Set(calls.map((call) => call.url.pathname.split("/").at(-1))),
+    new Set(["club_members", "club_events", "club_news", "club_content", "club_settings"]),
+  );
   assert.deepEqual(content.url.searchParams.getAll("order"), ["updated_at.desc,id.asc"]);
   assert.notEqual(content.url.searchParams.get("select"), "*");
   controller.abort();

@@ -1,7 +1,7 @@
 // The site's sitemap: every public page in Arabic and English, with each
 // page's two language versions linked as alternates, and news, events and
-// partners by their one-based public index. Built live from club_content, so a new
-// item appears as soon as it is published.
+// partners by their one-based public index. Built live from the dedicated public
+// content tables, so a new item appears as soon as it is published.
 //
 // Called by the site's /sitemap.xml, which passes its own origin as ?site= so
 // the domain is configured in one place (VITE_SITE_URL on the site's build).
@@ -69,17 +69,25 @@ Deno.serve(async (req) => {
   try {
     const key = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}")["default"];
     if (!key) throw new Error("Missing publishable key");
-    for (let offset = 0; ;) {
-      const response = await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/rest/v1/club_content?select=id,kind,data,created_at,updated_at&order=updated_at.desc,id.asc&offset=${offset}&limit=500`,
-        { headers: { apikey: key }, signal },
-      );
-      if (!response.ok) throw new Error("Content could not be read");
-      const page: Row[] = await response.json();
-      if (page.length === 0) break;
-      rows.push(...page);
-      // Advance by actual rows so a lower project API cap does not truncate it.
-      offset += page.length;
+    const tables = [
+      ["club_members", "members", ""],
+      ["club_events", "events", ""],
+      ["club_news", "news", ""],
+      ["club_content", "partners", "&kind=eq.partners"],
+    ] as const;
+    for (const [table, kind, filter] of tables) {
+      for (let offset = 0; ;) {
+        const response = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/rest/v1/${table}?select=id,data,created_at,updated_at&order=updated_at.desc,id.asc${filter}&offset=${offset}&limit=500`,
+          { headers: { apikey: key }, signal },
+        );
+        if (!response.ok) throw new Error("Content could not be read");
+        const page: Omit<Row, "kind">[] = await response.json();
+        if (page.length === 0) break;
+        rows.push(...page.map((row) => ({ ...row, kind })));
+        // Advance by actual rows so a lower project API cap does not truncate it.
+        offset += page.length;
+      }
     }
   } catch {
     return new Response("Content could not be read", { status: 502 });

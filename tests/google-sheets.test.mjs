@@ -123,7 +123,7 @@ function harness(kind = "join", options = {}) {
           });
         if (url.includes("/rest/v1/club_admins"))
           return mockFetchResponse(200, [{ role: options.adminRole || "super_admin" }]);
-        if (url.includes("/rest/v1/club_content")) {
+        if (url.includes("/rest/v1/club_events")) {
           if (options.eventFetchStatus)
             return mockFetchResponse(options.eventFetchStatus, { message: "failed" });
           const event = options.event;

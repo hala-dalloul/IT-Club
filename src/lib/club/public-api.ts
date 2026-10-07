@@ -3,7 +3,7 @@ import type { Content, ContentCollection, Settings } from "./model";
 /**
  * The public read path, without the Supabase SDK.
  *
- * Everything a visitor sees is two PostgREST GETs and one RPC, all anonymous,
+ * Everything a visitor sees is a small set of parallel PostgREST GETs and one RPC, all anonymous,
  * all guarded by RLS. Reaching them through `createClient` pulled the whole SDK
  * — auth, realtime, storage, functions — into the entry bundle: 58 KB gzipped,
  * measured against this exact version, on every page load, for features only
@@ -73,12 +73,13 @@ async function request<T>(path: string, init: RequestInit, f: Fetcher): Promise<
   throw new Error(message);
 }
 
-async function rows(table: string, order: string, f: Fetcher, signal: AbortSignal) {
+async function rows(table: string, order: string, f: Fetcher, signal: AbortSignal, hasSlug = true) {
   const result: Row[] = [];
+  const fields = `id,${hasSlug ? "slug," : ""}data,created_at,updated_at,updated_by`;
 
   for (let offset = 0; ; offset += 500) {
     const page = await request<Row[]>(
-      `${table}?select=id,kind,slug,data,created_at,updated_at,updated_by&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
+      `${table}?select=${fields}&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
       { method: "GET", signal },
       f,
     );
@@ -91,6 +92,13 @@ async function rows(table: string, order: string, f: Fetcher, signal: AbortSigna
   return result;
 }
 
+const contentTables: Record<ContentCollection, string> = {
+  members: "club_members",
+  events: "club_events",
+  news: "club_news",
+  partners: "club_content",
+};
+
 /**
  * Whether one item exists right now, by id or slug, asked of the database directly.
  *
@@ -101,21 +109,30 @@ async function rows(table: string, order: string, f: Fetcher, signal: AbortSigna
 export async function contentExists(ref: string, kinds: ContentCollection[]) {
   // An id that isn't a UUID would make Postgres reject the whole query.
   const column = /^[0-9a-f-]{36}$/i.test(ref) ? "id" : "slug";
-  const found = await request<{ id: string }[]>(
-    `club_content?select=id&${column}=eq.${ref}&kind=in.(${kinds.join(",")})&limit=1`,
-    { method: "GET" },
-    fetch,
+  const results = await Promise.all(
+    kinds.map((kind) => {
+      if (kind === "members" && column === "slug") return Promise.resolve([]);
+      const kindFilter = kind === "partners" ? "&kind=eq.partners" : "";
+      return request<{ id: string }[]>(
+        `${contentTables[kind]}?select=id&${column}=eq.${ref}${kindFilter}&limit=1`,
+        { method: "GET" },
+        fetch,
+      );
+    }),
   );
 
-  return found.length > 0;
+  return results.some((found) => found.length > 0);
 }
 
 /** Every public row the site renders, in one shape the provider can hold. */
 export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal) {
   const deadline = AbortSignal.timeout(8000);
   const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
-  const [content, settings] = await Promise.all([
-    rows("club_content", "updated_at", f, signal),
+  const [members, events, news, partners, settings] = await Promise.all([
+    rows(contentTables.members, "updated_at", f, signal, false),
+    rows(contentTables.events, "updated_at", f, signal),
+    rows(contentTables.news, "updated_at", f, signal),
+    rows(contentTables.partners, "updated_at", f, signal),
     request<{ data?: Settings }[]>(
       "club_settings?select=data&id=eq.public&limit=1",
       { method: "GET", signal },
@@ -130,22 +147,25 @@ export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal)
     partners: [],
   };
 
-  for (const row of content) {
-    // SAFETY: kind is unverified until the hasOwn check below drops rows that
-    // aren't one of the supported ContentCollection keys.
-    const kind = row["kind"] as ContentCollection;
+  const grouped: [ContentCollection, Row[]][] = [
+    ["members", members],
+    ["events", events],
+    ["news", news],
+    ["partners", partners.filter((row) => row["kind"] === "partners")],
+  ];
 
-    if (!Object.hasOwn(data, kind)) continue;
-    data[kind].push({
-      // SAFETY: club_content.data is only ever written by saveContent, which
-      // validates the value against contentSchema before insert.
-      ...(row["data"] as Omit<Content, "id">),
-      id: String(row["id"]),
-      ...(typeof row["slug"] === "string" ? { slug: row["slug"] } : {}),
-      createdAt: String(row["created_at"] ?? ""),
-      updatedAt: String(row["updated_at"] ?? ""),
-      updatedBy: String(row["updated_by"] || ""),
-    });
+  for (const [kind, content] of grouped) {
+    for (const row of content)
+      data[kind].push({
+        // SAFETY: content data is only written by saveContent, which validates
+        // the value against contentSchema before insert.
+        ...(row["data"] as Omit<Content, "id">),
+        id: String(row["id"]),
+        ...(typeof row["slug"] === "string" ? { slug: row["slug"] } : {}),
+        createdAt: String(row["created_at"] ?? ""),
+        updatedAt: String(row["updated_at"] ?? ""),
+        updatedBy: String(row["updated_by"] || ""),
+      });
   }
 
   return { data, settings: settings[0]?.data };
