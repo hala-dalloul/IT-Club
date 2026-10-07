@@ -1,5 +1,6 @@
 import { CalendarDays, UserRound } from "lucide-react";
 import { local, safeUrl, type Content, type Lang } from "@/lib/club/model";
+import { splitRichTextAtHalf } from "@/lib/club/rich-text";
 import { siteName } from "@/lib/club/seo";
 import { ClubLink } from "./ClubContent";
 import { ContentImage } from "./ContentImage";
@@ -21,6 +22,9 @@ export function NewsDetail({ news, lang }: { news: Content; lang: Lang }) {
   const title = local(news, "title", lang);
   const validImages = news.images?.filter((image) => safeUrl(image)) ?? [];
   const cover = validImages[0];
+  const [leadDescription, continuedDescription] = splitRichTextAtHalf(
+    local(news, "description", lang),
+  );
 
   return (
     <article className="overflow-hidden rounded-[2rem] border border-border bg-card p-5 shadow-card sm:p-8 lg:p-10">
@@ -66,11 +70,23 @@ export function NewsDetail({ news, lang }: { news: Content; lang: Lang }) {
           </div>
 
           <RichText
-            value={local(news, "description", lang)}
+            value={leadDescription}
             className="text-base leading-loose text-muted-foreground"
           />
         </div>
       </div>
+
+      {continuedDescription && (
+        <section
+          className="mt-8 border-t border-border pt-6"
+          aria-label={ar ? "تكملة الخبر" : "News continuation"}
+        >
+          <RichText
+            value={continuedDescription}
+            className="text-base leading-loose text-muted-foreground"
+          />
+        </section>
+      )}
 
       {validImages.length > 1 && (
         <section

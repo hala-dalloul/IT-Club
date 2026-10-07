@@ -26,7 +26,10 @@ test("news content includes its headline, date, author and localized body", () =
   assert.match(detail, /<h1/);
   assert.match(detail, /formattedNewsDate/);
   assert.match(detail, /siteName\[lang\]/);
-  assert.match(detail, /local\(news, "description", lang\)/);
+  assert.match(detail, /splitRichTextAtHalf/);
+  assert.match(detail, /value=\{leadDescription\}/);
+  assert.match(detail, /value=\{continuedDescription\}/);
+  assert.match(detail, /تكملة الخبر/);
 });
 
 test("news design retains theme-aware semantic colors", () => {

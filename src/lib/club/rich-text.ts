@@ -125,6 +125,59 @@ function textOf(node: RichNode | string): string {
   return blockTags.has(node.tag) ? `${text}\n` : text;
 }
 
+function inlineTextOf(node: RichNode | string): string {
+  if (typeof node === "string") return node;
+  if (node.tag === "br") return "\n";
+  return node.children.map(inlineTextOf).join("");
+}
+
+function nearestWordBoundary(value: string) {
+  const midpoint = Math.floor(value.length / 2);
+  const before = value.slice(0, midpoint + 1).search(/\s+\S*$/);
+  const afterOffset = value.slice(midpoint).search(/\s/);
+  const after = afterOffset < 0 ? -1 : midpoint + afterOffset;
+  const candidates = [before, after].filter((index) => index > 0 && index < value.length);
+  return candidates.sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint))[0] ?? midpoint;
+}
+
+function splitNodeAt(
+  node: RichNode | string,
+  index: number,
+): [RichNode | string | undefined, RichNode | string | undefined] {
+  if (typeof node === "string") {
+    return [node.slice(0, index) || undefined, node.slice(index) || undefined];
+  }
+  if (node.tag === "br") return index > 0 ? [node, undefined] : [undefined, node];
+
+  const left: Array<RichNode | string> = [];
+  const right: Array<RichNode | string> = [];
+  let remaining = index;
+  let reachedSplit = false;
+
+  for (const child of node.children) {
+    if (reachedSplit) {
+      right.push(child);
+      continue;
+    }
+
+    const length = inlineTextOf(child).length;
+    if (remaining >= length) {
+      left.push(child);
+      remaining -= length;
+      continue;
+    }
+
+    const [leftChild, rightChild] = splitNodeAt(child, remaining);
+    if (leftChild !== undefined) left.push(leftChild);
+    if (rightChild !== undefined) right.push(rightChild);
+    reachedSplit = true;
+  }
+
+  const clone = (children: Array<RichNode | string>) =>
+    children.length ? { ...node, children } : undefined;
+  return [clone(left), clone(right)];
+}
+
 export function isRichText(value: string | undefined) {
   return Boolean(value?.startsWith(prefix));
 }
@@ -173,4 +226,29 @@ export function splitRichText(value: string) {
   return groups
     .map((nodes) => prefix + serialize(nodes))
     .filter((entry) => plainRichText(entry).trim());
+}
+
+/** Split an article near its character midpoint while preserving valid rich-text markup. */
+export function splitRichTextAtHalf(value: string): [string, string] {
+  if (!value.trim()) return [value, ""];
+
+  if (!isRichText(value)) {
+    const index = nearestWordBoundary(value);
+    return [value.slice(0, index).trimEnd(), value.slice(index).trimStart()];
+  }
+
+  const nodes = parse(value.slice(prefix.length));
+  const text = nodes.map(inlineTextOf).join("");
+  if (!text.trim()) return [value, ""];
+
+  const index = nearestWordBoundary(text);
+  const root: RichNode = { tag: "root", children: nodes };
+  const [left, right] = splitNodeAt(root, index);
+  const serializeHalf = (half: RichNode | string | undefined) => {
+    if (!half) return "";
+    const children = typeof half === "string" ? [half] : half.children;
+    return prefix + serialize(children);
+  };
+
+  return [serializeHalf(left), serializeHalf(right)];
 }
