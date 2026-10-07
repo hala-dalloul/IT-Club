@@ -102,57 +102,31 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
     <>
       <article className="overflow-hidden rounded-[2rem] border border-border bg-card p-5 shadow-card sm:p-8 lg:p-10">
         <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-10">
-          <figure className="overflow-hidden rounded-3xl border border-border bg-muted lg:col-start-2 lg:row-start-1">
-            {cover ? (
-              <img
-                src={cover}
-                alt={event.title_en && lang === "en" ? event.title_en : event.title}
-                width={1200}
-                height={675}
-                className="aspect-video w-full object-cover"
-              />
-            ) : (
-              <>
-                <ContentImage
+          <div className="space-y-5 lg:col-start-2 lg:row-start-1">
+            <figure className="overflow-hidden rounded-3xl border border-border bg-muted">
+              {cover ? (
+                <img
+                  src={cover}
                   alt={event.title_en && lang === "en" ? event.title_en : event.title}
-                  lang={lang}
+                  width={1200}
+                  height={675}
                   className="aspect-video w-full object-cover"
                 />
-                <figcaption className="px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-                  {ar
-                    ? "صورة تعريفية للنادي — تُضاف صورة الفعالية عند توفرها."
-                    : "Club illustration — the event image will be added when available."}
-                </figcaption>
-              </>
-            )}
-          </figure>
-
-          <div className="space-y-8 lg:col-start-1 lg:row-start-1">
-            <h1 className="text-3xl font-black text-gradient-brand sm:text-5xl">
-              {lang === "en" ? event.title_en || event.title : event.title}
-            </h1>
-            <section aria-labelledby={`event-about-${event.id}`}>
-              <h2 id={`event-about-${event.id}`} className="club-rule text-2xl font-black">
-                {ar ? "عن الفعالية" : "About the event"}
-              </h2>
-              <RichText
-                value={
-                  lang === "en" ? event.description_en || event.description : event.description
-                }
-                className="mt-4 text-base leading-loose text-muted-foreground"
-              />
-            </section>
-
-            <section aria-labelledby={`event-information-${event.id}`}>
-              <h2 id={`event-information-${event.id}`} className="club-rule text-2xl font-black">
-                {ar ? "معلومات الفعالية" : "Event information"}
-              </h2>
-              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                {facts.map((fact) => (
-                  <EventFact key={fact.label} {...fact} />
-                ))}
-              </dl>
-            </section>
+              ) : (
+                <>
+                  <ContentImage
+                    alt={event.title_en && lang === "en" ? event.title_en : event.title}
+                    lang={lang}
+                    className="aspect-video w-full object-cover"
+                  />
+                  <figcaption className="px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                    {ar
+                      ? "صورة تعريفية للنادي — تُضاف صورة الفعالية عند توفرها."
+                      : "Club illustration — the event image will be added when available."}
+                  </figcaption>
+                </>
+              )}
+            </figure>
 
             <section
               aria-labelledby={`event-presenter-${event.id}`}
@@ -180,6 +154,34 @@ export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
                   </p>
                 </div>
               </div>
+            </section>
+          </div>
+
+          <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+            <h1 className="text-3xl font-black text-gradient-brand sm:text-5xl">
+              {lang === "en" ? event.title_en || event.title : event.title}
+            </h1>
+            <section aria-labelledby={`event-about-${event.id}`}>
+              <h2 id={`event-about-${event.id}`} className="club-rule text-2xl font-black">
+                {ar ? "عن الفعالية" : "About the event"}
+              </h2>
+              <RichText
+                value={
+                  lang === "en" ? event.description_en || event.description : event.description
+                }
+                className="mt-4 text-base leading-loose text-muted-foreground"
+              />
+            </section>
+
+            <section aria-labelledby={`event-information-${event.id}`}>
+              <h2 id={`event-information-${event.id}`} className="club-rule text-2xl font-black">
+                {ar ? "معلومات الفعالية" : "Event information"}
+              </h2>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {facts.map((fact) => (
+                  <EventFact key={fact.label} {...fact} />
+                ))}
+              </dl>
             </section>
 
             {registrationAvailable ? (

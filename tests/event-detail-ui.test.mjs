@@ -11,8 +11,11 @@ test("event details use a dedicated maintainable component", () => {
   assert.doesNotMatch(pages, /<EventRegistrationForm event=\{item\}/);
 });
 
-test("event layout keeps the image on the desktop right and content on the left", () => {
-  assert.match(detail, /lg:col-start-2 lg:row-start-1/);
+test("event layout keeps the image and presenter on the desktop right and content on the left", () => {
+  assert.match(
+    detail,
+    /space-y-5 lg:col-start-2 lg:row-start-1[\s\S]*<figure[\s\S]*event-presenter-/,
+  );
   assert.match(detail, /space-y-8 lg:col-start-1 lg:row-start-1/);
   assert.match(detail, /lg:grid-cols-2/);
 });
