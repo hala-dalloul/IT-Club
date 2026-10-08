@@ -73,13 +73,21 @@ async function request<T>(path: string, init: RequestInit, f: Fetcher): Promise<
   throw new Error(message);
 }
 
-async function rows(table: string, order: string, f: Fetcher, signal: AbortSignal, hasSlug = true) {
+async function rows(
+  table: string,
+  order: string,
+  f: Fetcher,
+  signal: AbortSignal,
+  hasSlug = true,
+  kind?: ContentCollection,
+) {
   const result: Row[] = [];
   const fields = `id,${hasSlug ? "slug," : ""}data,created_at,updated_at,updated_by`;
+  const kindFilter = kind ? `&kind=eq.${kind}` : "";
 
   for (let offset = 0; ; offset += 500) {
     const page = await request<Row[]>(
-      `${table}?select=${fields}&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
+      `${table}?select=${fields}${kindFilter}&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
       { method: "GET", signal },
       f,
     );
@@ -132,7 +140,7 @@ export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal)
     rows(contentTables.members, "updated_at", f, signal, false),
     rows(contentTables.events, "updated_at", f, signal),
     rows(contentTables.news, "updated_at", f, signal),
-    rows(contentTables.partners, "updated_at", f, signal),
+    rows(contentTables.partners, "updated_at", f, signal, true, "partners"),
     request<{ data?: Settings }[]>(
       "club_settings?select=data&id=eq.public&limit=1",
       { method: "GET", signal },
@@ -151,7 +159,7 @@ export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal)
     ["members", members],
     ["events", events],
     ["news", news],
-    ["partners", partners.filter((row) => row["kind"] === "partners")],
+    ["partners", partners],
   ];
 
   for (const [kind, content] of grouped) {

@@ -29,9 +29,41 @@ test("public reads use one stable order and propagate cancellation", async () =>
     new Set(["club_members", "club_events", "club_news", "club_content", "club_settings"]),
   );
   assert.deepEqual(content.url.searchParams.getAll("order"), ["updated_at.desc,id.asc"]);
+  assert.equal(content.url.searchParams.get("kind"), "eq.partners");
   assert.notEqual(content.url.searchParams.get("select"), "*");
   controller.abort();
   assert.ok(calls.every((c) => c.init.signal.aborted));
+});
+
+test("public partner reads return newly saved partnerships from the legacy content table", async () => {
+  const fetcher = async (input) => {
+    const url = new URL(input);
+
+    if (!url.pathname.endsWith("club_content")) return Response.json([]);
+    assert.equal(url.searchParams.get("kind"), "eq.partners");
+
+    return Response.json([
+      {
+        id: "partner-1",
+        slug: null,
+        data: {
+          title: "شريك تقني",
+          title_en: "Technology partner",
+          description: "وصف الشراكة",
+          description_en: "Partnership description",
+          images: [],
+        },
+        created_at: "2026-10-08T10:59:23Z",
+        updated_at: "2026-10-08T10:59:23Z",
+        updated_by: null,
+      },
+    ]);
+  };
+  const api = compile("src/lib/club/public-api.ts", { fetch: fetcher });
+  const result = await api.loadPublic(fetcher);
+
+  assert.equal(result.data.partners.length, 1);
+  assert.equal(result.data.partners[0].title, "شريك تقني");
 });
 
 function sitemap(fetcher) {
