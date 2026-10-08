@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
   collections,
   findItem,
-  isEmptySection,
+  isUnavailableSection,
   kindsFor,
   type Content,
   type ContentCollection,
@@ -79,7 +79,7 @@ export async function loadPage(
     // ponytail: a first item added to an empty section can still 404 for up
     // to the one-minute cache. Refreshing here instead would re-fetch on
     // every visit while the section stays empty.
-    if (isEmptySection(kind, loaded.data)) throw notFound();
+    if (isUnavailableSection(kind, loaded.data, loaded.settings)) throw notFound();
 
     return {};
   }

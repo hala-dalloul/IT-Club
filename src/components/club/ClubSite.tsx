@@ -3,7 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Globe, Menu, Moon, Sun, X } from "lucide-react";
 import logo from "@/assets/ucas-logo.webp";
 import { brandButtonClass } from "./brand-button-styles";
-import { collections, isEmptySection, type ContentCollection } from "@/lib/club/model";
+import { collections, isUnavailableSection, type ContentCollection } from "@/lib/club/model";
 import { otherLangHref, pageOf } from "@/lib/club/paths";
 import { readTheme, THEME_COOKIE, writePrefCookie } from "@/lib/club/prefs";
 import { ClubProvider } from "./ClubProvider";
@@ -74,14 +74,14 @@ function useTheme() {
 
 function SiteHeader() {
   const location = useLocation();
-  const { lang, loading, error, data } = useClub();
+  const { lang, loading, error, data, settings } = useClub();
   const [open, setOpen] = useState(false);
   const { dark, toggle } = useTheme();
   const ar = lang === "ar";
   const links =
     loading || error
       ? navigationItems
-      : navigationItems.filter(([path]) => !isEmptySection(path, data));
+      : navigationItems.filter(([path]) => !isUnavailableSection(path, data, settings));
   return (
     <header className="club-header sticky top-3 z-40 mx-auto max-w-7xl px-3 sm:px-4">
       <div className="club-header-surface">

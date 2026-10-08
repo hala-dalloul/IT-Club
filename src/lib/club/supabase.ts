@@ -178,6 +178,14 @@ export async function saveSettings(data: Settings) {
   changed();
 }
 
+export async function setTeamVisibility(visible: boolean) {
+  const result = await supabase().rpc("club_set_team_visibility", { is_visible: visible });
+  check(result.error);
+  if (result.data !== visible) throw new Error("The saved team visibility was not returned");
+  changed();
+  return visible;
+}
+
 export function observeAuth(next: (user: User | null) => void) {
   let active = true;
 

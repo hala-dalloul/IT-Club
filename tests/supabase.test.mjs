@@ -60,6 +60,9 @@ before(async () => {
   ]);
   migratedRows = seeded.map((result) => result.rows[0]);
   await db.exec(readFileSync("supabase/migrations/202610070002_split_content_tables.sql", "utf8"));
+  await db.exec(
+    readFileSync("supabase/migrations/202610080001_team_visibility_control.sql", "utf8"),
+  );
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
     owner,
     "owner@test.invalid",
@@ -185,6 +188,26 @@ test("editor writes valid content and server owns audit fields", async () => {
   await assert.rejects(() => addContent({ ...payload, unknown: true }));
   await as(null);
   assert.ok((await db.query("select * from public.club_content")).rows.length > 0);
+});
+
+test("only editors can change team visibility without changing other settings", async () => {
+  await as(owner);
+  await db.query("insert into public.club_settings(id,data) values('public',$1)", [
+    JSON.stringify({ email: "club@example.test" }),
+  ]);
+  await as(editor);
+  assert.equal(
+    (await db.query("select public.club_set_team_visibility(false) as visible")).rows[0].visible,
+    false,
+  );
+  const saved = (await db.query("select data from public.club_settings where id='public'")).rows[0]
+    .data;
+  assert.equal(saved.teamVisible, false);
+  assert.equal(saved.email, "club@example.test");
+  await as(outsider);
+  await assert.rejects(() => db.query("select public.club_set_team_visibility(true)"));
+  await as(null);
+  await assert.rejects(() => db.query("select public.club_set_team_visibility(true)"));
 });
 
 test("public submissions are valid only and cannot inject status", async () => {

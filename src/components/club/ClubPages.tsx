@@ -198,19 +198,30 @@ export function AboutPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {committees.map(([key, arabic, english], index) => {
           const count = data.members.filter((member) => member.committee === key).length;
+          const contents = (
+            <>
+              <span aria-hidden="true" className="h-1.5 w-12 rounded-full bg-brand-gradient" />
+              <h3 className="mt-5 text-xl font-extrabold">{ar ? arabic : english}</h3>
+              <p className="mt-2 text-sm font-bold text-muted-foreground">
+                <CountUp value={count} />{" "}
+                {ar ? (count === 1 ? "عضو" : "أعضاء") : count === 1 ? "member" : "members"}
+              </p>
+            </>
+          );
           return (
             <Reveal key={key} delay={index * 90}>
-              <ClubLink
-                path="members"
-                className="club-card flex h-full flex-col rounded-3xl border border-border bg-card p-6 shadow-card"
-              >
-                <span aria-hidden="true" className="h-1.5 w-12 rounded-full bg-brand-gradient" />
-                <h3 className="mt-5 text-xl font-extrabold">{ar ? arabic : english}</h3>
-                <p className="mt-2 text-sm font-bold text-muted-foreground">
-                  <CountUp value={count} />{" "}
-                  {ar ? (count === 1 ? "عضو" : "أعضاء") : count === 1 ? "member" : "members"}
-                </p>
-              </ClubLink>
+              {settings.teamVisible !== false ? (
+                <ClubLink
+                  path="members"
+                  className="club-card flex h-full flex-col rounded-3xl border border-border bg-card p-6 shadow-card"
+                >
+                  {contents}
+                </ClubLink>
+              ) : (
+                <div className="club-card flex h-full flex-col rounded-3xl border border-border bg-card p-6 shadow-card">
+                  {contents}
+                </div>
+              )}
             </Reveal>
           );
         })}

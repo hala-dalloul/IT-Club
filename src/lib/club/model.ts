@@ -127,6 +127,8 @@ export type Settings = {
    * whether to render a button.
    */
   registrationOpen?: boolean;
+  /** Whether visitors can see or open the team section. Defaults to visible. */
+  teamVisible?: boolean;
   vision: string;
   vision_en: string;
   mission: string;
@@ -141,6 +143,7 @@ export type Settings = {
 };
 
 export const emptySettings: Settings = {
+  teamVisible: true,
   vision: "",
   vision_en: "",
   mission: "",
@@ -239,11 +242,16 @@ export const joinSchema = z.object({
  * rather than being indexed as an empty page. Callers pass only loaded data;
  * an unloaded site has every list empty.
  */
-export function isEmptySection(path: string, data: Record<ContentCollection, Content[]>) {
+export function isUnavailableSection(
+  path: string,
+  data: Record<ContentCollection, Content[]>,
+  settings?: Pick<Settings, "teamVisible">,
+) {
   // SAFETY: includes only needs the wider string type; the index below runs
   // only once includes has confirmed path is a collection.
   return (
-    (collections as readonly string[]).includes(path) && !data[path as ContentCollection].length
+    (path === "members" && settings?.teamVisible === false) ||
+    ((collections as readonly string[]).includes(path) && !data[path as ContentCollection].length)
   );
 }
 

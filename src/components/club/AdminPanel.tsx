@@ -28,6 +28,7 @@ import {
   removeContent,
   uploadImage,
   saveSettings,
+  setTeamVisibility,
 } from "@/lib/club/supabase";
 import { loadPublic } from "@/lib/club/public-api";
 import { matchesArticleSearch, normalizeAdminSearch } from "@/lib/club/admin-search";
@@ -62,6 +63,8 @@ import {
   CalendarDays,
   Newspaper,
   Handshake,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const blank: Omit<Content, "id"> = { title: "", title_en: "", description: "", description_en: "" };
@@ -257,6 +260,8 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
         : "You have unsaved changes. Discard them and continue?",
     );
   const [notice, setNotice] = useState("");
+  const [teamVisibilityBusy, setTeamVisibilityBusy] = useState(false);
+  const teamVisible = settings.teamVisible !== false;
   const adminLoadError = useCallback(
     () =>
       setNotice(
@@ -472,17 +477,55 @@ function AdminWorkspace({ role, user }: { role: string; user: User }) {
             <>
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-black">{labels[activeCollection][ar ? 0 : 1]}</h2>
-                <BrandButton
-                  size="sm"
-                  onClick={() => {
-                    if (!confirmDiscard()) return;
-                    setEditing(null);
-                    setDirty(false);
-                  }}
-                >
-                  <Plus size={18} />
-                  {ar ? "إضافة جديد" : "Add new"}
-                </BrandButton>
+                <div className="flex flex-wrap gap-2">
+                  {activeCollection === "members" && (
+                    <BrandButton
+                      size="sm"
+                      variant={teamVisible ? "outline" : "primary"}
+                      disabled={teamVisibilityBusy}
+                      aria-pressed={teamVisible}
+                      onClick={() => {
+                        const nextVisible = !teamVisible;
+                        setTeamVisibilityBusy(true);
+                        void run(async () => {
+                          try {
+                            await setTeamVisibility(nextVisible);
+                            queryClient.setQueryData<Awaited<ReturnType<typeof loadPublic>>>(
+                              clubPublicKey,
+                              (old) =>
+                                old && {
+                                  ...old,
+                                  settings: { ...settings, teamVisible: nextVisible },
+                                },
+                            );
+                          } finally {
+                            setTeamVisibilityBusy(false);
+                          }
+                        });
+                      }}
+                    >
+                      {teamVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {teamVisible
+                        ? ar
+                          ? "إخفاء تبويبة الفريق"
+                          : "Hide team tab"
+                        : ar
+                          ? "إظهار تبويبة الفريق"
+                          : "Show team tab"}
+                    </BrandButton>
+                  )}
+                  <BrandButton
+                    size="sm"
+                    onClick={() => {
+                      if (!confirmDiscard()) return;
+                      setEditing(null);
+                      setDirty(false);
+                    }}
+                  >
+                    <Plus size={18} />
+                    {ar ? "إضافة جديد" : "Add new"}
+                  </BrandButton>
+                </div>
               </div>
               {activeCollection === "members" && (
                 <label className="mb-6 block">

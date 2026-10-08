@@ -6,7 +6,7 @@ import { RichTextEditor } from "@/components/club/RichTextEditor";
 import { Input } from "@/components/ui/input";
 import type { Settings } from "@/lib/club/model";
 
-type TextSetting = Exclude<keyof Settings, "registrationOpen">;
+type TextSetting = Exclude<keyof Settings, "registrationOpen" | "teamVisible">;
 
 const settingFields: Record<TextSetting, [string, string]> = {
   vision: ["الرؤية بالعربية", "Vision in Arabic"],

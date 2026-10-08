@@ -57,6 +57,7 @@ test("sitemap reads beyond one API page and numbers items oldest-first", async (
     const url = new URL(input);
     calls.push(url);
     assert.ok(init.signal);
+    if (url.pathname.endsWith("club_settings")) return Response.json([{ data: {} }]);
     assert.equal(url.searchParams.get("order"), "updated_at.desc,id.asc");
     const offset = Number(url.searchParams.get("offset"));
     return Response.json(
@@ -85,6 +86,24 @@ test("sitemap reads beyond one API page and numbers items oldest-first", async (
   assert.equal(response.status, 200);
   assert.match(await response.text(), /news\/501/);
   assert.ok(calls.length >= 2);
+});
+
+test("sitemap omits the complete team section when administrators hide it", async () => {
+  const calls = [];
+  const response = await sitemap(async (input) => {
+    const url = new URL(input);
+    calls.push(url.pathname);
+    if (url.pathname.endsWith("club_settings"))
+      return Response.json([{ data: { teamVisible: false } }]);
+    return Response.json([]);
+  })();
+
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(await response.text(), /\/team/);
+  assert.equal(
+    calls.some((path) => path.endsWith("club_members")),
+    false,
+  );
 });
 
 test("sitemap upstream exceptions return an uncached 502", async () => {

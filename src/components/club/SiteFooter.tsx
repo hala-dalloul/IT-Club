@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail, Facebook, Instagram, Linkedin, Github } from "lucide-react";
 import { useClub } from "./club-context";
 import { Reveal } from "./Reveal";
-import { collegeUrl, isEmptySection, safeUrl } from "@/lib/club/model";
+import { collegeUrl, isUnavailableSection, safeUrl } from "@/lib/club/model";
 import { hrefOf } from "@/lib/club/paths";
 import logo from "@/assets/ucas-logo.webp";
 
@@ -75,7 +75,7 @@ export function SiteFooter() {
           <Column title={ar ? "الأقسام" : "Sections"}>
             {/* Rendered only after loading; on a failed load every list is empty, so keep them. */}
             {sections
-              .filter(([path]) => error || !isEmptySection(path, data))
+              .filter(([path]) => error || !isUnavailableSection(path, data, settings))
               .map(([path, a, e]) => (
                 <Link key={path} to={hrefOf(lang, path)} className={itemClass}>
                   {ar ? a : e}
