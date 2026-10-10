@@ -887,11 +887,7 @@ function ContentEditor({
 
       onSaved();
     } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.message.includes("club_content_slug_unique") ||
-          error.message.includes("content_slugs_pkey"))
-      ) {
+      if (error instanceof Error && error.message.includes("content_slugs_pkey")) {
         setError(
           ar
             ? "اسم الرابط مستخدم لمحتوى آخر. اختر اسمًا مختلفًا أو اتركه فارغًا ليُنشأ تلقائيًا."
@@ -902,8 +898,7 @@ function ContentEditor({
       const rejectedBoard =
         kind === "members" &&
         error instanceof Error &&
-        (error.message.includes("club_content_data_check") ||
-          error.message.includes("club_members_data_check"));
+        error.message.includes("club_members_data_check");
       setError(
         rejectedBoard
           ? ar

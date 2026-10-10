@@ -23,24 +23,22 @@ test("public reads use one stable order and propagate cancellation", async () =>
   };
   const api = compile("src/lib/club/public-api.ts", { fetch: fetcher });
   await api.loadPublic(fetcher, controller.signal);
-  const content = calls.find((c) => c.url.pathname.endsWith("club_content"));
+  const content = calls.find((c) => c.url.pathname.endsWith("club_partners"));
   assert.deepEqual(
     new Set(calls.map((call) => call.url.pathname.split("/").at(-1))),
-    new Set(["club_members", "club_events", "club_news", "club_content", "club_settings"]),
+    new Set(["club_members", "club_events", "club_news", "club_partners", "club_settings"]),
   );
   assert.deepEqual(content.url.searchParams.getAll("order"), ["updated_at.desc,id.asc"]);
-  assert.equal(content.url.searchParams.get("kind"), "eq.partners");
   assert.notEqual(content.url.searchParams.get("select"), "*");
   controller.abort();
   assert.ok(calls.every((c) => c.init.signal.aborted));
 });
 
-test("public partner reads return newly saved partnerships from the legacy content table", async () => {
+test("public partner reads return newly saved partnerships from the dedicated table", async () => {
   const fetcher = async (input) => {
     const url = new URL(input);
 
-    if (!url.pathname.endsWith("club_content")) return Response.json([]);
-    assert.equal(url.searchParams.get("kind"), "eq.partners");
+    if (!url.pathname.endsWith("club_partners")) return Response.json([]);
 
     return Response.json([
       {

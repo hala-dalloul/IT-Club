@@ -12,7 +12,7 @@ OUTPUT_PATH = os.path.join(OUTPUT_DIR, "صفحة-الأخبار-كاملة.pdf")
 TEMP_DIR = r"C:\Users\hp\IT-Club\IT-Club-master\tmp\pdfs"
 HTML_PATH = os.path.join(TEMP_DIR, "news-page.html")
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-API_URL = "https://jxweaxenswbjpxxjmihb.supabase.co/rest/v1/club_content?select=id,slug,data,created_at,updated_at&kind=eq.news&order=updated_at.desc,id.asc"
+API_URL = "https://jxweaxenswbjpxxjmihb.supabase.co/rest/v1/club_news?select=id,slug,data,created_at,updated_at&order=updated_at.desc,id.asc"
 PUBLIC_KEY = "sb_publishable_kHJik-SCyMiMQ7nn2SRHbQ_0FR6CpOZ"
 
 

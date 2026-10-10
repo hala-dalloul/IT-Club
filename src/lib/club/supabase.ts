@@ -37,7 +37,7 @@ const contentTables: Record<ContentCollection, string> = {
   members: "club_members",
   events: "club_events",
   news: "club_news",
-  partners: "club_content",
+  partners: "club_partners",
 };
 
 async function rows(table: string, order = "id", tie = "id") {
@@ -148,7 +148,6 @@ export async function saveContent(
 
   const table = contentTables[kind];
   const values = {
-    ...(kind === "partners" ? { kind } : {}),
     data: value,
     ...(slug === undefined ? {} : { slug }),
   };
@@ -164,9 +163,12 @@ export async function saveContent(
 }
 
 export async function removeContent(kind: ContentCollection, id: string) {
-  let query = supabase().from(contentTables[kind]).delete().eq("id", id);
-  if (kind === "partners") query = query.eq("kind", kind);
-  const { error } = await query.select("id").single();
+  const { error } = await supabase()
+    .from(contentTables[kind])
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .single();
 
   check(error);
   changed();
@@ -306,18 +308,18 @@ export type MediaAsset = {
 };
 
 export async function loadMedia(): Promise<MediaAsset[]> {
-  const [assets, contentLinks, memberLinks, eventLinks, newsLinks] = await Promise.all([
+  const [assets, memberLinks, eventLinks, newsLinks, partnerLinks] = await Promise.all([
     rows("club_media", "created_at"),
-    rows("club_content_media", "content_id", "media_id"),
     rows("club_member_media", "member_id", "media_id"),
     rows("club_event_media", "event_id", "media_id"),
     rows("club_news_media", "news_id", "media_id"),
+    rows("club_partner_media", "partner_id", "media_id"),
   ]);
   const links = [
-    ...contentLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["content_id"] })),
     ...memberLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["member_id"] })),
     ...eventLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["event_id"] })),
     ...newsLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["news_id"] })),
+    ...partnerLinks.map((link) => ({ mediaId: link["media_id"], ownerId: link["partner_id"] })),
   ];
 
   return assets.map((a) => ({
@@ -391,15 +393,20 @@ export async function renameMedia(id: string, name: string) {
 }
 
 export async function deleteMedia(id: string) {
-  const prepared = await supabase().rpc("club_prepare_media_delete", { asset_id: id });
-  check(prepared.error);
-
-  const removed = await supabase()
-    .storage.from("club-media")
-    .remove([String(prepared.data)]);
-
-  check(removed.error);
-  const done = await supabase().from("club_media").delete().eq("id", id).select("id").single();
-  check(done.error);
-  changed();
+  try {
+    const { data, error } = await supabase().functions.invoke("delete-media", {
+      body: { assetId: id },
+    });
+    if (error) {
+      let message = error.message;
+      if ("context" in error && error.context instanceof Response) {
+        const detail = await error.context.json().catch(() => null);
+        if (detail && typeof detail.error === "string") message = detail.error;
+      }
+      throw new Error(message);
+    }
+    if (!data?.deleted) throw new Error("The image could not be deleted. Please retry.");
+  } finally {
+    changed();
+  }
 }

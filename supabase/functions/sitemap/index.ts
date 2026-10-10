@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         ["club_members", "members", ""],
         ["club_events", "events", ""],
         ["club_news", "news", ""],
-        ["club_content", "partners", "&kind=eq.partners"],
+        ["club_partners", "partners", ""],
       ] as const
     ).filter(([, kind]) => kind !== "members" || teamVisible);
     for (const [table, kind, filter] of tables) {

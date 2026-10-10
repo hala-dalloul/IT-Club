@@ -57,9 +57,16 @@ before(async () => {
     db.query("insert into club_content(kind,data) values('news',$1) returning id,slug,created_at", [
       JSON.stringify({ ...legacyBase, date: "2026-10-07" }),
     ]),
+    db.query(
+      "insert into club_content(kind,data) values('partners',$1) returning id,slug,created_at",
+      [JSON.stringify(legacyBase)],
+    ),
   ]);
   migratedRows = seeded.map((result) => result.rows[0]);
   await db.exec(readFileSync("supabase/migrations/202610070002_split_content_tables.sql", "utf8"));
+  await db.exec(
+    readFileSync("supabase/migrations/202610080002_separate_partners_remove_legacy.sql", "utf8"),
+  );
   await db.exec(
     readFileSync("supabase/migrations/202610080001_team_visibility_control.sql", "utf8"),
   );
@@ -92,26 +99,21 @@ async function as(id) {
 }
 
 const payload = {
-  title: "مشروع تجريبي",
-  title_en: "Test project",
-  description: "وصف المشروع التجريبي",
-  description_en: "A project description",
+  title: "شريك تجريبي",
+  title_en: "Test partner",
+  description: "وصف الشريك التجريبي",
+  description_en: "A partner description",
   images: [],
-  category: "web",
-  year: 2026,
-  technologies: [],
-  memberIds: [],
 };
 
 const addContent = (value = payload) =>
-  db.query("insert into public.club_content(kind,data) values($1,$2) returning id,updated_by", [
-    "projects",
+  db.query("insert into public.club_partners(data) values($1) returning id,updated_by", [
     JSON.stringify(value),
   ]);
 
-test("existing members, events and news copy to dedicated tables without changing identity", async () => {
+test("legacy content copies to dedicated tables before the old tables are removed", async () => {
   await as(null);
-  const [member, event, news] = migratedRows;
+  const [member, event, news, partner] = migratedRows;
   const migratedMember = (
     await db.query("select id,created_at from club_members where id=$1", [member.id])
   ).rows[0];
@@ -121,6 +123,9 @@ test("existing members, events and news copy to dedicated tables without changin
   const migratedNews = (
     await db.query("select id,slug,created_at from club_news where id=$1", [news.id])
   ).rows[0];
+  const migratedPartner = (
+    await db.query("select id,slug,created_at from club_partners where id=$1", [partner.id])
+  ).rows[0];
 
   assert.equal(migratedMember.id, member.id);
   assert.equal(String(migratedMember.created_at), String(member.created_at));
@@ -128,28 +133,24 @@ test("existing members, events and news copy to dedicated tables without changin
   assert.equal(String(migratedEvent.created_at), String(event.created_at));
   assert.equal(migratedNews.slug, news.slug);
   assert.equal(String(migratedNews.created_at), String(news.created_at));
+  assert.equal(migratedPartner.id, partner.id);
+  assert.equal(migratedPartner.slug, partner.slug);
+  assert.equal(String(migratedPartner.created_at), String(partner.created_at));
   assert.equal(
-    (await db.query("select id from club_content where kind in ('members','events','news')")).rows
-      .length,
-    3,
+    (
+      await db.query(
+        "select count(*)::int as n from pg_tables where schemaname='public' and tablename in ('club_content','club_content_media')",
+      )
+    ).rows[0].n,
+    0,
   );
-  await as(editor);
-  const archivedUpdate = await db.query(
-    "update club_content set data=data where id=$1 returning id",
-    [member.id],
-  );
-  assert.equal(archivedUpdate.rows.length, 0);
-  await assert.rejects(() =>
-    db.query("insert into club_content(kind,data) values('news',$1)", [
-      JSON.stringify({
-        title: "Archived write",
-        title_en: "Archived write",
-        description: "Archived write must fail",
-        description_en: "Archived write must fail",
-        images: [],
-        date: "2026-10-07",
-      }),
-    ]),
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int as n from pg_views where schemaname='public' and viewname in ('club_content','club_content_media')",
+      )
+    ).rows[0].n,
+    2,
   );
 });
 
@@ -184,10 +185,26 @@ test("editor writes valid content and server owns audit fields", async () => {
   await as(editor);
   const result = await addContent();
   assert.equal(result.rows[0].updated_by, editor);
-  await assert.rejects(() => addContent({ ...payload, year: 1800 }));
+  await assert.rejects(() => addContent({ ...payload, title: "x" }));
   await assert.rejects(() => addContent({ ...payload, unknown: true }));
   await as(null);
-  assert.ok((await db.query("select * from public.club_content")).rows.length > 0);
+  assert.ok((await db.query("select * from public.club_partners")).rows.length > 0);
+});
+
+test("the temporary legacy view routes partner writes to the dedicated table", async () => {
+  await as(editor);
+  const inserted = await db.query(
+    "insert into public.club_content(kind,data) values('partners',$1) returning id",
+    [JSON.stringify(payload)],
+  );
+  assert.equal(
+    (
+      await db.query("select count(*)::int as n from club_partners where id=$1", [
+        inserted.rows[0].id,
+      ])
+    ).rows[0].n,
+    1,
+  );
 });
 
 test("only editors can change team visibility without changing other settings", async () => {
@@ -278,7 +295,7 @@ test("media library guards in-use files and updates links transactionally", asyn
 
   const content = (await addContent({ ...payload, images: [image] })).rows[0].id;
   assert.equal(
-    (await db.query("select * from public.club_content_media where media_id=$1", [asset])).rows
+    (await db.query("select * from public.club_partner_media where media_id=$1", [asset])).rows
       .length,
     1,
   );
@@ -289,13 +306,13 @@ test("media library guards in-use files and updates links transactionally", asyn
   ]);
 
   assert.equal(deleted.rows.length, 0);
-  await db.query("update public.club_content set data=$1 where id=$2", [
+  await db.query("update public.club_partners set data=$1 where id=$2", [
     JSON.stringify(payload),
     content,
   ]);
   await db.query("select public.club_prepare_media_delete($1)", [asset]);
   await assert.rejects(() =>
-    db.query("update public.club_content set data=$1 where id=$2", [
+    db.query("update public.club_partners set data=$1 where id=$2", [
       JSON.stringify({ ...payload, images: [image] }),
       content,
     ]),
@@ -476,9 +493,7 @@ test("news and events accept an optional summary; other kinds and bad lengths ar
   };
   const insert = (kind, value) =>
     kind === "partners"
-      ? db.query("insert into club_content(kind,data) values('partners',$1)", [
-          JSON.stringify(value),
-        ])
+      ? db.query("insert into club_partners(data) values($1)", [JSON.stringify(value)])
       : db.query(`insert into club_${kind}(data) values($1)`, [JSON.stringify(value)]);
 
   await insert("news", { ...data, summary: "ملخص قصير", summary_en: "A short summary" });
@@ -503,9 +518,7 @@ test("news and events accept validated Google Drive image fields only", async ()
   const driveImage = "https://drive.google.com/thumbnail?id=1AbCdEfGhIjKlMnOpQrStUvWxYz&sz=w2000";
   const insert = (kind, value) =>
     kind === "partners"
-      ? db.query("insert into club_content(kind,data) values('partners',$1)", [
-          JSON.stringify(value),
-        ])
+      ? db.query("insert into club_partners(data) values($1)", [JSON.stringify(value)])
       : db.query(`insert into club_${kind}(data) values($1)`, [JSON.stringify(value)]);
 
   await insert("news", { ...data, driveImageUrls: [driveImage] });

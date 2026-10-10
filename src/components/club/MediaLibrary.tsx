@@ -217,11 +217,16 @@ function AssetCard({
 
     try {
       await work();
-    } catch {
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "";
       setError(
-        ar
-          ? "تعذر إتمام العملية. قد تكون الصورة مستخدمة أو تحتاج صلاحيات."
-          : "Could not complete the action. The image may be in use or access may be missing.",
+        message.includes("Image is used by published content")
+          ? ar
+            ? "الصورة مستخدمة في محتوى منشور. أزلها من ذلك المحتوى أولًا ثم أعد المحاولة."
+            : "This image is used by published content. Remove it there first, then retry."
+          : ar
+            ? `تعذر إتمام العملية${message ? `: ${message}` : "."}`
+            : `Could not complete the action${message ? `: ${message}` : "."}`,
       );
     } finally {
       setBusy(false);
@@ -256,6 +261,11 @@ function AssetCard({
               <li key={i}>{label}</li>
             ))}
           </ul>
+          <p className="mt-2 text-muted-foreground">
+            {ar
+              ? "للحذف النهائي، أزل الصورة من المحتوى المذكور أعلاه واحفظ التغيير أولًا."
+              : "To delete it permanently, remove it from the content above and save first."}
+          </p>
         </div>
       ) : (
         <p className="mt-3 text-sm text-muted-foreground">

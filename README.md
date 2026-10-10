@@ -21,6 +21,7 @@ Supabase provides authentication, PostgreSQL data management, Row Level Security
 ## Features
 
 ### Public Platform
+
 - Club information and configurable content.
 - Members, events, news, and partners.
 - Public media.
@@ -28,6 +29,7 @@ Supabase provides authentication, PostgreSQL data management, Row Level Security
 - Social contact channels without storing contact messages.
 
 ### Administration
+
 - Authenticated administration.
 - Editor and super administrator roles.
 - Content creation and editing.
@@ -36,6 +38,7 @@ Supabase provides authentication, PostgreSQL data management, Row Level Security
 - Member and project management.
 
 ### Media Library
+
 - JPG, PNG, and WebP uploads.
 - Maximum upload size of 5 MB.
 - Image compression and resizing.
@@ -58,14 +61,17 @@ Web Application (TanStack Start)
 
 ## Data Model
 
-| Table | Responsibility |
-|---|---|
-| `club_content` | Members, events, news, and partners |
-| `club_settings` | Official club text and links |
-| `club_visits` | Privacy-preserving session visit count |
-| `club_admins` | Editor and super administrator roles |
-| `club_media` | Media library records |
-| `club_content_media` | Media/content relationships |
+| Table                                                                            | Responsibility                            |
+| -------------------------------------------------------------------------------- | ----------------------------------------- |
+| `club_members`                                                                   | Club members                              |
+| `club_events`                                                                    | Events and registration configuration     |
+| `club_news`                                                                      | News articles                             |
+| `club_partners`                                                                  | Club partners                             |
+| `club_settings`                                                                  | Official club text and links              |
+| `club_visits`                                                                    | Privacy-preserving session visit count    |
+| `club_admins`                                                                    | Editor and super administrator roles      |
+| `club_media`                                                                     | Media library records                     |
+| `club_member_media`, `club_event_media`, `club_news_media`, `club_partner_media` | Media relationships for each content type |
 
 `club_submissions` remains in the original migration for legacy compatibility, but new membership and event registrations are stored in Google Sheets. It is not part of the current public workflow.
 
@@ -81,19 +87,19 @@ Public media is available to the club website, while media-library management re
 
 ## Technology Stack
 
-| Area | Technology |
-|---|---|
-| Language | TypeScript |
-| Build Tool | Vite |
-| Runtime / Package Manager | Bun |
-| Backend | Supabase |
-| Database | PostgreSQL |
-| Authentication | Supabase Auth |
-| Authorization | PostgreSQL RLS |
-| Storage | Supabase Storage |
-| Testing | Node test runner and PGlite |
-| Formatting | Prettier |
-| Linting | ESLint |
+| Area                      | Technology                  |
+| ------------------------- | --------------------------- |
+| Language                  | TypeScript                  |
+| Build Tool                | Vite                        |
+| Runtime / Package Manager | Bun                         |
+| Backend                   | Supabase                    |
+| Database                  | PostgreSQL                  |
+| Authentication            | Supabase Auth               |
+| Authorization             | PostgreSQL RLS              |
+| Storage                   | Supabase Storage            |
+| Testing                   | Node test runner and PGlite |
+| Formatting                | Prettier                    |
+| Linting                   | ESLint                      |
 
 ## Environment Configuration
 

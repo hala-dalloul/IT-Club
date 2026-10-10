@@ -73,21 +73,13 @@ async function request<T>(path: string, init: RequestInit, f: Fetcher): Promise<
   throw new Error(message);
 }
 
-async function rows(
-  table: string,
-  order: string,
-  f: Fetcher,
-  signal: AbortSignal,
-  hasSlug = true,
-  kind?: ContentCollection,
-) {
+async function rows(table: string, order: string, f: Fetcher, signal: AbortSignal, hasSlug = true) {
   const result: Row[] = [];
   const fields = `id,${hasSlug ? "slug," : ""}data,created_at,updated_at,updated_by`;
-  const kindFilter = kind ? `&kind=eq.${kind}` : "";
 
   for (let offset = 0; ; offset += 500) {
     const page = await request<Row[]>(
-      `${table}?select=${fields}${kindFilter}&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
+      `${table}?select=${fields}&order=${order}.desc,id.asc&offset=${offset}&limit=500`,
       { method: "GET", signal },
       f,
     );
@@ -104,7 +96,7 @@ const contentTables: Record<ContentCollection, string> = {
   members: "club_members",
   events: "club_events",
   news: "club_news",
-  partners: "club_content",
+  partners: "club_partners",
 };
 
 /**
@@ -120,9 +112,8 @@ export async function contentExists(ref: string, kinds: ContentCollection[]) {
   const results = await Promise.all(
     kinds.map((kind) => {
       if (kind === "members" && column === "slug") return Promise.resolve([]);
-      const kindFilter = kind === "partners" ? "&kind=eq.partners" : "";
       return request<{ id: string }[]>(
-        `${contentTables[kind]}?select=id&${column}=eq.${ref}${kindFilter}&limit=1`,
+        `${contentTables[kind]}?select=id&${column}=eq.${ref}&limit=1`,
         { method: "GET" },
         fetch,
       );
@@ -140,7 +131,7 @@ export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal)
     rows(contentTables.members, "updated_at", f, signal, false),
     rows(contentTables.events, "updated_at", f, signal),
     rows(contentTables.news, "updated_at", f, signal),
-    rows(contentTables.partners, "updated_at", f, signal, true, "partners"),
+    rows(contentTables.partners, "updated_at", f, signal),
     request<{ data?: Settings }[]>(
       "club_settings?select=data&id=eq.public&limit=1",
       { method: "GET", signal },

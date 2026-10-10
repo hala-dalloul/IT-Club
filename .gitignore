@@ -49,6 +49,7 @@ docs/SRS_UCAS_IT_Club_Website_v2.docx.md
 .impeccable/
 
 # Generated local artifacts
+.artifact-work/
 output/
 outputs/
 tmp/
