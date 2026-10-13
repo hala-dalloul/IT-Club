@@ -952,8 +952,6 @@ function ContentEditor({
   const extraFields: [keyof Content, string, string, string][] =
     kind === "members"
       ? [
-          ["role", "الدور بالعربية", "Role in Arabic", "text"],
-          ["role_en", "الدور بالإنجليزية", "Role in English", "text"],
           ["githubUrl", "رابط GitHub", "GitHub URL", "url"],
           ["linkedinUrl", "رابط LinkedIn", "LinkedIn URL", "url"],
         ]
@@ -1054,6 +1052,37 @@ function ContentEditor({
           </label>
         ))}
       </div>
+      {kind === "members" && (
+        <fieldset className="rounded-2xl border border-primary/30 bg-brand-gradient-soft/30 p-5">
+          <legend className="px-2 font-bold">
+            {ar ? "المسمّى الظاهر على بطاقة العضو" : "Member title shown on the card"}
+          </legend>
+          <p className="mb-4 text-sm font-normal text-muted-foreground">
+            {ar
+              ? "اكتب الصفة التي تظهر أسفل اسم العضو، مثل: نائب الرئيس. ولكل عضو مسمّى خاص به."
+              : "Enter the position shown below the member’s name, such as Vice President. Each member has their own title."}
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {(
+              [
+                ["role", "بالعربية", "Arabic", "نائب الرئيس"],
+                ["role_en", "بالإنجليزية", "English", "Vice President"],
+              ] as const
+            ).map(([key, a, en, placeholder]) => (
+              <label key={key} className="block text-sm font-bold">
+                <span className="mb-2 block">{ar ? `المسمّى ${a}` : `${en} title`}</span>
+                <Input
+                  name={key}
+                  maxLength={200}
+                  defaultValue={item?.[key] || ""}
+                  placeholder={placeholder}
+                  dir={key.endsWith("_en") ? "ltr" : "rtl"}
+                />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {kind === "members" && (
         <label className="block text-sm font-bold">
           <span className="mb-2 block">
