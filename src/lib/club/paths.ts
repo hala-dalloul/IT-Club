@@ -39,9 +39,10 @@ export function hrefOf(lang: Lang, page: string): string {
 /** Public item addresses use their one-based position in the collection. */
 export function itemPage(
   kind: ContentCollection,
-  item: Pick<Content, "id">,
+  item: Pick<Content, "id" | "slug">,
   data: Record<ContentCollection, Content[]>,
 ) {
+  if (kind === "members") return `${kind}/${item.slug || item.id}`;
   return `${kind}/${publicItemIndex(data, kind, item)}`;
 }
 

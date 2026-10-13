@@ -118,7 +118,7 @@ export function watchQuery<T>(
 
 /**
  * `slug` is the item's URL name: a string sets it, null asks the database to
- * generate one from title_en, and undefined (members) leaves the column alone.
+ * generate one from title_en, and undefined leaves the column alone.
  */
 export async function saveContent(
   kind: ContentCollection,

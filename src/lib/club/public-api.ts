@@ -111,7 +111,6 @@ export async function contentExists(ref: string, kinds: ContentCollection[]) {
   const column = /^[0-9a-f-]{36}$/i.test(ref) ? "id" : "slug";
   const results = await Promise.all(
     kinds.map((kind) => {
-      if (kind === "members" && column === "slug") return Promise.resolve([]);
       return request<{ id: string }[]>(
         `${contentTables[kind]}?select=id&${column}=eq.${ref}&limit=1`,
         { method: "GET" },
@@ -128,7 +127,7 @@ export async function loadPublic(f: Fetcher = fetch, callerSignal?: AbortSignal)
   const deadline = AbortSignal.timeout(8000);
   const signal = callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline;
   const [members, events, news, partners, settings] = await Promise.all([
-    rows(contentTables.members, "updated_at", f, signal, false),
+    rows(contentTables.members, "updated_at", f, signal),
     rows(contentTables.events, "updated_at", f, signal),
     rows(contentTables.news, "updated_at", f, signal),
     rows(contentTables.partners, "updated_at", f, signal),
