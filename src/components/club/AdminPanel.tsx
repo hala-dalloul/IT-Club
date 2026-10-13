@@ -842,10 +842,9 @@ function ContentEditor({
       }
     }
 
-    // Members keep their ids in URLs; everything else has a readable name.
-    const typedSlug = values["slug"]?.trim().toLowerCase() || item?.slug || "";
+    const typedSlug = values["slug"]?.trim().toLowerCase() ?? item?.slug ?? "";
 
-    if (kind !== "members" && typedSlug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(typedSlug)) {
+    if (typedSlug && (typedSlug.length > 80 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(typedSlug))) {
       setError(
         ar
           ? "اسم الرابط: حروف إنجليزية صغيرة وأرقام وشرطات فقط، مثل club-launch-2026."
@@ -859,13 +858,7 @@ function ContentEditor({
     setError("");
 
     try {
-      const savedId = await saveContent(
-        targetKind,
-        value,
-        item?.id,
-        kind,
-        kind === "members" ? undefined : typedSlug || null,
-      );
+      const savedId = await saveContent(targetKind, value, item?.id, kind, typedSlug || null);
 
       if (targetKind === "events" && status === "upcoming" && eventRegistration.enabled) {
         await ensureEventSheet(savedId, value.title);
@@ -959,8 +952,6 @@ function ContentEditor({
   const extraFields: [keyof Content, string, string, string][] =
     kind === "members"
       ? [
-          ["role", "الدور بالعربية", "Role in Arabic", "text"],
-          ["role_en", "الدور بالإنجليزية", "Role in English", "text"],
           ["githubUrl", "رابط GitHub", "GitHub URL", "url"],
           ["linkedinUrl", "رابط LinkedIn", "LinkedIn URL", "url"],
         ]
@@ -1061,6 +1052,58 @@ function ContentEditor({
           </label>
         ))}
       </div>
+      {kind === "members" && (
+        <fieldset className="rounded-2xl border border-primary/30 bg-brand-gradient-soft/30 p-5">
+          <legend className="px-2 font-bold">
+            {ar ? "المسمّى الظاهر على بطاقة العضو" : "Member title shown on the card"}
+          </legend>
+          <p className="mb-4 text-sm font-normal text-muted-foreground">
+            {ar
+              ? "اكتب الصفة التي تظهر أسفل اسم العضو، مثل: نائب الرئيس. ولكل عضو مسمّى خاص به."
+              : "Enter the position shown below the member’s name, such as Vice President. Each member has their own title."}
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {(
+              [
+                ["role", "بالعربية", "Arabic", "نائب الرئيس"],
+                ["role_en", "بالإنجليزية", "English", "Vice President"],
+              ] as const
+            ).map(([key, a, en, placeholder]) => (
+              <label key={key} className="block text-sm font-bold">
+                <span className="mb-2 block">{ar ? `المسمّى ${a}` : `${en} title`}</span>
+                <Input
+                  name={key}
+                  maxLength={200}
+                  defaultValue={item?.[key] || ""}
+                  placeholder={placeholder}
+                  dir={key.endsWith("_en") ? "ltr" : "rtl"}
+                />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {kind === "members" && (
+        <label className="block text-sm font-bold">
+          <span className="mb-2 block">
+            {ar ? "اسم رابط صفحة العضو (بالإنجليزية)" : "Member page URL name (English)"}
+          </span>
+          <Input
+            name="slug"
+            maxLength={80}
+            defaultValue={item?.slug || ""}
+            dir="ltr"
+            placeholder="member-name"
+            aria-describedby="member-slug-help"
+            onChange={() => setDirty(true)}
+          />
+          <span id="member-slug-help" className="mt-2 block font-normal text-muted-foreground">
+            {ar
+              ? "أحرف إنجليزية صغيرة وأرقام وشرطات فقط. اتركه فارغًا لإنشائه من الاسم الإنجليزي."
+              : "Use lowercase English letters, numbers, and hyphens. Leave blank to generate it from the English name."}
+          </span>
+        </label>
+      )}
       {isArticle && (
         <div className="grid gap-5 sm:grid-cols-2">
           {(

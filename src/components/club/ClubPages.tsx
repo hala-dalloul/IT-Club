@@ -9,6 +9,8 @@ import {
   Smartphone,
   Target,
   Users,
+  Github,
+  Linkedin,
 } from "lucide-react";
 import { HeroSection } from "@/components/ui/hero-section-4";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -400,11 +402,71 @@ export function DetailPage({ kind, id }: { kind: ContentCollection; id: string }
           </li>
         </ol>
       </nav>
-      {kind !== "events" && kind !== "news" && <Heading ar={item.title} en={item.title_en} />}
+      {kind !== "events" && kind !== "news" && kind !== "members" && (
+        <Heading ar={item.title} en={item.title_en} />
+      )}
       {kind === "events" ? (
         <EventDetail event={item} lang={lang} />
       ) : kind === "news" ? (
         <NewsDetail news={item} lang={lang} />
+      ) : kind === "members" ? (
+        <article className="rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
+          <div className="grid grid-cols-[128px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[184px_minmax(0,1fr)] sm:gap-6 lg:grid-cols-[232px_minmax(0,1fr)]">
+            <img
+              src={item.images?.map(safeUrl).find(Boolean) || logo}
+              alt={local(item, "title", lang)}
+              width={450}
+              height={600}
+              className={`aspect-[3/4] w-full max-w-[232px] rounded-2xl ${item.images?.some((image) => safeUrl(image)) ? "object-cover object-top" : "object-contain bg-brand-gradient-soft p-4"}`}
+            />
+            <div className="min-w-0">
+              <h1 className="break-words text-2xl font-black leading-relaxed sm:text-3xl">
+                {local(item, "title", lang)}
+              </h1>
+              <p className="mt-3 text-base text-muted-foreground">
+                {local(item, "role", lang) ||
+                  (ar ? "عضو النادي التكنولوجي" : "UCAS IT Club member")}
+              </p>
+              <RichText
+                value={local(item, "description", lang)}
+                className="mt-5 text-base leading-loose"
+              />
+              <div className="mt-6 flex flex-wrap items-center gap-5">
+                {(
+                  [
+                    ["githubUrl", "GitHub", Github],
+                    ["linkedinUrl", "LinkedIn", Linkedin],
+                  ] as const
+                ).map(([key, label, Icon]) =>
+                  safeUrl(item[key]) ? (
+                    <a
+                      key={key}
+                      href={safeUrl(item[key])}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 font-bold text-primary"
+                    >
+                      <Icon size={20} /> {label}
+                    </a>
+                  ) : null,
+                )}
+              </div>
+            </div>
+          </div>
+          {item.images
+            ?.slice(1)
+            .map(safeUrl)
+            .filter(Boolean)
+            .map((src, i) => (
+              <img
+                key={`${src}-${i}`}
+                src={src}
+                alt={local(item, "title", lang)}
+                loading="lazy"
+                className="mt-8 max-h-[70vh] w-full rounded-2xl object-contain"
+              />
+            ))}
+        </article>
       ) : (
         <article className="rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-10">
           {item.date && (

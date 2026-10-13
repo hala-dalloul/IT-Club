@@ -21,7 +21,7 @@ export const collegeUrl: Record<Lang, string> = {
 
 export type Content = {
   id: string;
-  /** Readable URL name for news, events and partners; members keep their id. */
+  /** Readable URL name for news, events, partners, and member profiles. */
   slug?: string;
   title: string;
   title_en: string;
