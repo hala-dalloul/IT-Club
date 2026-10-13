@@ -1,4 +1,4 @@
-import { Plus, ArrowUpRight, Linkedin, Github } from "lucide-react";
+import { Plus, Linkedin, Github } from "lucide-react";
 import {
   Sheet,
   SheetTrigger,
@@ -6,7 +6,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { safeUrl, type Content, type Lang } from "@/lib/club/model";
+import { committees, safeUrl, type Content, type Lang } from "@/lib/club/model";
 import logo from "@/assets/ucas-logo.webp";
 import { RichText } from "@/components/club/RichText";
 import { plainRichText } from "@/lib/club/rich-text";
@@ -15,45 +15,47 @@ import { plainRichText } from "@/lib/club/rich-text";
 export default function InformationDrawer({ teams, lang }: { teams: Content[]; lang: Lang }) {
   const ar = lang === "ar";
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
       {teams.map((member, index) => {
         const name = ar ? member.title : member.title_en || member.title;
         const description = ar ? member.description : member.description_en || member.description;
         const role = ar ? member.role : member.role_en || member.role;
         const photo = member.images?.map(safeUrl).find(Boolean);
         const image = photo || logo;
-        // The club logo stands in for a missing photo; inset it so it reads as a
-        // placeholder mark rather than a cropped portrait.
-        const fit = photo ? "object-cover object-top" : "object-contain p-4";
+        const detailImageFit = photo ? "object-cover object-top" : "object-contain p-4";
+        const committee = committees.find(([key]) => key === member.committee);
+        const committeeName = committee ? (ar ? committee[1] : committee[2]) : "";
         return (
           <Sheet key={member.id}>
             <SheetTrigger asChild>
               <button
                 type="button"
                 aria-label={ar ? `عرض معلومات ${name}` : `View ${name}`}
-                className="group relative aspect-[3/4] w-full min-w-0 justify-self-center lg:w-[95%] overflow-hidden rounded-2xl sm:rounded-3xl border border-border bg-card text-start shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card text-start shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:rounded-3xl"
               >
-                <img
-                  src={image}
-                  alt=""
-                  width={450}
-                  height={600}
-                  loading="lazy"
-                  className={`h-full w-full ${fit} transition duration-300 group-hover:grayscale motion-reduce:transition-none`}
-                />
-                <span className="absolute end-2 top-2 rounded-full bg-black/40 p-1.5 sm:end-3 sm:top-3 sm:p-2 text-white">
-                  <Plus size={18} />
-                </span>
-                <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 sm:gap-2 bg-black/60 p-2 sm:p-3 lg:p-5 text-white backdrop-blur-md transition-transform duration-300 lg:translate-y-full lg:group-hover:translate-y-0 lg:group-focus-visible:translate-y-0 motion-reduce:transition-none">
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm sm:text-base lg:text-xl font-bold">
-                      {name}
-                    </span>
-                    <span className="mt-1 block truncate text-xs sm:text-sm">
-                      {role || plainRichText(description)}
-                    </span>
+                <span className="relative block aspect-[4/4.3] w-full overflow-hidden bg-brand-gradient-soft">
+                  <img
+                    src={image}
+                    alt=""
+                    width={450}
+                    height={600}
+                    loading="lazy"
+                    className={`h-full w-full transition duration-500 group-hover:scale-105 motion-reduce:transition-none ${photo ? "object-cover object-top" : "object-contain p-8"}`}
+                  />
+                  <span className="absolute end-2 top-2 rounded-full border border-white/40 bg-background/90 p-2 text-primary shadow-sm sm:end-3 sm:top-3">
+                    <Plus size={17} />
                   </span>
-                  <ArrowUpRight className="hidden shrink-0 sm:block" size={22} />
+                </span>
+                <span className="flex min-h-24 flex-1 flex-col justify-center p-3 sm:min-h-28 sm:p-4">
+                  <span className="truncate text-sm font-black leading-snug sm:text-base">{name}</span>
+                  <span className="mt-1.5 line-clamp-1 text-xs font-medium text-muted-foreground sm:text-sm">
+                    {role || plainRichText(description)}
+                  </span>
+                  {committeeName && (
+                    <span className="mt-3 w-fit max-w-full truncate rounded-full bg-brand-gradient-soft px-2.5 py-1 text-[10px] font-bold text-primary sm:text-xs">
+                      {committeeName}
+                    </span>
+                  )}
                 </span>
               </button>
             </SheetTrigger>
@@ -71,7 +73,7 @@ export default function InformationDrawer({ teams, lang }: { teams: Content[]; l
                   alt={name}
                   width={450}
                   height={600}
-                  className={`aspect-[3/4] w-full max-w-[232px] rounded-2xl ${fit}`}
+                  className={`aspect-[3/4] w-full max-w-[232px] rounded-2xl ${detailImageFit}`}
                 />
                 <div className="min-w-0">
                   <SheetTitle className="break-words text-2xl font-black leading-relaxed sm:text-3xl">
