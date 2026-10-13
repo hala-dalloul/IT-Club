@@ -68,6 +68,9 @@ before(async () => {
     readFileSync("supabase/migrations/202610080002_separate_partners_remove_legacy.sql", "utf8"),
   );
   await db.exec(
+    readFileSync("supabase/migrations/20261013202822_member_profile_slugs.sql", "utf8"),
+  );
+  await db.exec(
     readFileSync("supabase/migrations/202610080001_team_visibility_control.sql", "utf8"),
   );
   await db.query("insert into auth.users values($1,$2),($3,$4),($5,$6)", [
@@ -590,7 +593,7 @@ test("event details accept complete valid data and reject other kinds or malform
   }
 });
 
-test("slugs are generated once, unique, editable and never set on members", async () => {
+test("slugs are generated once, unique, editable and shared with member profiles", async () => {
   await as(editor);
   const data = (title_en) => ({
     title: "خبر",
@@ -603,8 +606,9 @@ test("slugs are generated once, unique, editable and never set on members", asyn
   const add = async (kind, value, slug) => {
     if (kind === "members")
       return (
-        await db.query("insert into club_members(data) values($1) returning id", [
+        await db.query("insert into club_members(data,slug) values($1,$2) returning id,slug", [
           JSON.stringify(value),
+          slug ?? null,
         ])
       ).rows[0];
     return (
@@ -649,7 +653,13 @@ test("slugs are generated once, unique, editable and never set on members", asyn
   const member = await add(
     "members",
     { ...data("Member Name"), committee: "media", isFounder: false, gender: "male" },
-    "member-link",
+    null,
   );
-  assert.equal(member.slug, undefined);
+  assert.equal(member.slug, "member-name");
+  await db.query("update club_members set slug=$1 where id=$2", ["dalloul-deputy", member.id]);
+  assert.equal(
+    (await db.query("select slug from club_members where id=$1", [member.id])).rows[0].slug,
+    "dalloul-deputy",
+  );
+  await assert.rejects(() => add("news", data("Taken by a member"), "dalloul-deputy"));
 });
