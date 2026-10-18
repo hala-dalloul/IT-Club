@@ -61,10 +61,18 @@ function EventFact({
   );
 }
 
-export function EventDetail({ event, lang }: { event: Content; lang: Lang }) {
+export function EventDetail({
+  event,
+  lang,
+  previewImage,
+}: {
+  event: Content;
+  lang: Lang;
+  previewImage?: string;
+}) {
   const ar = lang === "ar";
   const [registrationOpen, setRegistrationOpen] = useState(false);
-  const validImages = contentImageUrls(event);
+  const validImages = [...(previewImage ? [previewImage] : []), ...contentImageUrls(event)];
   const cover = validImages[0];
   const registrationAvailable = eventRegistrationIsAvailable(event);
   const ended = eventHasEnded(event);

@@ -19,9 +19,17 @@ type Props = {
   dir: "rtl" | "ltr";
   required?: boolean;
   onDirty?: () => void;
+  onValueChange?: (value: string) => void;
 };
 
-export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty }: Props) {
+export function RichTextEditor({
+  name,
+  defaultValue = "",
+  dir,
+  required,
+  onDirty,
+  onValueChange,
+}: Props) {
   const editor = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
   const [value, setValue] = useState(defaultValue);
@@ -53,7 +61,9 @@ export function RichTextEditor({ name, defaultValue = "", dir, required, onDirty
 
   const update = () => {
     if (!editor.current) return;
-    setValue(encodeRichText(editor.current.innerHTML));
+    const nextValue = encodeRichText(editor.current.innerHTML);
+    setValue(nextValue);
+    onValueChange?.(nextValue);
     onDirty?.();
   };
 

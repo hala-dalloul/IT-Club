@@ -74,18 +74,22 @@ export function Empty() {
   );
 }
 
-function Card({
+export function ContentCard({
   item,
   kind,
   compact = false,
+  preview = false,
+  imagePreview,
 }: {
   item: Content;
   kind: Exclude<ContentCollection, "members">;
   compact?: boolean;
+  preview?: boolean;
+  imagePreview?: string;
 }) {
   const { lang, data } = useClub();
   const title = local(item, "title", lang);
-  const image = contentImageUrls(item)[0];
+  const image = imagePreview || contentImageUrls(item)[0];
   const partner = kind === "partners";
   const status = kind === "events" ? eventDisplayStatus(item) : undefined;
 
@@ -165,6 +169,11 @@ function Card({
               </a>
             )}
           </div>
+        ) : preview ? (
+          <span className="club-card-cta mt-auto inline-flex items-center gap-2 pt-5 font-bold text-primary">
+            {lang === "ar" ? "التفاصيل" : "View details"}
+            {lang === "ar" ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
+          </span>
         ) : (
           <ClubLink
             path={itemPage(kind, item, data)}
@@ -197,7 +206,7 @@ export function ContentGrid({
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item, index) => (
         <Reveal key={item.id} delay={(index % 3) * 110}>
-          <Card item={item} kind={kind} compact={compact} />
+          <ContentCard item={item} kind={kind} compact={compact} />
         </Reveal>
       ))}
     </div>

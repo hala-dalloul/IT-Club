@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
 import { RegistrationAdmin } from "./RegistrationAdmin";
 import { EventRegistrationAdmin } from "./EventRegistrationAdmin";
+import { ContentCard } from "./ClubContent";
+import { EventDetail } from "./EventDetail";
+import { NewsDetail } from "./NewsDetail";
 import { ensureEventSheet, sheetLinks } from "@/lib/club/sheets";
 import { MediaLibrary } from "./MediaLibrary";
 import { RichTextEditor } from "./RichTextEditor";
@@ -706,6 +709,16 @@ function ContentEditor({
     kind === "news" ? "news" : "events",
   );
   const targetKind: ContentCollection = isArticle ? articleKind : kind;
+  const [showFinalPreview, setShowFinalPreview] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>(() => {
+    const values = Object.fromEntries(
+      Object.entries(item ?? {}).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    );
+    if (item?.durationMinutes) values["durationHours"] = String(item.durationMinutes / 60);
+    return values;
+  });
 
   const [committee, setCommittee] = useState(
     item?.isFounder || item?.committee === "administrative"
@@ -950,6 +963,15 @@ function ContentEditor({
     setDirty(true);
   }
 
+  function captureDraft(form: HTMLFormElement) {
+    const entries = Object.fromEntries(new FormData(form)) as Record<string, FormDataEntryValue>;
+    const values: Record<string, string> = {};
+    for (const [key, value] of Object.entries(entries)) {
+      if (typeof value === "string") values[key] = value;
+    }
+    setDraft((current) => ({ ...current, ...values }));
+  }
+
   const extraFields: [keyof Content, string, string, string][] =
     kind === "members"
       ? [
@@ -976,15 +998,65 @@ function ContentEditor({
             ],
           ];
 
+  const previewItem: Content = {
+    id: item?.id || "admin-preview",
+    title: draft["title"] ?? item?.title ?? "",
+    title_en: draft["title_en"] ?? item?.title_en ?? "",
+    description: draft["description"] ?? item?.description ?? "",
+    description_en: draft["description_en"] ?? item?.description_en ?? "",
+    images: preview ? [preview, ...images] : images,
+    driveImageUrls,
+    date: draft["date"] ?? item?.date ?? "",
+    status,
+    eventTime: draft["eventTime"] ?? item?.eventTime ?? "",
+    ...(draft["durationHours"]
+      ? { durationMinutes: Number(draft["durationHours"]) * 60 }
+      : item?.durationMinutes
+        ? { durationMinutes: item.durationMinutes }
+        : {}),
+    eventType: draft["eventType"] ?? item?.eventType ?? "",
+    eventType_en: draft["eventType_en"] ?? item?.eventType_en ?? "",
+    presenterName: draft["presenterName"] ?? item?.presenterName ?? "",
+    presenterName_en: draft["presenterName_en"] ?? item?.presenterName_en ?? "",
+    presenterBio: draft["presenterBio"] ?? item?.presenterBio ?? "",
+    presenterBio_en: draft["presenterBio_en"] ?? item?.presenterBio_en ?? "",
+    partnershipType: draft["partnershipType"] ?? item?.partnershipType ?? "",
+    partnershipType_en: draft["partnershipType_en"] ?? item?.partnershipType_en ?? "",
+    websiteUrl: draft["websiteUrl"] ?? item?.websiteUrl ?? "",
+    eventRegistration,
+  };
+
   return (
     <form
       onSubmit={save}
-      onChange={() => setDirty(true)}
+      onChange={(event) => {
+        setDirty(true);
+        captureDraft(event.currentTarget);
+      }}
       className="space-y-6 rounded-[2rem] border border-border bg-card p-6 shadow-card sm:p-8"
     >
-      <h2 className="text-2xl font-black">
-        {item ? (ar ? "تعديل المحتوى" : "Edit content") : ar ? "إضافة محتوى" : "Add content"}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-black">
+          {item ? (ar ? "تعديل المحتوى" : "Edit content") : ar ? "إضافة محتوى" : "Add content"}
+        </h2>
+        {(kind === "partners" || isArticle) && (
+          <BrandButton
+            type="button"
+            variant={showFinalPreview ? "primary" : "outline"}
+            aria-expanded={showFinalPreview}
+            onClick={() => setShowFinalPreview((shown) => !shown)}
+          >
+            {showFinalPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showFinalPreview
+              ? ar
+                ? "إخفاء المعاينة"
+                : "Hide preview"
+              : ar
+                ? "معاينة الشكل النهائي"
+                : "Preview final appearance"}
+          </BrandButton>
+        )}
+      </div>
       {isArticle && (
         <label className="block">
           <span className="mb-2 block">{ar ? "نوع المحتوى" : "Content type"}</span>
@@ -994,6 +1066,7 @@ function ContentEditor({
             onValueChange={(value) => {
               if (value === "events" || value === "news") {
                 setArticleKind(value);
+                setDraft((current) => ({ ...current, articleKind: value }));
                 setDirty(true);
               }
             }}
@@ -1026,6 +1099,7 @@ function ContentEditor({
                 defaultValue={item?.[key] || ""}
                 dir={key.endsWith("_en") ? "ltr" : "rtl"}
                 onDirty={() => setDirty(true)}
+                onValueChange={(value) => setDraft((current) => ({ ...current, [key]: value }))}
               />
             ) : (
               <Input
@@ -1300,6 +1374,7 @@ function ContentEditor({
               value={status}
               onValueChange={(v) => {
                 setStatus(v);
+                setDraft((current) => ({ ...current, status: v }));
                 setDirty(true);
               }}
             >
@@ -1493,6 +1568,53 @@ function ContentEditor({
             </div>
           )}
         </fieldset>
+      )}
+      {showFinalPreview && (
+        <section className="space-y-5 rounded-[2rem] border border-primary/30 bg-brand-gradient-soft/20 p-4 sm:p-6">
+          <div>
+            <h3 className="text-xl font-black">
+              {ar ? "معاينة الشكل النهائي" : "Final appearance preview"}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {ar
+                ? "المعاينة تتحدث تلقائيًا مع تعديل البيانات، قبل حفظ المحتوى."
+                : "This preview updates as you edit, before the content is saved."}
+            </p>
+          </div>
+          <div inert className="space-y-6">
+            {kind === "partners" && (
+              <div>
+                <h4 className="mb-3 font-bold">{ar ? "بطاقة الشراكة" : "Partnership card"}</h4>
+                <div className="max-w-xl">
+                  <ContentCard item={previewItem} kind="partners" preview imagePreview={preview} />
+                </div>
+              </div>
+            )}
+            {isArticle && (
+              <>
+                <div>
+                  <h4 className="mb-3 font-bold">{ar ? "بطاقة العرض" : "Listing card"}</h4>
+                  <div className="max-w-xl">
+                    <ContentCard
+                      item={previewItem}
+                      kind={articleKind}
+                      preview
+                      imagePreview={preview}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-3 font-bold">{ar ? "صفحة التفاصيل" : "Details page"}</h4>
+                  {articleKind === "events" ? (
+                    <EventDetail event={previewItem} lang={lang} previewImage={preview} />
+                  ) : (
+                    <NewsDetail news={previewItem} lang={lang} previewImage={preview} />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
       )}
       {error && <p role="alert">{error}</p>}
       <div className="flex flex-wrap gap-3">
