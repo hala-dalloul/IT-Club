@@ -40,6 +40,8 @@ export type Content = {
   memberIds?: string[];
   role?: string;
   role_en?: string;
+  /** Whether visitors can open this member's individual profile page. */
+  profileEnabled?: boolean;
   committee?: string;
   gender?: "male" | "female";
   isFounder?: boolean;

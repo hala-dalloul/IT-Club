@@ -109,6 +109,10 @@ export async function loadPage(
     if (!hit) throw notFound();
   }
 
+  // Older members without this setting remain enabled. When explicitly
+  // disabled, block both slug and legacy-id URLs before canonical redirects.
+  if (hit.kind === "members" && hit.item.profileEnabled === false) throw notFound();
+
   // Old id links and the other kind's path move to the item's own address.
   moveTo(itemPage(hit.kind, hit.item, loaded.data));
 
