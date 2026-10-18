@@ -17,10 +17,18 @@ function formattedNewsDate(date: string, lang: Lang) {
   }).format(parsed);
 }
 
-export function NewsDetail({ news, lang }: { news: Content; lang: Lang }) {
+export function NewsDetail({
+  news,
+  lang,
+  previewImage,
+}: {
+  news: Content;
+  lang: Lang;
+  previewImage?: string;
+}) {
   const ar = lang === "ar";
   const title = local(news, "title", lang);
-  const validImages = contentImageUrls(news);
+  const validImages = [...(previewImage ? [previewImage] : []), ...contentImageUrls(news)];
   const cover = validImages[0];
 
   return (
