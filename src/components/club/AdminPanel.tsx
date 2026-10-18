@@ -769,6 +769,7 @@ function ContentEditor({
     if (kind === "members") {
       value.role = values["role"] || "";
       value.role_en = values["role_en"] || "";
+      value.profileEnabled = values["profileEnabled"] === "on";
       value.committee = committee;
       value.gender = gender === "female" ? "female" : "male";
       value.isFounder = committee === "administrative";
@@ -1082,6 +1083,26 @@ function ContentEditor({
             ))}
           </div>
         </fieldset>
+      )}
+      {kind === "members" && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border p-4">
+          <input
+            type="checkbox"
+            name="profileEnabled"
+            defaultChecked={item?.profileEnabled !== false}
+            className="mt-1 size-4 accent-primary"
+          />
+          <span>
+            <span className="block font-bold">
+              {ar ? "السماح بفتح صفحة العضو" : "Allow visitors to open this member’s page"}
+            </span>
+            <span className="mt-1 block text-sm font-normal text-muted-foreground">
+              {ar
+                ? "عند إيقاف الخيار تبقى البطاقة ظاهرة، لكن لا يمكن فتح صفحة العضو."
+                : "When turned off, the member card stays visible but the profile page cannot be opened."}
+            </span>
+          </span>
+        </label>
       )}
       {kind === "members" && (
         <label className="block text-sm font-bold">
